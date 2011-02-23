@@ -49,7 +49,6 @@ sendMailMsg ()
 	HEADERS="$3"
 	BCC="$4"
 	LOG="$5"
-	echo $BCC
 	perl -e "
 use MIME::Lite;
 
@@ -58,7 +57,7 @@ while (<>) {
     \$text .= \$_;
 }
 
-\$msg = MIME::Lite->new(
+my \$msg = MIME::Lite->new(
     From => '$OWNER',
     To => '$TO',
     Subject => '$SUBJECT',
@@ -133,7 +132,7 @@ reportError ()
 			TINDER1="`echo 'Full log available at http://tinderbox.go-oo.org/MASTER/status.html'`"
 			TINDER2="`echo \"Box name: $TINDERNAME\"`"
 		fi
-		cat <<EOF | sendMailMsg "$to_mail" "Tinderbox failure, $message" "" "$OWNER"
+		cat <<EOF | sendMailMsg "$to_mail" "Tinderbox failure, $message" "" "$OWNER" ""
 Hi folks,
 
 One of you broke the build of LibreOffice master with your commit :-(
@@ -188,6 +187,7 @@ sendTinderboxLog ()
 	LOG="$3"
 
 	XTINDER=",'X-Tinder:'=>'cookie'"
+	SUBJECT="tinderbox build start notification"
 	GZLOG=
 	MESSAGE="
 tinderbox: administrator: $OWNER
@@ -204,9 +204,10 @@ tinderbox: END
 		GZLOG="tinder.log.gz"
 		( echo "$MESSAGE" ; cat autogen.log clean.log build.log smoketest.log install.log 2>/dev/null ) | gzip -c > "$GZLOG"
 		XTINDER=",'X-Tinder:'=>'gzookie'"
+		SUBJECT="tinderbox gzipped logfile"
 	fi
 
-	echo "$MESSAGE" | sendMailMsg "tinderbox@gimli.documentfoundation.org" "tinderbox gzipped logfile" "$XTINDER" "" "$GZLOG"
+	echo "$MESSAGE" | sendMailMsg "tinderbox@gimli.documentfoundation.org" "$SUBJECT" "$XTINDER" "" "$GZLOG"
 }
 
 ## code
@@ -256,9 +257,6 @@ prev_success=""
 last_success=""
 while true; do
 	err_msg=""
-
-	# cleanup
-	$NICE make clean
 
 	# FIXME we need a more exact way to determine a 'good' date; this is not accurate
 	rough_checkout_date="`currentTime`"
