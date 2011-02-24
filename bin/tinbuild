@@ -147,6 +147,11 @@ sendTinderboxLog ()
 	STATUS="$2"
 	LOG="$3"
 
+	if [ "X$MACHINE" == "XDarwin" ] ; then
+		STARTLINE="tinderbox: starttime: `date -juf '%Y-%m-%d %H:%M:%S' \"$STARTTIME\" '+%s'`"
+	else
+		STARTLINE="tinderbox: starttime: `date '+%s' -d \"$STARTTIME\"`"
+	fi
 	XTINDER="X-Tinder: cookie"
 	SUBJECT="tinderbox build start notification"
 	GZLOG=
@@ -154,7 +159,7 @@ sendTinderboxLog ()
 tinderbox: administrator: $OWNER
 tinderbox: buildname: $TINDERNAME
 tinderbox: tree: MASTER
-tinderbox: starttime: `date '+%s' -d \"$STARTTIME\"`
+$STARTLINE
 tinderbox: timenow: `date '+%s'`
 tinderbox: errorparser: unix
 tinderbox: status: $STATUS
