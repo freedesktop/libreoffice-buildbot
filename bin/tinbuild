@@ -49,54 +49,15 @@ sendMailMsg ()
 	HEADERS="$3"
 	BCC="$4"
 	LOG="$5"
-	perl -e "
-use MIME::Lite;
 
-my \$text;
-while (<>) {
-    \$text .= \$_;
-}
+	CMD='bin/sendEmail -q -f "$OWNER" -s "$SMTPHOST" -xu "$SMTPUSER" -xp "$SMTPPW" -t "$TO" -bcc "$BCC" -u "$SUBJECT" -o "message-header=$HEADERS"'
 
-my \$msg = MIME::Lite->new(
-    From => '$OWNER',
-    To => '$TO',
-    Subject => '$SUBJECT',
-    Type => 'TEXT',
-    Data => \$text
-    $HEADERS
-) or die \"Error creating multipart container: \$!\n\";
+	if test -n "$LOG" && test -f "$LOG"; then
+		CMD="$CMD -a $LOG"
+	fi
+	eval $CMD
 
-if ('$LOG' ne '' && -f '$LOG') {
-    \$msg->attach (
-        Type => 'application/x-gzip',
-        Path => '$LOG',
-        Filename => '$LOG',
-        Disposition => 'attachment'
-    ) or die \"Error adding $LOG: \$!\n\";
-}
-
-my \$smtp_class = '$SMTPCRYPT' eq 'none' ? 
-    'Net::SMTP' : 
-    '$SMTPCRYPT' eq 'ssl' ? 'Net::SMTP::SSL' : 'Net::SMTP::TLS';
-eval \"use \$smtp_class\";
-my \$SMTP = \$smtp_class->new(
-	'$SMTPHOST',
-    Hello => 'documentfoundation.org',
-	Port => '$SMTPPORT',
-	User => '$SMTPUSER',
-	Password => '$SMTPPW' );
-die \"Cannot connect to SMTP server!\" unless defined \$SMTP;
-
-\$SMTP->mail('$OWNER');
-\$SMTP->to('$TO');
-\$SMTP->bcc('$BCC') if ('$BCC' ne '');
-\$SMTP->data();
-\$SMTP->datasend( \$msg->as_string() );
-\$SMTP->dataend();
-\$SMTP->quit();
-
-print 'Sent a mail to \"$TO\" with subject \"$SUBJECT\".' . \"\n\";
-"
+	echo "Sent a mail to \"$TO\" with subject \"$SUBJECT\"."
 }
 
 reportError ()
@@ -186,7 +147,7 @@ sendTinderboxLog ()
 	STATUS="$2"
 	LOG="$3"
 
-	XTINDER=",'X-Tinder:'=>'cookie'"
+	XTINDER="X-Tinder: cookie"
 	SUBJECT="tinderbox build start notification"
 	GZLOG=
 	MESSAGE="
@@ -203,7 +164,7 @@ tinderbox: END
 	if [ "$LOG" = "yes" ] ; then
 		GZLOG="tinder.log.gz"
 		( echo "$MESSAGE" ; cat autogen.log clean.log build.log smoketest.log install.log 2>/dev/null ) | gzip -c > "$GZLOG"
-		XTINDER=",'X-Tinder:'=>'gzookie'"
+		XTINDER="X-Tinder: gzookie"
 		SUBJECT="tinderbox gzipped logfile"
 	fi
 
