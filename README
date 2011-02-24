@@ -1,0 +1,28 @@
+Howto setup a tinderbox
+=======================
+
+Prepare your build tree from git as described here:
+
+http://wiki.documentfoundation.org/Development/Native_Build
+
+Configure your build, *do* a build (if necessary, fix the build),
+tweak your setup to get optimal performance (play with
+--with-num-cpus, use ccache etc.)
+
+After a successful build, 'cd' into the source tree (the same dir that
+also has the autogen.sh and configure scripts), and run tinbuild.
+
+A typical call for a home box (without a working smtp relay) looks
+like this:
+
+tinbuild -m joe_hacker@gmail.com -s smtp.gmail.com -u joe_hacker -p SeCrEt -c tls -t "My Home Tinderbox Linux gcc-4.4.1 (x86_64)"
+
+If you don't want the user or password to show up in the process list,
+simply edit the tinbuild script - rather at the top of it, there are
+SMTPUSER and SMTPPW variables, to be set.
+
+This setup will then continuously build the tree (whenever there are
+new commits), and send results to the tinderbox master, as well as
+complaint mails to the committers that broke the build. To prevent
+excessive spam, you'll get a Bcc of those nag mails - so you'll
+notice.
