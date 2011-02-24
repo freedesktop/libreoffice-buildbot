@@ -26,3 +26,21 @@ new commits), and send results to the tinderbox master, as well as
 complaint mails to the committers that broke the build. To prevent
 excessive spam, you'll get a Bcc of those nag mails - so you'll
 notice.
+
+Random configure options to help speed up the build
+---------------------------------------------------
+
+The following options speed up the build, sometimes at the cost of
+coverage, functionality, or robustness. YMMV.
+
+ * --disable-dependency-tracking - avoids wasting time with
+   determining header dependencies, with a one-off build
+ * --disable-mozilla --without-system-mozilla - don't build parts of
+   mozilla. You'll miss breakages that use moz functionality
+ * --disable-binfilter - don't build old legacy StarOffice binary
+   formats. Highly deprecated code, may vanish soon
+ * --disable-odk - do not pack office development kit - not considered
+   core functionality
+ * --with-num-cpus=2 --with-max-jobs=2 - for the typical dual core
+   machine, with ccache, a rather good starting point to keep ~100%
+   load.
