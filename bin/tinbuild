@@ -4,6 +4,7 @@ export LC_ALL="C"
 
 ## default config
 PAUSE_SECONDS=$((15*60))
+BIN_PATH=`dirname $0`
 HTML_OUTPUT=0
 SEND_MAIL=0
 NICE=
@@ -50,7 +51,7 @@ sendMailMsg ()
 	BCC="$4"
 	LOG="$5"
 
-	CMD='bin/sendEmail -q -f "$OWNER" -s "$SMTPHOST" -xu "$SMTPUSER" -xp "$SMTPPW" -t "$TO" -bcc "$BCC" -u "$SUBJECT" -o "message-header=$HEADERS"'
+	CMD='$BIN_PATH/sendEmail -q -f "$OWNER" -s "$SMTPHOST" -xu "$SMTPUSER" -xp "$SMTPPW" -t "$TO" -bcc "$BCC" -u "$SUBJECT" -o "message-header=$HEADERS"'
 
 	if test -n "$LOG" && test -f "$LOG"; then
 		CMD="$CMD -a $LOG"
