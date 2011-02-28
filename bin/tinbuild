@@ -9,7 +9,7 @@ HTML_OUTPUT=0
 SEND_MAIL=0
 NICE=
 OWNER=
-MACHINE=`uname`
+GNUDATE=0
 TINDERNAME=
 
 SMTPPORT=25
@@ -17,6 +17,12 @@ SMTPCRYPT=none
 SMTPHOST=
 SMTPUSER=
 SMTPPW=
+
+## Determine if we have GNU date(1) or not
+date --version 2> /dev/null | grep -q GNU
+if [ $? -eq 0 ]; then
+	GNUDATE=1
+fi
 
 ## subroutines
 usage ()
@@ -131,7 +137,7 @@ gitHeads ()
 
 currentTime ()
 {
-	if [ "X$MACHINE" == "XDarwin" ] ; then
+	if [ $GNUDATE -eq 0 ] ; then
 	    date -u '+%Y-%m-%d %H:%M:%S'
 	else
 	    date --utc --rfc-3339=seconds
@@ -148,7 +154,7 @@ sendTinderboxLog ()
 	STATUS="$2"
 	LOG="$3"
 
-	if [ "X$MACHINE" == "XDarwin" ] ; then
+	if [ $GNUDATE -eq 0 ] ; then
 		STARTLINE="tinderbox: starttime: `date -juf '%Y-%m-%d %H:%M:%S' \"$STARTTIME\" '+%s'`"
 	else
 		STARTLINE="tinderbox: starttime: `date '+%s' -d \"$STARTTIME\"`"
@@ -267,7 +273,7 @@ while true; do
 			reportError owner "$rough_checkout_date" `printf "git repo broken - error is:\n\n$err_msg"`
 		}
 		new_head=$(gitHeads)
-		
+
 		if test "$old_head" != "$new_head"; then
 			break
 		fi
