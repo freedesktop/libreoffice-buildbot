@@ -239,7 +239,7 @@ while true; do
 		reportError committer "$rough_checkout_date" `printf "building failed - error is:\n\n"` "$(tail -n100 build.log)"
 #	elif ! $NICE make smoketest > smoketest.log 2>&1 ; then
 #		reportError committer "$rough_checkout_date" `printf "smoketest failed - error is:\n\n"` "$(tail -n100 smoketest.log)"
-	elif ! $NICE make dev-install >install.log 2>&1 ; then
+	elif ( test "`uname -o`" != "Cygwin" ) && ! $NICE make dev-install >install.log 2>&1 ; then
 		reportError committer "$rough_checkout_date" `printf "dev installation failed - error is:\n\n"` "$(tail -n100 install.log)"
 	else
 		echo "Build done - checkout from $rough_checkout_date successful."
