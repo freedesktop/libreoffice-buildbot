@@ -1,6 +1,29 @@
 Howto setup a tinderbox
 =======================
 
+LibreOffice tinderbox - a script that builds the project over and over
+again, and reports success or problems to
+
+http://tinderbox.go-oo.org/MASTER/status.html
+
+Short version
+-------------
+
+$ git clone git://anongit.freedesktop.org/libreoffice/bootstrap tinderbox
+$ cd tinderbox
+$ ./autogen.sh [params]
+[make sure that you fulfill all the configure needs]
+$ make
+[make sure that you get at least one successful build, for sanity check]
+$ cd ..
+$ git clone git://anongit.freedesktop.org/libreoffice/contrib/buildbot
+$ cd tinderbox
+$ screen ../buildbot/bin/tinbuild [params]
+[and now let that box do the work :-)]
+
+Longer version
+--------------
+
 Prepare your build tree from git as described here:
 
 http://wiki.documentfoundation.org/Development/Native_Build
@@ -15,7 +38,7 @@ also has the autogen.sh and configure scripts), and run tinbuild.
 A typical call for a home box (without a working smtp relay) looks
 like this:
 
-tinbuild -m joe_hacker@gmail.com -s smtp.gmail.com -u joe_hacker -p SeCrEt -c tls -t "My Home Tinderbox Linux gcc-4.4.1 (x86_64)"
+tinbuild -m joe_hacker@gmail.com -s smtp.gmail.com -u joe_hacker -p SeCrEt -c tls -t "Linux gcc-4.4.1 (x86_64)"
 
 If you don't want the user or password to show up in the process list,
 simply edit the tinbuild script - rather at the top of it, there are
@@ -35,6 +58,7 @@ coverage, functionality, or robustness. YMMV.
 
  * --disable-dependency-tracking - avoids wasting time with
    determining header dependencies, with a one-off build
+   This option is also essential for getting reliable build logs
  * --disable-mozilla --without-system-mozilla - don't build parts of
    mozilla. You'll miss breakages that use moz functionality
  * --disable-binfilter - don't build old legacy StarOffice binary
