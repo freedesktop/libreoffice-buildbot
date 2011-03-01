@@ -24,6 +24,15 @@ if [ $? -eq 0 ]; then
 	GNUDATE=1
 fi
 
+## Determine how GNU make(1) is called on the system
+for _g in make gmake gnumake; do
+	$_g --version 2> /dev/null | grep -q GNU
+	if test $? -eq 0;  then
+		MAKE=$_g
+		break
+	fi
+done
+
 ## subroutines
 usage ()
 {
@@ -40,6 +49,7 @@ usage ()
 	echo "-p <pass>  SMTP password for auth login"
 	echo "-t <name>  send tinderbox mails, identify self as <name>"
 	echo "-w <N>     specify timeout in secs between subsequent pull requests"
+	echo "-d <name>  name of the distro-config to use"
 }
 
 getCommitters ()
@@ -155,9 +165,14 @@ sendTinderboxLog ()
 	LOG="$3"
 
 	if [ $GNUDATE -eq 0 ] ; then
-		STARTLINE="tinderbox: starttime: `date -juf '%Y-%m-%d %H:%M:%S' \"$STARTTIME\" '+%s'`"
+		if [ X"`uname`" == X"OpenBSD" ]; then
+			STARTTIME=`echo $STARTTIME | sed "s/-//g;s/ //g;s/://1;s/:/\./g"`
+			STARTLINE="tinderbox: starttime: `date -j \"$STARTTIME\" '+%s'`"
+		else
+			STARTLINE="tinderbox: starttime: `date '+%s' -d \"$STARTTIME\"`"
+		fi
 	else
-		STARTLINE="tinderbox: starttime: `date '+%s' -d \"$STARTTIME\"`"
+		STARTLINE="tinderbox: starttime: `date -juf '%Y-%m-%d %H:%M:%S' \"$STARTTIME\" '+%s'`"
 	fi
 	XTINDER="X-Tinder: cookie"
 	SUBJECT="tinderbox build start notification"
@@ -184,7 +199,7 @@ tinderbox: END
 }
 
 ## code
-while getopts hilm:ns:c:u:p:t:w: opt ; do
+while getopts hilm:ns:c:u:p:t:w:d: opt ; do
 	case "$opt" in
 		h) usage; exit ;;
 		i) NICE="$NICE ionice -c3" ;;
@@ -197,6 +212,7 @@ while getopts hilm:ns:c:u:p:t:w: opt ; do
 		p) SMTPPW="$OPTARG" ;;
 		t) TINDERNAME="$OPTARG" ;;
 		w) PAUSE_SECONDS="$OPTARG" ;;
+		d) DISTRO_CONFIG="$OPTARG" ;;
 		?) usage; exit ;;
 	esac
 done
@@ -237,15 +253,15 @@ while true; do
 
 	# try to build
 	build_status="build_failed"
-	if ! $NICE ./autogen.sh >autogen.log 2>&1 ; then
+	if ! $NICE ./autogen.sh ${DISTRO_CONFIG:+ --with-distro=${DISTRO_CONFIG}} >autogen.log 2>&1 ; then
 		reportError committer "$rough_checkout_date" `printf "autogen.sh / configure failed - error is:\n\n"` "$(cat autogen.log)"
-	elif ! $NICE make clean >clean.log 2>&1 ; then
+	elif ! $NICE $MAKE clean >clean.log 2>&1 ; then
 		reportError committer "$rough_checkout_date" `printf "cleaning up failed - error is:\n\n"` "$(tail -n100 clean.log)"
-	elif ! $NICE make >build.log 2>&1 ; then
+	elif ! $NICE $MAKE >build.log 2>&1 ; then
 		reportError committer "$rough_checkout_date" `printf "building failed - error is:\n\n"` "$(tail -n100 build.log)"
 #	elif ! $NICE make smoketest > smoketest.log 2>&1 ; then
 #		reportError committer "$rough_checkout_date" `printf "smoketest failed - error is:\n\n"` "$(tail -n100 smoketest.log)"
-	elif ( test "`uname -o`" != "Cygwin" ) && ! $NICE make dev-install >install.log 2>&1 ; then
+	elif ( test "`uname -o`" != "Cygwin" ) && ! $NICE $MAKE dev-install >install.log 2>&1 ; then
 		reportError committer "$rough_checkout_date" `printf "dev installation failed - error is:\n\n"` "$(tail -n100 install.log)"
 	else
 		echo "Build done - checkout from $rough_checkout_date successful."
