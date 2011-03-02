@@ -169,10 +169,10 @@ sendTinderboxLog ()
 			STARTTIME=`echo $STARTTIME | sed "s/-//g;s/ //g;s/://1;s/:/\./g"`
 			STARTLINE="tinderbox: starttime: `date -j \"$STARTTIME\" '+%s'`"
 		else
-			STARTLINE="tinderbox: starttime: `date '+%s' -d \"$STARTTIME\"`"
+			STARTLINE="tinderbox: starttime: `date -juf '%Y-%m-%d %H:%M:%S' \"$STARTTIME\" '+%s'`"
 		fi
 	else
-		STARTLINE="tinderbox: starttime: `date -juf '%Y-%m-%d %H:%M:%S' \"$STARTTIME\" '+%s'`"
+		STARTLINE="tinderbox: starttime: `date '+%s' -d \"$STARTTIME\"`"
 	fi
 	XTINDER="X-Tinder: cookie"
 	SUBJECT="tinderbox build start notification"
