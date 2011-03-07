@@ -1,0 +1,89 @@
+#!/bin/bash
+
+bin_dir="$(dirname $0)"
+cd ${bin_dir}
+bin_dir=$(pwd)
+cd - 1>/dev/null 2>&1
+
+bootstrap_dir=
+profile=
+pull_time=
+
+while [ "${1:-}" != "" ] ; do
+	case $1 in
+		-p|--profile) shift
+			profile="$1"
+			;;
+		-s|--source) shift
+			bootstrap_dir=$1
+			;;
+		-t|--pull-time) shift
+			pull_time="$1"
+			;;
+		-h|--help)
+			echo "Usage $0 -p|--profile <autogen_profile> -s|--source <bootstrap_git> -t|--pull-time <utc time of the last pull -r>"
+			exit 0;
+			;;
+		-*)
+			echo "Invalid option $1" 1>&2
+			exit 1
+			;;
+		*)
+			echo "extra argument $1" 1>&2
+			exit 1;
+			;;
+	esac
+	shift;
+done
+
+if [ -z "$bootstrap_dir" ] ; then
+	bootstrap_dir=$(pwd)
+fi
+cd $bootstrap_dir
+
+if [ -n "$profile" ] ; then
+	if [ ! -e "$profile" ] ; then
+		echo "profile $profile does not exist" 1>&2
+		exit 1
+	fi
+	git_branch=$(git branch -a | grep "^\*" | sed -e "s/\* //" | sed -e "s@/@~@")
+	if [ -z "$pull_time" ] ; then
+		pullt_time=$(cat ${bootstrap_dir}/pull.lastrun)
+		if [ -z "$pull_time" ] ; then
+			pull_time=$(date -u "+%Y-%m-%d-%H.%M.%S")
+		fi
+	fi
+	build_version="${git_branch}~${pull_time}"
+	cat $profile | sed -e "s/with-build-version=/with-build-version=${build_version}/" > autogen.lastrun
+else
+	echo "Warning: you did not specify a profile, the current autogen.lastrun will be used including any possibly incorrect branch/timestamp information" 1>&2
+fi
+
+if [ "x$DAILIES_USE_RAMDISK" == "xY" ] ; then
+	if [ -d /Volumes/temp_ramdisk ] ; then
+		${bin_dir}/destroy_ramdisk temp_ramdisk
+	fi
+	${bin_dir}/create_ramdisk temp_ramdisk 12000000
+	mkdir /Volumes/temp_ramdisk/tmp
+	export TMPDIR=/Volumes/temp_ramdisk/tmp
+fi
+
+if [ $? -eq 0 ] ; then
+	rm -f build.log.bz2
+	./g branch -v --no-abbrev > build.log
+	make clean >> build.log 2>&1
+	if [ $? -eq 0 ] ; then
+		./autogen.sh >> build.log 2>&1
+		if [ "x$DAILIES_USE_RAMDISK" == "xY" ] ; then
+			if [ $? -eq 0 ] ; then
+				mkdir /Volumes/temp_ramdisk/work
+				mkdir /Volumes/temp_ramdisk/work/helpcontent2
+				cd helpcontent2
+				ln -s /Volumes/temp_ramdisk/work/helpcontent2 unxmacxi.pro
+				cd -
+			fi
+		fi
+		make >> build.log 2>&1
+	fi
+fi
+exit $?

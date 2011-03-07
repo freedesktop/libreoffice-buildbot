@@ -1,0 +1,77 @@
+#!/bin/bash
+
+branch=
+pull_time=
+result=0
+src="."
+
+while [ "${1:-}" != "" ] ; do
+	case $1 in
+		-b|--branch) shift
+			branch="$1"
+			;;
+		-s|--source) shift
+			src="$1"
+			;;
+		-t|--pull-time) shift
+			pull_time="$1"
+			;;
+		--ok)
+			result=1
+			;;
+		--ko)
+			result=0;
+			;;
+		-*)
+			echo "Invalid option $1" 1>&2
+			exit 1
+			;;
+		*)
+			echo "extra argument $1" 1>&2
+			exit 1;
+			;;
+	esac
+	shift;
+done
+
+if [ -z "$branch" -o -z "$pull_time" ] ; then
+	echo "missing argument. syntax $0 -b <git_branch> -t <git_pull_timestap>" 1>&2
+    exit 1;
+fi
+
+if [ ! -d "${src}/instsetoo_native" ] ; then
+	echo "source ${src} does not exist or is not a valid bootstrap git repo" 1>&2
+	exit 1;
+fi
+
+cd "$src"
+
+tag="${branch}~${pull_time}"
+
+ssh upload@gimli.documentfoundation.org "mkdir -p /srv/www/dev-builds.libreoffice.org/daily/MacOS/$branch/${pull_time}"
+
+if [ -f build.log ] ; then
+	bzip2 build.log
+fi
+if [ "$result" = "0" ] ; then
+	scp build.log.bz2 upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/MacOS/$branch/${pull_time}/${tag}.failed.log.bz2
+else
+	scp build.log.bz2 upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/MacOS/$branch/${pull_time}/${tag}.success.log.bz2
+fi
+
+cd instsetoo_native
+mkdir unxmacxi.pro/push 2>/dev/null
+
+for file in $(find . -name "*.dmg" | grep -v "/push/")
+do
+	target=$(basename $file)
+	target="${tag}_${target}"
+
+	mv $file unxmacxi.pro/push/$target
+
+done;
+rsync --bwlimit=100 -avPe  ssh  unxmacxi.pro/push/* upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/MacOS/$branch/${pull_time}/
+
+if [ "$?" == "0" ] ; then
+	ssh upload@gimli.documentfoundation.org "cd /srv/www/dev-builds.libreoffice.org/daily/MacOS/$branch/ && ln -sf ${pull_time} current"
+fi

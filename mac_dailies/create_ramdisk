@@ -1,0 +1,16 @@
+#!/bin/bash
+
+volume="$1"
+size="$2"
+
+if [ -n "$volume" -a -n "$size" ] ; then
+	if [ -d /Volumes/$volume ] ; then
+		echo "Error: the volume $volume is already mounted" >&2
+		exit 1
+	else
+		diskutil erasevolume HFS+ "$volume" $(hdiutil attach -nomount ram://$size)
+	fi
+else
+	echo "missing argument. syntax $0 <volume_name> <size_in_blocks>" >&2
+    exit 1
+fi

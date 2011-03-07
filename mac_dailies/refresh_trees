@@ -1,0 +1,53 @@
+#!/bin/bash
+
+bootstrap_dir="."
+branch="master"
+
+
+while [ "${1:-}" != "" ] ; do
+	case $1 in
+		--source) shift
+			bootstrap_dir="$1"
+			;;
+		-b|--branch) shift
+			branch="$1"
+			;;
+		-*)
+			echo "Invalid option $1" 1>&2
+			exit 1
+			;;
+		*)
+			echo "extra argument $1" 1>&2
+			exit 1;
+			;;
+	esac
+	shift;
+done
+
+if [ ! -d "$bootstrap_dir" ] ; then
+	echo "source location ${bootstrap_dir} does not exist or is not a directory"
+	exit 1
+fi
+
+cd ${bootstrap_dir}
+if [ ! -x ./g ] ; then
+	echo "./g missing or not executable in `pwd`"
+	exit 1
+fi
+
+./g reset --hard
+
+# just in case we were not on master, we go back on master so
+# that if a branch does not exist in a given repo it will default
+# to master rather than what-ever branch we were on
+./g -f checkout master
+
+./g -f checkout $branch
+
+echo "$(date -u "+%Y-%m-%d-%H.%M.%S")" > pull.lastrun
+
+# attention: branch need to be setup with an associated tracking branch
+./g pull -r
+
+# hack to remove ooo
+#sed -i -e "s/ooohelppack//" ./instsetoo_native/util/makefile.mk

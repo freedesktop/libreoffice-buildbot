@@ -1,0 +1,1 @@
+'--with-distro=LibreOfficeMacOSX' '--with-git' '--with-num-cpus=8' '--with-max-jobs=8' '--enable-binfilter' '--disable-mozilla' '--with-system-mesa-headers=no' 'CC=ccache gcc-4.0' 'CXX=ccache g++-4.0'
