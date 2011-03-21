@@ -37,7 +37,7 @@ fi
 CURR_HEAD=$(<".git/HEAD")
 BRANCH="${CURR_HEAD#*/*/}"
 tag="${BRANCH}~${PULL_TIME}"
-ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}\""
+ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}\"" || exit 1
 
 . ./*[Ee]nv.[Ss]et.sh
 cd instsetoo_native
@@ -51,7 +51,7 @@ do
 	mv $file "${INPATH}/push/$target"
 done;
 
-rsync --bwlimit=${BANDWIDTH_LIMIT} -avsPe ssh ${INPATH}/push/* "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}/"
+rsync --bwlimit=${BANDWIDTH_LIMIT} -avsPe ssh ${INPATH}/push/* "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}/" || exit 1
 if [ "$?" == "0" ] ; then
 	ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/\" && ln -sf \"${PULL_TIME}\" current"
 fi
