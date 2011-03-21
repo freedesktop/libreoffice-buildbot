@@ -278,10 +278,12 @@ while true; do
 		# upload new daily build?
 		curr_day=`date -u '+%j'`
 		if [ $day_last_upload -lt $curr_day ]; then
-			day_last_upload=$curr_day
 			if test "$PUSH_NIGHTLIES" -eq 1; then
 				$BIN_PATH/push_nightlies.sh -t "$rough_checkout_date" -n "$TINDERNAME"
-			fi	
+				if [ "$?" == "0" ] ; then
+					day_last_upload=$curr_day
+				fi
+			fi
 		fi
 	fi
 

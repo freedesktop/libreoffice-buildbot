@@ -17,8 +17,8 @@ BANDWIDTH_LIMIT=20
 while getopts ht:n:l: opt ; do
 	case "$opt" in
 		h) usage; exit ;;
-		t) PULL_TIME="$OPTARG" ;;
-		n) BUILDER_NAME="$OPTARG" ;;
+		t) PULL_TIME="${OPTARG// /_}" ;;
+		n) BUILDER_NAME="${OPTARG// /_}" ;;
 		l) BANDWIDTH_LIMIT="$OPTARG" ;;
 		?) usage; exit ;;
 	esac
@@ -41,17 +41,17 @@ ssh upload@gimli.documentfoundation.org "mkdir -p /srv/www/dev-builds.libreoffic
 
 . ./*[Ee]nv.[Ss]et.sh
 cd instsetoo_native
-mkdir ${OUTPATH}/push 2>/dev/null
+mkdir ${INPATH}/push 2>/dev/null
 
 for file in $(find . -name "*.dmg" -o -name "*.tar.gz" -o -name "*.exe" | grep -v "/push/")
 do
 	target=$(basename $file)
 	target="${tag}_${target}"
 
-	mv $file ${OUTPATH}/push/$target
+	mv $file ${INPATH}/push/$target
 done;
 
-rsync --bwlimit=${BANDWIDTH_LIMIT} -avPe ssh ${OUTPATH}/push/* upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}/
+rsync --bwlimit=${BANDWIDTH_LIMIT} -avPe ssh ${INPATH}/push/* upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}/
 if [ "$?" == "0" ] ; then
 	ssh upload@gimli.documentfoundation.org "cd /srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/ && ln -sf ${PULL_TIME} current"
 fi
