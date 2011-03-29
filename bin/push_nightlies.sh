@@ -53,5 +53,5 @@ done;
 
 rsync --bwlimit=${BANDWIDTH_LIMIT} -avsPe ssh ${INPATH}/push/* "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}/" || exit 1
 if [ "$?" == "0" ] ; then
-	ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/\" && ln -sf \"${PULL_TIME}\" current"
+	ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/\" && { rm current; ln -s \"${PULL_TIME}\" current }"
 fi
