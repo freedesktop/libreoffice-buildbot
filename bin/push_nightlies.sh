@@ -43,7 +43,7 @@ ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoff
 cd instsetoo_native
 mkdir ${INPATH}/push 2>/dev/null
 
-for file in $(find . -name "*.dmg" -o -name "*.tar.gz" -o -name "*.exe" | grep -v "/push/")
+for file in $(find . -name "*.dmg" -o -name "LibO*.tar.gz" -o -name "LibO*.exe" | grep -v "/push/")
 do
 	target=$(basename $file)
 	target="${tag}_${target}"
