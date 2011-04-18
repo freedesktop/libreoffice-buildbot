@@ -21,7 +21,7 @@ SMTPUSER=
 SMTPPW=
 
 ## Determine if we have GNU date(1) or not
-date --version 2> /dev/null | grep -q GNU
+date --version 2> /dev/null | grep -q Free\ Software\ Foundation
 if [ $? -eq 0 ]; then
 	GNUDATE=1
 fi
