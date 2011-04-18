@@ -148,15 +148,6 @@ gitHeads ()
 	./g rev-parse --verify HEAD
 }
 
-currentTime ()
-{
-	if [ $GNUDATE -eq 0 ] ; then
-	    date -u '+%Y-%m-%d %H:%M:%S'
-	else
-	    date --utc --rfc-3339=seconds
-	fi
-}
-
 sendTinderboxLog ()
 {
 	if test "$SEND_MAIL" -ne 1 -o -z "$TINDERNAME" ; then
@@ -253,7 +244,7 @@ while true; do
 	err_msg=""
 
 	# FIXME we need a more exact way to determine a 'good' date; this is not accurate
-	rough_checkout_date="`currentTime`"
+	rough_checkout_date="`date -u '+%Y-%m-%d %H:%M:%S'`"
 	sendTinderboxLog "$rough_checkout_date" "building"
 
 	# try to build
