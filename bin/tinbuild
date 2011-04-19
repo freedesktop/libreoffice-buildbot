@@ -110,7 +110,7 @@ reportError ()
 		TINDER1=
 		TINDER2=
 		if test "$SEND_MAIL" -eq 1 -a -n "$TINDERNAME" ; then
-			TINDER1="`echo 'Full log available at http://tinderbox.go-oo.org/MASTER/status.html'`"
+			TINDER1="`echo \"Full log available at http://tinderbox.go-oo.org/$TINDER_BRANCH/status.html\"`"
 			TINDER2="`echo \"Box name: $TINDERNAME\"`"
 		fi
 		cat <<EOF | sendMailMsg "$to_mail" "Tinderbox failure, $message" "" "$OWNER" ""
@@ -174,7 +174,7 @@ sendTinderboxLog ()
 	MESSAGE="
 tinderbox: administrator: $OWNER
 tinderbox: buildname: $TINDERNAME
-tinderbox: tree: MASTER
+tinderbox: tree: $TINDER_BRANCH
 $STARTLINE
 tinderbox: timenow: `date '+%s'`
 tinderbox: errorparser: unix
@@ -235,6 +235,15 @@ fi
 
 # for build.pl
 test $HTML_OUTPUT -eq 1 && export BUILD_HTML_OUTPUT=true
+
+# where to report
+current_branch=`git branch | grep '^\*' | sed 's/^..//'`
+TINDER_BRANCH=
+case "$current_branch" in
+    master) TINDER_BRANCH='MASTER' ;;
+    libreoffice-3-4) TINDER_BRANCH=$current_branch ;;
+    *) echo "Unknown, non-registered branch, please update tinbuild, and tinderbox.libreoffice.org." ; exit 1 ;;
+esac
 
 # main
 prev_success=""
