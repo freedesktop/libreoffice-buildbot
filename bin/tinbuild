@@ -119,7 +119,7 @@ reportError ()
 		TINDER1=
 		TINDER2=
 		if test "$SEND_MAIL" -eq 1 -a -n "$TINDERNAME" ; then
-			TINDER1="`echo \"Full log available at http://tinderbox.go-oo.org/$TINDER_BRANCH/status.html\"`"
+			TINDER1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
 			TINDER2="`echo \"Box name: $TINDERNAME\"`"
 		fi
 		cat <<EOF | sendMailMsg "$to_mail" "Tinderbox failure, $message" "" "$OWNER" ""
