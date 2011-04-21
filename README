@@ -6,6 +6,10 @@ again, and reports success or problems to
 
 http://tinderbox.go-oo.org/MASTER/status.html
 
+or to a branch, like
+
+http://tinderbox.go-oo.org/libreoffice-3-4/status.html
+
 Short version
 -------------
 
@@ -68,3 +72,24 @@ coverage, functionality, or robustness. YMMV.
  * --with-num-cpus=2 --with-max-jobs=2 - for the typical dual core
    machine, with ccache, a rather good starting point to keep ~100%
    load.
+
+Tinderboxing more branches on one machine
+-----------------------------------------
+
+The tinbuild script synchronizes the 'expensive' operations using the 'flock'
+command, when you are on a system that actually has flock.  So on Linux, it is
+enough to have 2 trees, like ~/master and ~/libreoffice-3-4, switched to the
+respective branches, and run tinbuild from there, and it should work just
+fine, taking care of not building both at the same time.
+
+Example:
+
+$ cd ~/master
+$ screen -d -m ~/buildbot/bin/tinbuild -n -i ... etc.
+$ cd ~/libreoffice-3-4
+$ ./g checkout -b libreoffice-3-4 origin/libreoffice-3-4
+$ screen -d -m ~/buildbot/bin/tinbuild -n -i ... etc.
+
+will result in 2 screen sessions running the master and libreoffice-3-4 builds
+respectively, with the same load as if you were running just one; only the
+time to build will prolong.
