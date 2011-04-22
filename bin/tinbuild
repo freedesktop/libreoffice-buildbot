@@ -306,7 +306,8 @@ while true; do
 		mv $I prev-$I 2>/dev/null
 	done
 
-	echo updating repo
+	echo "Waiting $PAUSE_SECONDS seconds."
+	sleep $PAUSE_SECONDS
 
 	# new commits?
 	while true; do
@@ -317,10 +318,10 @@ while true; do
 		new_head=$(gitHeads)
 
 		if test "$old_head" != "$new_head"; then
+			echo "Repo updated, going to build"
 			break
 		fi
 
-		echo "Waiting $PAUSE_SECONDS seconds."
-		sleep $PAUSE_SECONDS
+		sleep 60
 	done
 done
