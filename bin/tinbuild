@@ -262,6 +262,7 @@ case "$current_branch" in
 esac
 
 # main
+echots "Starting tinderbox for branch '$current_branch'."
 prev_success=""
 last_success=""
 day_last_upload=0
@@ -270,7 +271,6 @@ while true; do
 
 	# FIXME we need a more exact way to determine a 'good' date; this is not accurate
 	rough_checkout_date="`date -u '+%Y-%m-%d %H:%M:%S'`"
-	sendTinderboxLog "$rough_checkout_date" "building"
 
 	# try to build
 	build_status="build_failed"
@@ -279,6 +279,7 @@ while true; do
 			flock -x 200
 		fi
 
+		sendTinderboxLog "$rough_checkout_date" "building"
 		retval=0
 
 		if ! $NICE ./autogen.sh ${DISTRO_CONFIG:+ --with-distro=${DISTRO_CONFIG}} >autogen.log 2>&1 ; then
