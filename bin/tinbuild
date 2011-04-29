@@ -67,7 +67,7 @@ usage ()
 # echo the message to the screen including a timestamp
 echots ()
 {
-	echo "[`date -u '+%Y-%m-%d %H:%M:%S'`]" "$@"
+	echo "[`date -u '+%Y-%m-%d %H:%M:%S'` $TINDER_BRANCH]" "$@"
 }
 
 getCommitters ()
@@ -262,7 +262,7 @@ case "$current_branch" in
 esac
 
 # main
-echots "Starting tinderbox for branch '$current_branch'."
+echots "Starting tinderbox for branch '$TINDER_BRANCH'."
 prev_success=""
 last_success=""
 day_last_upload=0
@@ -342,10 +342,11 @@ while true; do
 		new_head=$(gitHeads)
 
 		if test "$old_head" != "$new_head"; then
-			echots "Repo updated, going to build"
+			echots "Repo updated, going to build."
 			break
 		fi
 
+		echots "Waiting until there are changes in the repo..."
 		sleep 60
 	done
 done
