@@ -334,6 +334,7 @@ while true; do
 	sleep $PAUSE_SECONDS
 
 	# new commits?
+	show_once=1
 	while true; do
 		old_head=$(gitHeads) && err_msg="$(./g pull -r 2>&1)" ||
 		{
@@ -346,7 +347,10 @@ while true; do
 			break
 		fi
 
-		echots "Waiting until there are changes in the repo..."
+		if [ "$show_once" = "1" ] ; then
+			echots "Waiting until there are changes in the repo..."
+			show_once=0
+		fi
 		sleep 60
 	done
 done
