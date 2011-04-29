@@ -181,7 +181,7 @@ sendTinderboxLog ()
 			STARTLINE="tinderbox: starttime: `date -juf '%Y-%m-%d %H:%M:%S' \"$STARTTIME\" '+%s'`"
 		fi
 	else
-		STARTLINE="tinderbox: starttime: `date '+%s' -d \"$STARTTIME\"`"
+		STARTLINE="tinderbox: starttime: `date '+%s' -d \"$STARTTIME UTC\"`"
 	fi
 	XTINDER="X-Tinder: cookie"
 	SUBJECT="tinderbox build start notification"
