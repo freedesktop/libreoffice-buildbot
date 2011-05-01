@@ -1,0 +1,133 @@
+
+tinbuild2 is an evolution of tinbuild....
+Warning: this work is not fully operational yet
+
+Why:
+
+The main motivation was the need to have a more flexible customisation for the
+different build step. For performance reason, I needed to be able to set-up a
+ram_disk after the make clean, create a bunch of directory and link them in
+the tree to preempt solver and all the *.pro build directory
+
+I also needed a pre-clean step to be able to destroy that ram_disk (hence
+speeding up the make clean a lot)
+
+
+so rather than hacking the existing tinbuild in a way I could never upstream
+I started tinbuild2.
+
+while at it, I set-up a few more goals:
+have the list of commits and committers - in case of failure - be generated
+based on the heads of the last sucessfull build, rather than based on a
+timestamp. this is needed because the timestamp associated to the commits
+have little correlation to the time when they have become available in the
+public tree.
+Working based on a set of heads, meant I also wanted to tinbuild to be
+'restartable'. in other words, if the tinbuild stop of any reason
+(Ctrl-C for instance). when it restart it will behave as if it was stopped
+just after the last sucessful build it did.
+This require to prime/bootstrap the tinbuild, that is to sucessfully complete a
+build sequence. this is achieved with runnning it once with -b.
+It will then attempt a build iteration (without pulling) and stop immediatly
+after that.
+
+
+How:
+
+The design is loosely inspired from Gentoo's portage. the idea is to use
+the ability of bash to redefine function.
+
+so the function to build the product, do_build, is implemented with
+
+tb_call()
+{
+	declare -F "$1" > /dev/null && $1
+}
+
+phase()
+{
+	local f=${1}
+	for x in {pre_,do_,_post}${f} ; do
+		tb_call ${x}
+	done
+}
+
+
+do_build()
+{
+	retval=0
+	for p in autogen clean make test push ; do
+        echo "call $p"
+		phase $p
+	done
+}
+
+so essentially the following functions will be called if implemented
+pre_autogen, do_autogen, post_autogen, pre_clean, do_clean, post_clean,
+pre_make, do_make, post_make, pre_test, do_test, post_test, pre_push, do_push,
+post_push
+
+Note that the implementation of these function need to test ${retval} to find
+out if a step before them had failed. if so they may decide to do nothing
+(most cases) or may decide to still do something.
+reciprocally, every function should put a non-zero value in retval in case of
+failure.
+
+Now, the base function are implemented in tinbuild_phases.sh
+but these function can be overrided by a user-implementation.
+
+In the same spirit, platform dependent hack can be done in tinbuild_internals_<uname>.sh
+The core default is meant to run on Linux, using bash and all the GNU tools that
+are expected to normally be there on a Linux box.
+Other platform will re-implementent incompatible stuff in theyre own .sh
+
+And yes. bash is required. There maybe a way to avoid it, but:
+1/ Bash is required to build the product anyway
+2/ VHS won over BetaMax, get over it :-)
+
+
+Where:
+
+tinbuild2 rely on a profile name, passed with a mandatory -p <name> on the
+command line.
+That name is used to locate a file in ~/.tinbuild/config/<name>.cfg
+(you have to create it)
+
+That config file should contain all the needed SMTP information,
+the name of you build (TINDER_NAME)  and
+can override factory default (like PAUSE_SECOND, which by default
+is set at 15 minutes (900 seconds))
+
+also, if present, the file ~/.tinbuild/phases/<name>.sh will be sourced
+after tinbuild_phases.sh.
+This allow to override and/or expand the default build behavior.
+
+Note that there is no 'inheritance'. if you override and existing function
+you cannot invoque it anymore. so you cannot 'expand' a function, just
+re-write you own implementation of it.
+
+
+TODO:
+
+* In order not to mess the tinderbuild server with crappy message while
+debuggin tinbuild2, I have disabled the mail-sending part of it.
+(which means that that code as not run at all and is likely to have
+stupid bugs in it)
+
+* There should be an effort to refine the naming of things:
+of the config variables to keep the gobal namespace sane
+(like having TB_ as a prefic for these)
+
+* There should be an effort to document the available API
+that is the functions and variable available to the phases
+functions. like how to send an email, how to manipulate dates
+etc...
+
+Future:
+
+* make the locking mechanism work for Mac (flock is missing)
+* make one tinbuild able to handle more than one branch based on the same repo
+* make the pushing of result packages asynchronous.
+* make tinbuild respond to a pipe or a socket to be able to dynamically feed him
+  one-time request to do a build on a feature-branch (in that case there won't
+  be a baseline and the result, what-ever it is will be send to the 'requestor'

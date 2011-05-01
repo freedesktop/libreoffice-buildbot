@@ -1,0 +1,169 @@
+#!/usr/bin/env bash
+
+bin_dir=$(dirname "$0")
+
+PAUSE_SECOND=$((15*60))
+PUSH_NIGHTLIES=0
+SEND_MAIL=0
+NICE=
+PROFILE_NAME=
+PRIME_BUILD=0
+LOCK_FILE=/tmp/tinbuid-lockfile
+
+source ${bin_dir?}/tinbuild_internals.sh
+
+usage()
+{
+cat << EOF
+Usage $0 [options] -p <profile_name>
+Options:
+   -b           bootstrap/prime the tinbuild
+   -h           print help
+   -i           run with ionice -c3, can be combined with -n
+   -m           mail errors to the committer, general errors to the owner"
+   -n           run with nice, can be combined with -i
+   -p <profile> profile to use.
+   -w           specify minimum wait between build attempt
+
+<profile> is a name used to locate configuration information
+in ~/.tinbuild/config/<profile>.cfg
+
+EOF
+}
+
+load_profile()
+{
+    local p=$1
+    local rc=0
+
+    if [ -z "$p" ] ; then
+        echo "a profile is needed to run, see help" >&2
+        exit 1
+    else
+        if [ ! -f $HOME/.tinbuild/config/${p}.cfg ] ; then
+            echo "$HOME/.tinbuild/config/${p}.cfg can't be accessed" >&2
+            exit 1
+        else
+            source "$HOME/.tinbuild/config/${p}.cfg"
+            # add check to make sure that thing are setup correctly
+            if [ -f "$HOME/.tinbuild/phases/${p}.sh" ] ; then
+                source "$HOME/.tinbuild/phases/${p}.sh"
+            fi
+        fi
+    fi
+    if [ -n "${SEND_MAIL}" -a "${SEND_MAIL}" = "1" ] ; then
+        if [ -z "${SMTPHOST}" ] ; then
+            echo "Error: missing SMTPHOST" 1>&2
+            rc=1
+        fi
+        if [ -z "${SMTPUSER}" ] ; then
+            echo "Error: missing SMTPUSER" 1>&2
+            rc=1
+        fi
+        if [ -z "${SMTPPW}" ] ; then
+            echo "Error: missing SMTPPW" 1>&2
+            rc=1
+        fi
+        if [ -z "${TINDER_NAME}" ] ; then
+            echo "Error: missing TINDER_NAME" 1>&2
+            rc=1
+        fi
+        if [ -z "${OWNER}" ] ; then
+            echo "Error: missing OWNER" 1>&2
+            rc=1
+        fi
+    fi
+    if [ "$rc" != "0" ] ; then
+        exit 1
+    fi
+}
+
+while getopts behinmp:rw: opt ; do
+    case "$opt" in
+        b) PRIME_BUILD=1 ;;
+        e) LOCK=0 ;;
+        h) usage; exit ;;
+        i) NICE="$NICE ionice -c3" ;;
+        m) SEND_MAIL=1 ;;
+        n) NICE="$NICE nice" ;;
+        p) PROFILE_NAME="$OPTARG" ;;
+        r) PUSH_NIGHTLIES=1 ; BANDWIDTH="$OPTARG" ;;
+        w) PAUSE_SECONDS="$OPTARG" ;;
+        ?) usage; exit ;;
+    esac
+done
+
+load_profile "$PROFILE_NAME"
+
+# where to report
+current_branch=`git branch | grep '^\*' | sed 's/^..//'`
+TINDER_BRANCH=
+case "$current_branch" in
+    master) TINDER_BRANCH='MASTER' ;;
+    libreoffice-3-4) TINDER_BRANCH=$current_branch ;;
+    *) echo "Unknown, non-registered branch, please update tinbuild, and tinderbox.libreoffice.org."2>&1 ; exit 1 ;;
+esac
+
+collect_current_heads
+
+# do a build without involving the tinderbox to establish a good baseline
+if [ "${PRIME_BUILD?}" = "1" ] ; then
+    SEND_MAIL=0  # we don't want to notify the tinderbox
+    log_msgs "Starting primer for branch '$TINDER_BRANCH'."
+    build_status="build_failed"
+    (
+        if [ "$LOCK" = "1" ] ; then
+            flock -x 200
+        fi
+
+        do_build
+
+        exit ${retval?}
+    ) 200>${LOCK_FILE?}
+    retval=$?
+
+    rotate_logs
+
+    exit ${retval?}
+else
+    if [ ! -f "tb_last-success-git-heads.txt" ] ; then
+        echo "You need a valid baseline. run once with -b or make sure you have a valid tb_last-success-git-heads.txt" 1>&2
+        exit 1;
+    else
+        # reset to at the last sucessfull build
+        cp tb_last-success-git-heads.txt tb_current-git-heads.log
+        cp tb_last-success-git-timestamp.txt tb_current-git-timestamp.log
+        rotate_logs
+    fi
+fi
+
+# main tinderbox loop
+while true; do
+
+    wait_for_commits
+    last_checkout_date="$(cat tb_current-git-timestamp.log)"
+    build_status="build_failed"
+    (
+        if [ "$LOCK" = "1" ] ; then
+            flock -x 200
+        fi
+
+        report_to_tinderbox "${last_checkout_date?}" "building"
+
+        do_build
+
+        exit ${retval?}
+    ) 200>${LOCK_FILE?}
+
+    if [ "$?" = "0" ] ; then
+        build_status="success"
+        push_nightlies
+    fi
+    report_to_tinderbox "$last_checkout_date" "build_status" "yes"
+
+    rotate_logs
+
+    log_msgs "Waiting ${PAUSE_SECOND?} seconds."
+	sleep ${PAUSE_SECOND?}
+
+done
