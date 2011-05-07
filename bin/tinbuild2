@@ -9,6 +9,7 @@ LOCK=1
 NICE=
 PROFILE_NAME=
 PRIME_BUILD=0
+VERBOSE=0
 
 source ${bin_dir?}/tinbuild_internals.sh
 
@@ -17,13 +18,14 @@ usage()
 cat << EOF
 Usage $0 [options] -p <profile_name>
 Options:
-   -b           bootstrap/prime the tinbuild
    -h           print help
    -i           run with ionice -c3, can be combined with -n
    -m           mail errors to the committer, general errors to the owner"
    -n           run with nice, can be combined with -i
    -p <profile> profile to use.
+   -v           verbose. print more progress messages
    -w           specify minimum wait between build attempt
+   -z           bootstrap/prime the tinbuild
 
 <profile> is a name used to locate configuration information
 in ~/.tinbuild/config/<profile>.cfg
@@ -78,9 +80,8 @@ load_profile()
     fi
 }
 
-while getopts behinmp:rw: opt ; do
+while getopts ehinmp:rvw:z opt ; do
     case "$opt" in
-        b) PRIME_BUILD=1 ;;
         e) LOCK=0 ;;
         h) usage; exit ;;
         i) NICE="$NICE ionice -c3" ;;
@@ -88,7 +89,9 @@ while getopts behinmp:rw: opt ; do
         n) NICE="$NICE nice" ;;
         p) PROFILE_NAME="$OPTARG" ;;
         r) PUSH_NIGHTLIES=1 ; BANDWIDTH="$OPTARG" ;;
+        v) VERBOSE="1" ;;
         w) PAUSE_SECONDS="$OPTARG" ;;
+        z) PRIME_BUILD=1 ;;
         ?) usage; exit ;;
     esac
 done
@@ -110,25 +113,25 @@ collect_current_heads
 if [ "${PRIME_BUILD?}" = "1" ] ; then
     SEND_MAIL=0  # we don't want to notify the tinderbox
     log_msgs "Starting primer for branch '$TINDER_BRANCH'."
-    build_status="build_failed"
     (
         do_flock -x 200
 
         do_build
 
+        rotate_logs
+
         exit ${retval?}
     ) 200>${lock_file?}
     retval=$?
 
-    rotate_logs
-
     exit ${retval?}
 else
     if [ ! -f "tb_last-success-git-heads.txt" ] ; then
-        echo "You need a valid baseline. run once with -b or make sure you have a valid tb_last-success-git-heads.txt" 1>&2
+        echo "You need a valid baseline. run once with -z or make sure you have a valid tb_last-success-git-heads.txt" 1>&2
         exit 1;
     else
         # reset to at the last sucessfull build
+        retval=0
         cp tb_last-success-git-heads.txt tb_current-git-heads.log
         cp tb_last-success-git-timestamp.txt tb_current-git-timestamp.log
         rotate_logs
@@ -140,24 +143,17 @@ while true; do
 
     wait_for_commits
     last_checkout_date="$(cat tb_current-git-timestamp.log)"
-    build_status="build_failed"
     (
         do_flock -x 200
 
-        report_to_tinderbox "${last_checkout_date?}" "building"
-
         do_build
+
+        rotate_logs
 
         exit ${retval?}
     ) 200>${lock_file?}
 
-    if [ "$?" = "0" ] ; then
-        build_status="success"
-        push_nightlies
-    fi
-    report_to_tinderbox "$last_checkout_date" "build_status" "yes"
 
-    rotate_logs
 
     log_msgs "Waiting ${PAUSE_SECOND?} seconds."
 	sleep ${PAUSE_SECOND?}

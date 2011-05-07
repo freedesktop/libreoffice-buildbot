@@ -15,7 +15,7 @@ do_flock()
 
 epoch_from_utc()
 {
-    date -juf '%Y-%m-%d %H:%M:%S' "${1}" '+%s'
+    date -juf '%Y-%m-%d %H:%M:%S' "$1 $2" '+%s'
 }
 
 epoch_to_utc()

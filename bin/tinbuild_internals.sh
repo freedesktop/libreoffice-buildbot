@@ -11,7 +11,7 @@ do_lock()
 
 epoch_from_utc()
 {
-local utc="$1"
+local utc="$@"
 
     date '+%s' -d "$utc"
 }
@@ -31,21 +31,47 @@ log_msgs()
 	echo "[$(print_date) $TINDER_BRANCH]" "$@"
 }
 
+get_commits_since_last_good()
+{
+    local mode=$1
+	local head=
+	local repo=
+	local sha=
+
+	if [ -f tb_last-success-git-heads.txt ] ; then
+		for head in $(cat tb_last-success-git-heads.txt) ; do
+			repo=${head##:*}
+			sha=${head#*:}
+			(
+				if [ "${repo?}" != "bootstrap" ] ; then
+					cd clone/${repo?}
+				fi
+                if [ "${mode?}" = "people" ] ; then
+                    echo "==== ${repo} ===="
+				    git log '--pretty=tformat:%ce' ${sha?}..HEAD
+                else
+                    git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+
+                fi
+			)
+		done
+	fi
+}
+
 send_mail_msg()
 {
 local to="$1"
 local subject="$2"
 local headers="$3"
 local bcc="$4"
-local log=""
+local log="$5"
 
-    log_msgs sendEmail -q -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
-#    if [ -n "$5" ] ; then
-#		log="-a $5"
-#		${bin_path}/sendEmail -q -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
-#	else
-#		${bin_path}/sendEmail -q -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
-#    fi
+    log_msgs "send mail to ${to?} with subject \"${subject?}\""
+    if [ -n "$log" ] ; then
+		${bin_dir?}/sendEmail -q -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
+	else
+		${bin_dir?}/sendEmail -q -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
+    fi
 }
 
 report_to_tinderbox()
@@ -54,7 +80,7 @@ report_to_tinderbox()
 		return 0
 	fi
 
-	local start_time="$1"
+	local start_date="$1"
 	local status="$2"
 	local log="$3"
 	local start_line=
@@ -63,7 +89,7 @@ report_to_tinderbox()
 	local gzlog=
 	local message_content=
 
-	start_line="tinderbox: starttime: $(epoch_from_utc \"${start_time}\")"
+	start_line="tinderbox: starttime: $(epoch_from_utc ${start_date})"
 	message_content="
 tinderbox: administrator: ${OWNER?}
 tinderbox: buildname: ${TINDER_NAME?}
@@ -71,13 +97,13 @@ tinderbox: tree: ${TINDER_BRANCH?}
 $start_line
 tinderbox: timenow: `date '+%s'`
 tinderbox: errorparser: unix
-tinderbox: status: ${STATUS?}
+tinderbox: status: ${status?}
 tinderbox: END
 "
 
 	if [ "$log" = "yes" ] ; then
 		gzlog="tinder.log.gz"
-		( echo "$MESSAGE" ; cat autogen.log clean.log build.log smoketest.log install.log 2>/dev/null ) | gzip -c > "$GZLOG"
+		( echo "$MESSAGE" ; cat autogen.log clean.log build.log smoketest.log install.log 2>/dev/null ) | gzip -c > "${gzlog}"
 		xtinder="X-Tinder: gzookie"
 		subject="tinderbox gzipped logfile"
 	fi
@@ -122,7 +148,7 @@ report_error ()
 		cat <<EOF | send_mail_msg "$to_mail" "Tinderbox failure, $message" "" "${OWNER?}" ""
 Hi folks,
 
-One of you broke the build of LibreOffice master with your commit :-(
+One of you broke the build of LibreOffice with your commit :-(
 Please commit and push a fix ASAP!
 
 ${tinder1}
@@ -135,7 +161,7 @@ Tinderbox info:
 
 Commits since the last success:
 
-$(get_commit_since_last_good commits)
+$(get_commits_since_last_good commits)
 
 The error is:
 
@@ -154,33 +180,6 @@ collect_current_heads()
 {
 	./g -1 rev-parse --verify HEAD > tb_current-git-heads.log
 	print_date > tb_current-git-timestamp.log
-}
-
-get_commits_since_last_good()
-{
-    local mode=$1
-	local head=
-	local repo=
-	local sha=
-
-	if [ -f tb_last-success-git-heads.txt ] ; then
-		for head in $(cat tb_last-success-git-heads.txt) ; do
-			repo=${head##:*}
-			sha=${head#*:}
-			(
-				if [ "${repo?}" != "bootstrap" ] ; then
-					cd clone/${repo?}
-				fi
-                if [ "${mode?}" = "people" ] ; then
-                    echo "==== ${repo} ===="
-				    git log '--pretty=tformat:%ce' ${sha?}..HEAD
-                else
-                    git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
-
-                fi
-			)
-		done
-	fi
 }
 
 get_committers()
@@ -209,7 +208,7 @@ push_nightlies()
 		curr_day=$(date -u '+%j')
 		last_day_upload="$(cat tb_last-upload-day.txt) 2>/dev/null"
 		if [ -z $last_day_upload -o $last_day_upload -lt $curr_day ]; then
-			$bin_path/push_nightlies.sh -t "$(cat tb_current-git-timestamp.log)" -n "$TINDER_NAME" -l "$BANDWIDTH"
+			${bin_dir?}/push_nightlies.sh -t "$(cat tb_current-git-timestamp.log)" -n "$TINDER_NAME" -l "$BANDWIDTH"
 			if [ "$?" == "0" ] ; then
 				echo "$curr_day" > tb_last-upload-day.txt
 			fi
@@ -277,9 +276,19 @@ phase()
 
 do_build()
 {
+    report_to_tinderbox "${last_checkout_date?}" "building"
+
+    build_status="build_failed"
 	retval=0
 	for p in autogen clean make test push ; do
-        echo "call $p"
+        [ $VERBOSE -gt 0 ] && echo "call $p"
 		phase $p
 	done
+    if [ "$retval" = "0" ] ; then
+        build_status="success"
+        report_to_tinderbox "$last_checkout_date" "success" "yes"
+    else
+		report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(tail -n100 ${report_log?})"
+    fi
+
 }
