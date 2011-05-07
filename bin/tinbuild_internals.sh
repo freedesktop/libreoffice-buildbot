@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+lock_file=/tmp/tinbuid-lockfile
+
+do_lock()
+{
+    if [ "$LOCK" = "1" ] ; then
+        flock $@
+    fi
+}
+
 epoch_from_utc()
 {
 local utc="$1"

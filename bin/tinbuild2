@@ -5,10 +5,10 @@ bin_dir=$(dirname "$0")
 PAUSE_SECOND=$((15*60))
 PUSH_NIGHTLIES=0
 SEND_MAIL=0
+LOCK=1
 NICE=
 PROFILE_NAME=
 PRIME_BUILD=0
-LOCK_FILE=/tmp/tinbuid-lockfile
 
 source ${bin_dir?}/tinbuild_internals.sh
 
@@ -112,14 +112,12 @@ if [ "${PRIME_BUILD?}" = "1" ] ; then
     log_msgs "Starting primer for branch '$TINDER_BRANCH'."
     build_status="build_failed"
     (
-        if [ "$LOCK" = "1" ] ; then
-            flock -x 200
-        fi
+        do_flock -x 200
 
         do_build
 
         exit ${retval?}
-    ) 200>${LOCK_FILE?}
+    ) 200>${lock_file?}
     retval=$?
 
     rotate_logs
@@ -144,16 +142,14 @@ while true; do
     last_checkout_date="$(cat tb_current-git-timestamp.log)"
     build_status="build_failed"
     (
-        if [ "$LOCK" = "1" ] ; then
-            flock -x 200
-        fi
+        do_flock -x 200
 
         report_to_tinderbox "${last_checkout_date?}" "building"
 
         do_build
 
         exit ${retval?}
-    ) 200>${LOCK_FILE?}
+    ) 200>${lock_file?}
 
     if [ "$?" = "0" ] ; then
         build_status="success"
