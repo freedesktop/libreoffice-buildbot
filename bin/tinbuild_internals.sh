@@ -40,16 +40,16 @@ get_commits_since_last_good()
 
 	if [ -f tb_last-success-git-heads.txt ] ; then
 		for head in $(cat tb_last-success-git-heads.txt) ; do
-			repo=${head##:*}
-			sha=${head#*:}
+			repo=$(echo ${head} | cut -d : -f 1)
+			sha=$(echo ${head} | cut -d : -f 2)
 			(
 				if [ "${repo?}" != "bootstrap" ] ; then
 					cd clone/${repo?}
 				fi
                 if [ "${mode?}" = "people" ] ; then
-                    echo "==== ${repo} ===="
 				    git log '--pretty=tformat:%ce' ${sha?}..HEAD
                 else
+                    echo "==== ${repo} ===="
                     git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
 
                 fi
@@ -67,16 +67,18 @@ local bcc="$4"
 local log="$5"
 
     log_msgs "send mail to ${to?} with subject \"${subject?}\""
-    if [ -n "$log" ] ; then
-		${bin_dir?}/sendEmail -q -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
-	else
-		${bin_dir?}/sendEmail -q -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
+    if [ -n "${log}" ] ; then
+		${bin_dir?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
+	elif [ -n "${header}" ] ; then
+		${bin_dir?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
+    else
+		${bin_dir?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
     fi
 }
 
 report_to_tinderbox()
 {
-	if test "$SEND_MAIL" -ne 1 -o -z "$TINDER_NAME" ; then
+	if [ "$SEND_MAIL" -ne 1 -o -z "$TINDER_NAME" ] ; then
 		return 0
 	fi
 
@@ -103,12 +105,12 @@ tinderbox: END
 
 	if [ "$log" = "yes" ] ; then
 		gzlog="tinder.log.gz"
-		( echo "$MESSAGE" ; cat autogen.log clean.log build.log smoketest.log install.log 2>/dev/null ) | gzip -c > "${gzlog}"
+		( echo "$message_content" ; cat tb_autogen.log tb_clean.log tb_build.log tb_smoketest.log tb_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
 		xtinder="X-Tinder: gzookie"
 		subject="tinderbox gzipped logfile"
 	fi
 
-	echo "$message_content" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" "" "${gzlog}"
+	echo "$messsage_context" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" "${OWNER?}" "${gzlog}"
 }
 
 
@@ -122,26 +124,27 @@ report_error ()
 	local rough_time="$1"
 	shift
 
+	local last_success=$(cat tb_last-success-git-timestamp.txt)
 	to_mail=
 	if test "$SEND_MAIL" -eq 1; then
 		case "$error_kind" in
 			owner) to_mail="${OWNER?}"
 			       message="box broken" ;;
-			*)     if test -z "$last_success" ; then
+			*)     if [ -z "$last_success" ] ; then
 			          # we need at least one successful build to
                       # be reliable
 			          to_mail="${OWNER?}"
 			       else
-			          to_mail="$(get_committers)"
+			          to_mail="${OWNER?} $(get_committers)"
 			       fi
-			       message="last success: $rough_time" ;;
+			       message="last success: ${last_success?}" ;;
 		esac
 	fi
 
 	echo "$*" 1>&2
-	echo "Last success: $rough_time" 1>&2
+	echo "Last success: ${last_success}" 1>&2
 	if test -n "$to_mail" ; then
-		if test "$SEND_MAIL" -eq 1 -a -n "$TINDER_NAME" ; then
+		if [ "$SEND_MAIL" -eq 1 -a -n "$TINDER_NAME" ] ; then
 			tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
 			tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
 		fi
@@ -184,7 +187,8 @@ collect_current_heads()
 
 get_committers()
 {
-    $(get_commits_since_last_good people | sort | uniq | tr '\n' ',')
+    echo "get_commiter: $(get_commits_since_last_good people)" 1>&2
+    get_commits_since_last_good people | sort | uniq | tr '\n' ','
 }
 
 rotate_logs()
@@ -289,6 +293,7 @@ do_build()
         report_to_tinderbox "$last_checkout_date" "success" "yes"
     else
 		report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(tail -n100 ${report_log?})"
+        report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
     fi
 
 }
