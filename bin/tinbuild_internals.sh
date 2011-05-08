@@ -65,14 +65,16 @@ local subject="$2"
 local headers="$3"
 local bcc="$4"
 local log="$5"
+local quiet="-q"
 
     log_msgs "send mail to ${to?} with subject \"${subject?}\""
+    [ $VERBOSE -gt 0 ] && quiet=""
     if [ -n "${log}" ] ; then
-		${bin_dir?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
+		${bin_dir?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
 	elif [ -n "${header}" ] ; then
-		${bin_dir?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
+		${bin_dir?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
     else
-		${bin_dir?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
+		${bin_dir?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
     fi
 }
 
@@ -110,7 +112,7 @@ tinderbox: END
 		subject="tinderbox gzipped logfile"
 	fi
 
-	echo "$messsage_context" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" "${OWNER?}" "${gzlog}"
+	echo "$messsage_context" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" "" "${gzlog}"
 }
 
 
@@ -135,7 +137,7 @@ report_error ()
                       # be reliable
 			          to_mail="${OWNER?}"
 			       else
-			          to_mail="${OWNER?} $(get_committers)"
+			          to_mail="$(get_committers)"
 			       fi
 			       message="last success: ${last_success?}" ;;
 		esac
