@@ -42,7 +42,7 @@ also has the autogen.sh and configure scripts), and run tinbuild.
 A typical call for a home box (without a working smtp relay) looks
 like this:
 
-tinbuild -m joe_hacker@gmail.com -s smtp.gmail.com -u joe_hacker -p SeCrEt -c tls -t "Linux gcc-4.4.1 (x86_64)"
+tinbuild -m joe_hacker@gmail.com -s smtp.gmail.com -u joe_hacker -p SeCrEt -t "Linux gcc-4.4.1 (x86_64)"
 
 If you don't want the user or password to show up in the process list,
 simply edit the tinbuild script - rather at the top of it, there are

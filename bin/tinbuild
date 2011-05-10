@@ -16,7 +16,6 @@ BANDWIDTH=
 LOCK=
 
 SMTPPORT=25
-SMTPCRYPT=none
 SMTPHOST=
 SMTPUSER=
 SMTPPW=
@@ -208,7 +207,7 @@ tinderbox: END
 }
 
 ## code
-while getopts d:ehilm:ns:r:c:u:p:t:w: opt ; do
+while getopts d:ehilm:ns:r:u:p:t:w: opt ; do
 	case "$opt" in
 		d) DISTRO_CONFIG="$OPTARG" ;;
 		e) LOCK= ;;
@@ -219,7 +218,6 @@ while getopts d:ehilm:ns:r:c:u:p:t:w: opt ; do
 		m) SEND_MAIL=1 ; OWNER="$OPTARG" ;;
 		n) NICE="$NICE nice" ;;
 		s) SMTPHOST="$OPTARG" ;;
-		c) SMTPCRYPT="$OPTARG" ;;
 		u) SMTPUSER="$OPTARG" ;;
 		p) SMTPPW="$OPTARG" ;;
 		t) TINDERNAME="$OPTARG" ;;
