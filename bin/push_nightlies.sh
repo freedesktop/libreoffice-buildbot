@@ -27,6 +27,8 @@ done
 if [ -z "$PULL_TIME" -o -z "$BUILDER_NAME" ] ; then
 	echo "missing argument. syntax $0 -t <git_pull_timestap> -n <tinderbox_name>" 1>&2
     exit 1;
+else
+    PULL_TIME="${PULL_TIME//:/.}"
 fi
 
 if [ ! -d "instsetoo_native" ] ; then
