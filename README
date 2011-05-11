@@ -48,6 +48,9 @@ If you don't want the user or password to show up in the process list,
 simply edit the tinbuild script - rather at the top of it, there are
 SMTPUSER and SMTPPW variables, to be set.
 
+Please also note that for gmail, you may need to change the default
+smtp port to 587 (in the tinbuild script, too).
+
 This setup will then continuously build the tree (whenever there are
 new commits), and send results to the tinderbox master, as well as
 complaint mails to the committers that broke the build. To prevent
