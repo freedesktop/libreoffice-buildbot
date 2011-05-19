@@ -282,7 +282,9 @@ phase()
 
 do_build()
 {
-    report_to_tinderbox "${last_checkout_date?}" "building"
+    if [ -n "${last_checkout_date}" ] ; then
+        report_to_tinderbox "${last_checkout_date?}" "building"
+    fi
 
     build_status="build_failed"
 	retval=0
@@ -292,10 +294,14 @@ do_build()
 	done
     if [ "$retval" = "0" ] ; then
         build_status="success"
-        report_to_tinderbox "$last_checkout_date" "success" "yes"
+        if [ -n "${last_checkout_date}" ] ; then
+            report_to_tinderbox "$last_checkout_date" "success" "yes"
+        fi
     else
-		report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(tail -n100 ${report_log?})"
-        report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
+        if [ -n "${last_checkout_date}" ] ; then
+		    report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(tail -n100 ${report_log?})"
+            report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
+        fi
     fi
 
 }
