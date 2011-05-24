@@ -23,6 +23,7 @@ Options:
    -m           mail errors to the committer, general errors to the owner"
    -n           run with nice, can be combined with -i
    -p <profile> profile to use.
+   -r <bandwidth> push the build nightly at a rate limited by <badnwidth> (in kB/s)
    -v           verbose. print more progress messages
    -w           specify minimum wait between build attempt
    -z           bootstrap/prime the tinbuild

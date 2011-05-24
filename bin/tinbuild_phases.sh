@@ -33,6 +33,29 @@ do_make()
 	fi
 }
 
+do_push()
+{
+	local curr_day=
+
+	#upload new daily build?
+	if [ "$PUSH_NIGHTLIES" = "1" ] ; then
+		curr_day=$(date -u '+%Y%j')
+		last_day_upload="$(cat tb_last-upload-day.txt 2>/dev/null)"
+        if [ -z "$last_day_upload" ] ; then
+            last_day_upload=0
+        fi
+        echo "curr_day=$curr_day"
+        echo "last_day_upload=$last_day_upload"
+		if [ $last_day_upload -lt $curr_day ] ; then
+			${bin_dir?}/push_nightlies.sh -a -t "$(cat tb_current-git-timestamp.log)" -n "$TINDER_NAME" -l "$BANDWIDTH"
+			if [ "$?" == "0" ] ; then
+				echo "$curr_day" > tb_last-upload-day.txt
+			fi
+		fi
+	fi
+    return 0;
+}
+
 
 
 

@@ -112,7 +112,7 @@ tinderbox: END
 		subject="tinderbox gzipped logfile"
 	fi
 
-	echo "$messsage_context" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" "" "${gzlog}"
+	echo "$message_content" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" '' "${gzlog}"
 }
 
 
@@ -183,7 +183,7 @@ EOF
 
 collect_current_heads()
 {
-	./g -1 rev-parse --verify HEAD > tb_current-git-heads.log
+	./g -1 rev-parse HEAD > tb_current-git-heads.log
 	print_date > tb_current-git-timestamp.log
 }
 
@@ -203,23 +203,6 @@ rotate_logs()
 	for f in tb_*.log ; do
 		mv -f ${f} prev-${f} 2>/dev/null
 	done
-}
-
-push_nightlies()
-{
-	local curr_day=
-
-	#upload new daily build?
-	if [ "$PUSH_NIGHTLIES" = "1" ] ; then
-		curr_day=$(date -u '+%j')
-		last_day_upload="$(cat tb_last-upload-day.txt) 2>/dev/null"
-		if [ -z $last_day_upload -o $last_day_upload -lt $curr_day ]; then
-			${bin_dir?}/push_nightlies.sh -t "$(cat tb_current-git-timestamp.log)" -n "$TINDER_NAME" -l "$BANDWIDTH"
-			if [ "$?" == "0" ] ; then
-				echo "$curr_day" > tb_last-upload-day.txt
-			fi
-		fi
-	fi
 }
 
 wait_for_commits()
@@ -283,7 +266,7 @@ phase()
 do_build()
 {
     if [ -n "${last_checkout_date}" ] ; then
-        report_to_tinderbox "${last_checkout_date?}" "building"
+        report_to_tinderbox "${last_checkout_date?}" "building" "no"
     fi
 
     build_status="build_failed"
@@ -299,7 +282,7 @@ do_build()
         fi
     else
         if [ -n "${last_checkout_date}" ] ; then
-		    report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(tail -n100 ${report_log?})"
+		    report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(cat build_error.log) $(echo) ($echo  ======) $(tail -n25 ${report_log?})"
             report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
         fi
     fi
