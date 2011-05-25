@@ -78,7 +78,7 @@ static void usage(int ex)
 }
 
 
-static sig_atomic_t timeout_expired = 0;
+static volatile sig_atomic_t timeout_expired = 0;
 
 static void timeout_handler(int sig)
 {
