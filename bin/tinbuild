@@ -287,6 +287,7 @@ while true; do
 			reportError committer "$rough_checkout_date" `printf "cleaning up failed - error is:\n\n"` "$(tail -n100 clean.log)"
 			retval=1
 		elif ! $NICE $MAKE >build.log 2>&1 ; then
+			( . ./*Env.Set.sh && cd instsetoo_native && build.pl ) >> build.log 2>&1
 			reportError committer "$rough_checkout_date" `printf "building failed - error is:\n\n"` "$(tail -n100 build.log)"
 			retval=1
 #		elif ! $NICE make smoketest > smoketest.log 2>&1 ; then
