@@ -2,7 +2,7 @@
  * trimmed down version for portability accross suported platform
  * of libreoffice
  *
- * (c) 2011 Norbert Thiebaud. LGPL v3
+ * (c) 2011 Norbert Thiebaud. MIT
  */
 /* ----------------------------------------------------------------------- *
  *
