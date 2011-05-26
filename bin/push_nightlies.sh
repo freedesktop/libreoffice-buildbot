@@ -1,21 +1,41 @@
 #!/usr/bin/env bash
 
+bin_dir=$(dirname "$0")
+lock_file="/tmp/tinbuild-upload"
+
 ## subroutines
 usage ()
 {
 	echo "Usage: $0 [options]"
 	echo "Options:"
+	echo "-a          push asynchronously"
 	echo "-h          this help"
 	echo "-t <time>   pull time of this checkout"
 	echo "-n <name>   name of this tinderbox"
 	echo "-l <kbps>   bandwidth limit for upload (KBps)"
 }
 
+do_lock()
+{
+    m="$(uname)"
+    case "$m" in
+        Darwin)
+            ${bin_dir?}/flock "$@"
+            ;;
+        *)
+            flock "$@"
+    esac
+}
+
+
 BUILDER_NAME=
 PULL_TIME=
 BANDWIDTH_LIMIT=20
-while getopts ht:n:l: opt ; do
+ASYNC=0
+
+while getopts aht:n:l: opt ; do
 	case "$opt" in
+        a) ASYNC=1 ;;
 		h) usage; exit ;;
 		t) PULL_TIME="${OPTARG// /_}" ;;
 		n) BUILDER_NAME="${OPTARG// /_}" ;;
@@ -42,18 +62,41 @@ tag="${BRANCH}~${PULL_TIME}"
 ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}\"" || exit 1
 
 . ./*[Ee]nv.[Ss]et.sh
-cd instsetoo_native
-mkdir ${INPATH}/push 2>/dev/null
+cd instsetoo_native/${INPATH}
 
+if [ "$ASYNC" = "1" ] ; then
+    stage="/tmp"
+else
+    mkdir push 2>/dev/null
+    stage="./push"
+fi
+
+echo "find packages"
 for file in $(find . -name "*.dmg" -o -name "LibO*.tar.gz" -o -name "LibO*.exe" | grep -v "/push/")
 do
 	target=$(basename $file)
 	target="${tag}_${target}"
-
-	mv $file "${INPATH}/push/$target"
+    if [ "$ASYNC" = "1" ] ; then
+	    cp $file "$stage/$target"
+    else
+	    mv $file "$stage/$target"
+    fi
 done;
 
-rsync --bwlimit=${BANDWIDTH_LIMIT} -avsPe ssh ${INPATH}/push/* "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}/" || exit 1
-if [ "$?" == "0" ] ; then
-	ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/\" && { rm current; ln -s \"${PULL_TIME}\" current ; }"
+if [ "$ASYNC" = "1" ] ; then
+(
+    (
+#        do_flock -x 200
+        rsync --bwlimit=${BANDWIDTH_LIMIT} -avPe ssh ${stage}/${tag}_* "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}/" || exit 1
+        if [ "$?" == "0" ] ; then
+	        ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/\" && { rm current; ln -s \"${PULL_TIME}\" current ; }"
+        fi
+        rm -fr ${stage}/${tag}_*
+    )# 200>${lock_file?}
+) &
+else
+    rsync --bwlimit=${BANDWIDTH_LIMIT} -avPe ssh ${stage}/${tag}_* "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}/" || exit 1
+    if [ "$?" == "0" ] ; then
+	    ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/\" && { rm current; ln -s \"${PULL_TIME}\" current ; }"
+    fi
 fi
