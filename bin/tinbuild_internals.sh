@@ -2,7 +2,7 @@
 
 lock_file=/tmp/tinbuid-lockfile
 
-do_lock()
+do_flock()
 {
     if [ "$LOCK" = "1" ] ; then
         flock $@
@@ -13,7 +13,7 @@ epoch_from_utc()
 {
 local utc="$@"
 
-    date '+%s' -d "$utc"
+    date -u '+%s' -d "$utc UTC"
 }
 
 epoch_to_utc()
@@ -99,7 +99,7 @@ tinderbox: administrator: ${OWNER?}
 tinderbox: buildname: ${TINDER_NAME?}
 tinderbox: tree: ${TINDER_BRANCH?}
 $start_line
-tinderbox: timenow: `date '+%s'`
+tinderbox: timenow: `date -u '+%s'`
 tinderbox: errorparser: unix
 tinderbox: status: ${status?}
 tinderbox: END
