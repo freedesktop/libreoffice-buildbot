@@ -42,6 +42,13 @@ if which flock > /dev/null 2>&1 ; then
 	LOCK=1
 fi
 
+# Do we have timeout? If yes, guard git pull with that - which has a
+# tendency to hang forever, when connection is flaky
+if which timeout > /dev/null 2>&1 ; then
+	# timeout is two hours
+	timeout="`which timeout` 2h"
+fi
+
 ## subroutines
 usage ()
 {
@@ -335,7 +342,7 @@ while true; do
 	# new commits?
 	show_once=1
 	while true; do
-		old_head=$(gitHeads) && err_msg="$(./g pull -r 2>&1)" ||
+		old_head=$(gitHeads) && err_msg="$( $timeout ./g pull -r 2>&1 )" ||
 		{
 			reportError owner "$rough_checkout_date" `printf "git repo broken - error is:\n\n$err_msg"`
 		}
