@@ -45,8 +45,11 @@ fi
 # Do we have timeout? If yes, guard git pull with that - which has a
 # tendency to hang forever, when connection is flaky
 if which timeout > /dev/null 2>&1 ; then
-	# timeout is two hours
+	# std coreutils - timeout is two hours
 	timeout="`which timeout` 2h"
+elif which gtimeout > /dev/null 2>&1 ; then
+	# Mac - timeout is two hours
+	timeout="`which gtimeout` 2h"
 fi
 
 ## subroutines
