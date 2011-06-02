@@ -4,7 +4,7 @@ bin_dir=$(dirname "$0")
 
 PAUSE_SECOND=$((15*60))
 PUSH_NIGHTLIES=0
-SEND_MAIL=0
+SEND_MAIL="all"
 LOCK=1
 NICE=
 PROFILE_NAME=
@@ -20,7 +20,13 @@ Usage $0 [options] -p <profile_name>
 Options:
    -h           print help
    -i           run with ionice -c3, can be combined with -n
-   -m           mail errors to the committer, general errors to the owner"
+   -m [all,tb,owner,none]
+                tb=mail progress to the tinderbox,
+                all=tb + mail errors to the committer, general errors to the owner.
+                owner= tb + any other mail to the owner only
+                debug=any mail (progress or error) is sent to the owner
+                none=no mail
+                Default=all"
    -n           run with nice, can be combined with -i
    -p <profile> profile to use.
    -r <bandwidth> push the build nightly at a rate limited by <badnwidth> (in kB/s)
@@ -54,39 +60,14 @@ load_profile()
             fi
         fi
     fi
-    if [ -n "${SEND_MAIL}" -a "${SEND_MAIL}" = "1" ] ; then
-        if [ -z "${SMTPHOST}" ] ; then
-            echo "Error: missing SMTPHOST" 1>&2
-            rc=1
-        fi
-        if [ -z "${SMTPUSER}" ] ; then
-            echo "Error: missing SMTPUSER" 1>&2
-            rc=1
-        fi
-        if [ -z "${SMTPPW}" ] ; then
-            echo "Error: missing SMTPPW" 1>&2
-            rc=1
-        fi
-        if [ -z "${TINDER_NAME}" ] ; then
-            echo "Error: missing TINDER_NAME" 1>&2
-            rc=1
-        fi
-        if [ -z "${OWNER}" ] ; then
-            echo "Error: missing OWNER" 1>&2
-            rc=1
-        fi
-    fi
-    if [ "$rc" != "0" ] ; then
-        exit 1
-    fi
 }
 
-while getopts ehinmp:rvw:z opt ; do
+while getopts ehinm:p:rvw:z opt ; do
     case "$opt" in
         e) LOCK=0 ;;
         h) usage; exit ;;
         i) NICE="$NICE ionice -c3" ;;
-        m) SEND_MAIL=1 ;;
+        m) SEND_MAIL="$OPTARG" ;;
         n) NICE="$NICE nice" ;;
         p) PROFILE_NAME="$OPTARG" ;;
         r) PUSH_NIGHTLIES=1 ; BANDWIDTH="$OPTARG" ;;
@@ -98,6 +79,45 @@ while getopts ehinmp:rvw:z opt ; do
 done
 
 load_profile "$PROFILE_NAME"
+
+case "$SEND_MAIL" in
+    all|tb|owner|debug)
+        if [ -n "${SEND_MAIL}" ] ; then
+            rc=0
+            if [ -z "${SMTPHOST}" ] ; then
+                echo "Error: missing SMTPHOST" 1>&2
+                rc=1
+            fi
+            if [ -z "${SMTPUSER}" ] ; then
+                echo "Error: missing SMTPUSER" 1>&2
+                rc=1
+            fi
+            if [ -z "${SMTPPW}" ] ; then
+                echo "Error: missing SMTPPW" 1>&2
+                rc=1
+            fi
+            if [ -z "${TINDER_NAME}" ] ; then
+                echo "Error: missing TINDER_NAME" 1>&2
+                rc=1
+            fi
+            if [ -z "${OWNER}" ] ; then
+                echo "Error: missing OWNER" 1>&2
+                rc=1
+            fi
+            if [ "$rc" != "0" ] ; then
+                exit 1
+            fi
+        fi
+        ;;
+    none)
+        SEND_MAIL=""
+        ;;
+    *)
+        echo "Invalid -m argument:$SEND_MAIL" 1>&2
+        exit 1
+        ;;
+esac
+
 
 # where to report
 current_branch=`git branch | grep '^\*' | sed 's/^..//'`
@@ -112,7 +132,7 @@ collect_current_heads
 
 # do a build without involving the tinderbox to establish a good baseline
 if [ "${PRIME_BUILD?}" = "1" ] ; then
-    SEND_MAIL=0  # we don't want to notify the tinderbox
+    SEND_MAIL=""  # we don't want to notify the tinderbox
     log_msgs "Starting primer for branch '$TINDER_BRANCH'."
     (
         do_flock -x 200

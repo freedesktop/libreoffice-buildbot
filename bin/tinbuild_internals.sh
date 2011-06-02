@@ -80,7 +80,7 @@ local quiet="-q"
 
 report_to_tinderbox()
 {
-	if [ "$SEND_MAIL" -ne 1 -o -z "$TINDER_NAME" ] ; then
+	if [ -z "$SEND_MAIL" -o -z "$TINDER_NAME" ] ; then
 		return 0
 	fi
 
@@ -112,7 +112,11 @@ tinderbox: END
 		subject="tinderbox gzipped logfile"
 	fi
 
-	echo "$message_content" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" '' "${gzlog}"
+    if [ "$SEND_MAIL" = "debug" ] ; then
+	    echo "$message_content" | send_mail_msg "${OWNER}" "${subject?}" "${xtinder?}" '' "${gzlog}"
+    else
+	    echo "$message_content" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" '' "${gzlog}"
+    fi
 }
 
 
@@ -128,24 +132,28 @@ report_error ()
 
 	local last_success=$(cat tb_last-success-git-timestamp.txt)
 	to_mail=
-	if test "$SEND_MAIL" -eq 1; then
-		case "$error_kind" in
-			owner) to_mail="${OWNER?}"
-			       message="box broken" ;;
-			*)     if [ -z "$last_success" ] ; then
+    if [ "$SEND_MAIL" = "owner" -o "$SEND_MAIL" = "debug" ] ; then
+        to_mail="${OWNER?}"
+    else
+        if [ "$SEND_MAIL" = "all" ] ; then
+		    case "$error_kind" in
+			    owner) to_mail="${OWNER?}"
+			        message="box broken" ;;
+			    *)
+                    if [ -z "$last_success" ] ; then
 			          # we need at least one successful build to
                       # be reliable
-			          to_mail="${OWNER?}"
-			       else
-			          to_mail="$(get_committers)"
-			       fi
-			       message="last success: ${last_success?}" ;;
-		esac
-	fi
-
-	echo "$*" 1>&2
-	echo "Last success: ${last_success}" 1>&2
-	if test -n "$to_mail" ; then
+			            to_mail="${OWNER?}"
+		            else
+			            to_mail="$(get_committers)"
+		            fi
+		            message="last success: ${last_success?}" ;;
+		    esac
+        fi
+    fi
+    if [ -n "$to_mail" ] ; then
+	    echo "$*" 1>&2
+	    echo "Last success: ${last_success}" 1>&2
 		if [ "$SEND_MAIL" -eq 1 -a -n "$TINDER_NAME" ] ; then
 			tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
 			tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
@@ -174,10 +182,7 @@ $*
 EOF
 	else
 		echo "$*" 1>&2
-		if test "$error_kind" = "owner" ; then
-			exit 1
-		fi
-	fi
+    fi
 }
 
 
