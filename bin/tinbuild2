@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
+#
+#    Copyright (C) 2011 Norbert Thiebaud
+#    License: GPLv3
+#
 
-bin_dir=$(dirname "$0")
+BIN_DIR=$(dirname "$0")
 
 PAUSE_SECOND=$((15*60))
 PUSH_NIGHTLIES=0
@@ -10,8 +14,75 @@ NICE=
 PROFILE_NAME=
 PRIME_BUILD=0
 VERBOSE=0
+CHECK=0
 
-source ${bin_dir?}/tinbuild_internals.sh
+
+# load the internal functions. note that
+# tinderbuild_internals_<uname>.sh is sourced at the tail
+# end of tinbuild_internals.sh. this allow you do do
+# platform specific stuff.
+# after the platform specific internal script (if present) is
+# sourced, then tinbuild_phases.sh is sourced
+# this is where the standard build cycle unit functions are implemented
+# you can redefine these function in ~/.tinbuild/phases/<profile>.sh
+# which is sourced, if it exist, at the end of tinderbuild_phases.sh
+#
+# The build cycle, invoked in this script with do_build, consist
+# of 5 phases that are processed in this order: autogen, clean, make, test, push
+# eeach phase execution try to invoke pre_<phase>, do_<phase> and post_<pahse>
+# in this order, if the respective bash function are defined.
+#
+# In order to implement a specific step, pre_build for instance, you need
+# to implement a function pre_build() in ~/.tinbuild/config/phases/<profile>.sh
+# these function take no parameter at all, tough you can use any global variable
+# (the one in which a name in UPPERCASE in this script. all effort will be made to
+# maintain the existance of these variable
+# every step should also condition the entiere execution of the step by testing that
+# the variable $retval is equal to 0. if not the step must return $retval immediately
+# the step can do which ever actions that are deemded necessary..
+# the step must collect the relevant messages in tb_${B}_<step_name>.log
+# In case of error the step must set the error condition in the following manner
+#  report_log=tb_${B}_<step_name>.log
+#  report_msgs="<step_name> failed - error is:"
+#  retval=1
+# with the convention that do_xxx steps are shortenen to just xxx in the above filenames
+# and messages when substitution <step>.
+#
+# For example this is how do_make is implemented in tinderbuild_phases.sh
+#
+# do_make()
+# {
+#	 if [ "${retval}" = "0" ] ; then
+#		 if ! $NICE ${MAKE?} >tb_${B}_build.log 2>&1 ; then
+#             report_log=tb_${B}_build.log
+#             report_msgs="build failed - error is:"
+#			 retval=1
+#		 fi
+#	 fi
+# }
+
+
+
+
+source ${BIN_DIR?}/tinbuild_internals.sh
+
+display_setup_instruction()
+{
+cat << EOF
+In order to use $0 you need to:
+
+* create a directory ~/.tinbuild/config
+* create a file ~/.tinderbuild/config/<profile_name>
+    where <profile_name> is the argument you pased to the mandatory parameter -p
+    that <profile_name> is sourced and define at least:
+       SMTPHOST=<name of you smtp host to send email>
+       SMTPUSER=<user name to connect to you smtp host>
+       SMTPPW=<password to connect to your smtp host>
+       TINDER_NAME=<name of you tinderbox>
+       OWNER=<valid email address where people you spam with tinbuild error can contact you>
+
+EOF
+}
 
 usage()
 {
@@ -19,6 +90,7 @@ cat << EOF
 Usage $0 [options] -p <profile_name>
 Options:
    -h           print help
+   -c           sanity check (verify that tou configuration is sane and send a test email)
    -i           run with ionice -c3, can be combined with -n
    -m [all,tb,owner,none]
                 tb=mail progress to the tinderbox,
@@ -33,9 +105,6 @@ Options:
    -v           verbose. print more progress messages
    -w           specify minimum wait between build attempt
    -z           bootstrap/prime the tinbuild
-
-<profile> is a name used to locate configuration information
-in ~/.tinbuild/config/<profile>.cfg
 
 EOF
 }
@@ -62,24 +131,107 @@ load_profile()
     fi
 }
 
-while getopts ehinm:p:rvw:z opt ; do
+sanity_check()
+{
+    g=$(git rev-parse --git-dir 2> /dev/null)
+    if [ "$g" != ".git" ] ; then
+        echo "Error: The current working directory must be the root git repo"
+        exit 1
+    fi
+
+    if [ ! -f configure.in ] ; then
+        echo "Error: The current working directory must be the root git repo"
+        exit 1
+    fi
+
+    if [ ! -d $HOME/.tinbuild ] ; then
+        echo "Error: the directory $HOME/.tinbuild does mot exist" >&2
+        display_setup_instruction
+        exit 1
+    fi
+    if [ ! -d $HOME/.tinbuild/config ] ; then
+        echo "Error: the directory $HOME/.tinbuild/config does mot exist" >&2
+        display_setup_instruction
+        exit 1
+    fi
+    if [ ! -f $HOME/.tinbuild/config/${PROFILE_NAME?}.cfg ] ; then
+        echo "Error: the file $HOME/.tinbuild/config/${PROFILE_NAME?} does mot exist" >&2
+        display_setup_instruction
+        exit 1
+    fi
+    if [ ! -f $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen ] ; then
+        if [ ! -f autogen.lastrun ] ; then
+            echo "Error: Neither $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen or autogen.lastrun exist" >&2
+        else
+            echo "Warning: the file $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen does mot exist. Will use autogen.lastrun :" >&2
+            cat autogen.lastrun
+        fi
+        exit 1
+    fi
+
+    source $HOME/.tinbuild/config/${PROFILE_NAME?}.cfg || (echo "Error sourcing $HOME/.tinbuild/config/${PROFILE_NAME?}.cfg" ; exit 1)
+    rc = 0
+
+    if [ -z "${SMTPHOST}" ] ; then
+        echo "Error: missing SMTPHOST in config file" 1>&2
+        rc=1
+    fi
+    if [ -z "${SMTPUSER}" ] ; then
+        echo "Error: missing SMTPUSER in config file" 1>&2
+        rc=1
+    fi
+    if [ -z "${SMTPPW}" ] ; then
+        echo "Error: missing SMTPPW in config file" 1>&2
+        rc=1
+    fi
+    if [ -z "${TINDER_NAME}" ] ; then
+        echo "Error: missing TINDER_NAME in config file" 1>&2
+        rc=1
+    fi
+    if [ -z "${OWNER}" ] ; then
+        echo "Error: missing OWNER in config file" 1>&2
+        rc=1
+    fi
+    if [ "$rc" != "0" ] ; then
+        exit 1
+    fi
+
+	echo "test email from tinbuild" | ${BIN_DIR?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "$OWNER"  -u "tinderbuild test" || (echo "Errot sending test email" 1>&2 ; exit 1)
+
+    echo "Sanity checks OK."
+    exit 0
+}
+
+
+
+#
+# Main
+#
+
+while getopts cehinm:p:rvw:z opt ; do
     case "$opt" in
-        e) LOCK=0 ;;
-        h) usage; exit ;;
-        i) NICE="$NICE ionice -c3" ;;
-        m) SEND_MAIL="$OPTARG" ;;
-        n) NICE="$NICE nice" ;;
-        p) PROFILE_NAME="$OPTARG" ;;
-        r) PUSH_NIGHTLIES=1 ; BANDWIDTH="$OPTARG" ;;
-        v) VERBOSE="1" ;;
-        w) PAUSE_SECONDS="$OPTARG" ;;
-        z) PRIME_BUILD=1 ;;
+        e) LOCK=0 ;;      # whether to use flock to protect the build-cycle
+        c) CHECK=1 ;;     # whether to invoke the sanity-check function
+        h) usage; exit ;; # display help
+        i) NICE="$NICE ionice -c3" ;; # be gentle on i/o
+        m) SEND_MAIL="$OPTARG" ;; # which email to wend and to whom
+        n) NICE="$NICE nice" ;;   # build 'nicely' :-)
+        p) PROFILE_NAME="$OPTARG" ;; # profile to use to deterine extra parameter (email mostly) and autogen arguments
+        r) PUSH_NIGHTLIES=1 ; BANDWIDTH="$OPTARG" ;; # whether to upload daily build.
+        v) VERBOSE="1" ;;         # print more messages
+        w) PAUSE_SECONDS="$OPTARG" ;; # cool-down time after a build, in seconds
+        z) PRIME_BUILD=1 ;;           # to run an initial build (without sending any email) to establish a 'baseline'
         ?) usage; exit ;;
     esac
 done
 
+if [ "$CHECK" = "1" ] ; then
+    sanity_check
+fi
+
 load_profile "$PROFILE_NAME"
 
+# if we want email to be sent, we must make sure that the required parameters are set in the profile (or in the environment)
 case "$SEND_MAIL" in
     all|tb|owner|debug)
         if [ -n "${SEND_MAIL}" ] ; then
@@ -120,11 +272,13 @@ esac
 
 
 # where to report
-current_branch=`git branch | grep '^\*' | sed 's/^..//'`
+# right now we are limited to local branch that match what the tinderbox server expect
+#
+B=`git branch | grep '^\*' | sed 's/^..//'`
 TINDER_BRANCH=
-case "$current_branch" in
+case "$B" in
     master) TINDER_BRANCH='MASTER' ;;
-    libreoffice-3-4) TINDER_BRANCH=$current_branch ;;
+    libreoffice-3-4) TINDER_BRANCH=$B ;;
     *) echo "Unknown, non-registered branch, please update tinbuild, and tinderbox.libreoffice.org."2>&1 ; exit 1 ;;
 esac
 
@@ -147,14 +301,14 @@ if [ "${PRIME_BUILD?}" = "1" ] ; then
 
     exit ${retval?}
 else
-    if [ ! -f "tb_last-success-git-heads.txt" ] ; then
-        echo "You need a valid baseline. run once with -z or make sure you have a valid tb_last-success-git-heads.txt" 1>&2
+    if [ ! -f "tb_${B}_last-success-git-heads.txt" ] ; then
+        echo "You need a valid baseline. run once with -z or make sure you have a valid tb_${B}_last-success-git-heads.txt" 1>&2
         exit 1;
     else
         # reset to at the last sucessfull build
         retval=0
-        cp tb_last-success-git-heads.txt tb_current-git-heads.log
-        cp tb_last-success-git-timestamp.txt tb_current-git-timestamp.log
+        cp tb_${B}_last-success-git-heads.txt tb_${B}_current-git-heads.log
+        cp tb_${B}_last-success-git-timestamp.txt tb_${B}_current-git-timestamp.log
         rotate_logs
     fi
 fi
@@ -163,7 +317,7 @@ fi
 while true; do
 
     wait_for_commits
-    last_checkout_date="$(cat tb_current-git-timestamp.log)"
+    last_checkout_date="$(cat tb_${B}_current-git-timestamp.log)"
     (
         do_flock -x 200
 

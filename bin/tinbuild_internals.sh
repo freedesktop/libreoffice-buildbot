@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#
+#    Copyright (C) 2011 Norbert Thiebaud
+#    License: GPLv3
+#
 
 lock_file=/tmp/tinbuid-lockfile
 
@@ -38,8 +42,8 @@ get_commits_since_last_good()
 	local repo=
 	local sha=
 
-	if [ -f tb_last-success-git-heads.txt ] ; then
-		for head in $(cat tb_last-success-git-heads.txt) ; do
+	if [ -f tb_${B}_last-success-git-heads.txt ] ; then
+		for head in $(cat tb_${B}_last-success-git-heads.txt) ; do
 			repo=$(echo ${head} | cut -d : -f 1)
 			sha=$(echo ${head} | cut -d : -f 2)
 			(
@@ -70,11 +74,11 @@ local quiet="-q"
     log_msgs "send mail to ${to?} with subject \"${subject?}\""
     [ $VERBOSE -gt 0 ] && quiet=""
     if [ -n "${log}" ] ; then
-		${bin_dir?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
+		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
 	elif [ -n "${header}" ] ; then
-		${bin_dir?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
+		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
     else
-		${bin_dir?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
+		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
     fi
 }
 
@@ -107,7 +111,7 @@ tinderbox: END
 
 	if [ "$log" = "yes" ] ; then
 		gzlog="tinder.log.gz"
-		( echo "$message_content" ; cat tb_autogen.log tb_clean.log tb_build.log tb_smoketest.log tb_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
+		( echo "$message_content" ; cat tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_smoketest.log tb_${B}_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
 		xtinder="X-Tinder: gzookie"
 		subject="tinderbox gzipped logfile"
 	fi
@@ -130,7 +134,7 @@ report_error ()
 	local rough_time="$1"
 	shift
 
-	local last_success=$(cat tb_last-success-git-timestamp.txt)
+	local last_success=$(cat tb_${B}_last-success-git-timestamp.txt)
 	to_mail=
     if [ "$SEND_MAIL" = "owner" -o "$SEND_MAIL" = "debug" ] ; then
         to_mail="${OWNER?}"
@@ -188,8 +192,8 @@ EOF
 
 collect_current_heads()
 {
-	./g -1 rev-parse HEAD > tb_current-git-heads.log
-	print_date > tb_current-git-timestamp.log
+	./g -1 rev-parse HEAD > tb_${B}_current-git-heads.log
+	print_date > tb_${B}_current-git-timestamp.log
 }
 
 get_committers()
@@ -202,10 +206,10 @@ rotate_logs()
 {
 
 	if [ "$retval" = "0" ] ; then
-		cp -f tb_current-git-heads.log tb_last-success-git-heads.txt 2>/dev/null
-		cp -f tb_current-git-timestamp.log tb_last-success-git-timestamp.txt 2>/dev/null
+		cp -f tb_${B}_current-git-heads.log tb_${B}_last-success-git-heads.txt 2>/dev/null
+		cp -f tb_${B}_current-git-timestamp.log tb_${B}_last-success-git-timestamp.txt 2>/dev/null
 	fi
-	for f in tb_*.log ; do
+	for f in tb_${B}*.log ; do
 		mv -f ${f} prev-${f} 2>/dev/null
 	done
 }
@@ -222,7 +226,7 @@ wait_for_commits()
 		else
 			collect_current_heads
 
-		    if [ "$(cat tb_current-git-heads.log)" != "$(cat prev-tb_current-git-heads.log)" ] ; then
+		    if [ "$(cat tb_${B}_current-git-heads.log)" != "$(cat prev-tb_${B}_current-git-heads.log)" ] ; then
 			    log_msgs "Repo updated, going to build."
 			    break
             fi
@@ -237,8 +241,8 @@ wait_for_commits()
 
 m="$(uname)"
 
-if [ -f "${bin_dir?}/tinbuild_internals_${m}.sh" ] ; then
-	source "${bin_dir?}/tinbuild_internals_${m}.sh"
+if [ -f "${BIN_DIR?}/tinbuild_internals_${m}.sh" ] ; then
+	source "${BIN_DIR?}/tinbuild_internals_${m}.sh"
 fi
 unset m
 
@@ -251,7 +255,7 @@ for _g in make gmake gnumake; do
 	fi
 done
 
-source ${bin_dir?}/tinbuild_phases.sh
+source ${BIN_DIR?}/tinbuild_phases.sh
 
 
 tb_call()
@@ -284,6 +288,8 @@ do_build()
         build_status="success"
         if [ -n "${last_checkout_date}" ] ; then
             report_to_tinderbox "$last_checkout_date" "success" "yes"
+        else
+            log_msgs "Successfuly primed branch '$TINDER_BRANCH'."
         fi
     else
         if [ -n "${last_checkout_date}" ] ; then
@@ -291,7 +297,8 @@ do_build()
 ======
 $(tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' )"
             report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
+        else
+            log_msgs "Failed to primed branch '$TINDER_BRANCH'. see build_error.log"
         fi
     fi
-
 }

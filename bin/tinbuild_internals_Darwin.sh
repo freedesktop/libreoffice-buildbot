@@ -3,9 +3,9 @@
 do_flock()
 {
     if [ "$LOCK" = "1" ] ; then
-        if [ ${bin_dir?}/flock ] ; then
+        if [ ${BIN_DIR?}/flock ] ; then
             [ $VERBOSE -gt 0 ] && echo "locking..."
-            ${bin_dir?}/flock $@
+            ${BIN_DIR?}/flock $@
         else
             echo "no flock implementation, please build it from buildbot/flock or use -e" 2>&1
             exit 1;
