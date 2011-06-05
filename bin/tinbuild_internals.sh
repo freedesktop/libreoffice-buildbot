@@ -158,10 +158,9 @@ report_error ()
     if [ -n "$to_mail" ] ; then
 	    echo "$*" 1>&2
 	    echo "Last success: ${last_success}" 1>&2
-		if [ "$SEND_MAIL" -eq 1 -a -n "$TINDER_NAME" ] ; then
-			tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
-			tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
-		fi
+		tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
+		tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
+
 		cat <<EOF | send_mail_msg "$to_mail" "Tinderbox failure, $message" "" "${OWNER?}" ""
 Hi folks,
 
