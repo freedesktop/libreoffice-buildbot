@@ -13,7 +13,7 @@ LOCK=1
 NICE=
 PROFILE_NAME=
 PRIME_BUILD=0
-VERBOSE=0
+V=0
 CHECK=0
 
 
@@ -218,7 +218,7 @@ while getopts cehinm:p:rvw:z opt ; do
         n) NICE="$NICE nice" ;;   # build 'nicely' :-)
         p) PROFILE_NAME="$OPTARG" ;; # profile to use to deterine extra parameter (email mostly) and autogen arguments
         r) PUSH_NIGHTLIES=1 ; BANDWIDTH="$OPTARG" ;; # whether to upload daily build.
-        v) VERBOSE="1" ;;         # print more messages
+        v) V=1 ;;         # print more messages
         w) PAUSE_SECONDS="$OPTARG" ;; # cool-down time after a build, in seconds
         z) PRIME_BUILD=1 ;;           # to run an initial build (without sending any email) to establish a 'baseline'
         ?) usage; exit ;;

@@ -48,8 +48,8 @@ do_push()
         if [ -z "$last_day_upload" ] ; then
             last_day_upload=0
         fi
-        echo "curr_day=$curr_day"
-        echo "last_day_upload=$last_day_upload"
+        [ $V ] && echo "curr_day=$curr_day"
+        [ $V ] && echo "last_day_upload=$last_day_upload"
 		if [ $last_day_upload -lt $curr_day ] ; then
 			${bin_dir?}/push_nightlies.sh -a -t "$(cat tb_${B}_current-git-timestamp.log)" -n "$TINDER_NAME" -l "$BANDWIDTH"
 			if [ "$?" == "0" ] ; then

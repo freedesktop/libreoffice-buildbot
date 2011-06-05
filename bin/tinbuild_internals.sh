@@ -72,7 +72,7 @@ local log="$5"
 local quiet="-q"
 
     log_msgs "send mail to ${to?} with subject \"${subject?}\""
-    [ $VERBOSE -gt 0 ] && quiet=""
+    [ $V ] && quiet=""
     if [ -n "${log}" ] ; then
 		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
 	elif [ -n "${header}" ] ; then
@@ -220,6 +220,7 @@ wait_for_commits()
 	local err_msgs=
 
 	while true; do
+        [ $V ] && echo "pulling from the repos"
 		err_msgs="$(./g pull -r 2>&1)"
 		if [ "$?" -ne "0" ] ; then
 			report_error owner "$(date)" $(printf "git repo broken - error is:\n\n$err_msgs")
@@ -260,6 +261,7 @@ source ${BIN_DIR?}/tinbuild_phases.sh
 
 tb_call()
 {
+	[ $V ] && declare -F "$1" > /dev/null && echo "call $1"
 	declare -F "$1" > /dev/null && $1
 }
 
@@ -281,7 +283,7 @@ do_build()
     build_status="build_failed"
 	retval=0
 	for p in autogen clean make test push ; do
-        [ $VERBOSE -gt 0 ] && echo "call $p"
+        [ $V ] && echo "phase $p"
 		phase $p
 	done
     if [ "$retval" = "0" ] ; then
