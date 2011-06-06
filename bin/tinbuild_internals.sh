@@ -75,7 +75,7 @@ local quiet="-q"
     [ $V ] && quiet=""
     if [ -n "${log}" ] ; then
 		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
-	elif [ -n "${header}" ] ; then
+    elif [ -n "${headers?}" ] ; then
 		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
     else
 		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
