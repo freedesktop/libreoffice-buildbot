@@ -162,15 +162,15 @@ sanity_check()
     if [ ! -f $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen ] ; then
         if [ ! -f autogen.lastrun ] ; then
             echo "Error: Neither $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen or autogen.lastrun exist" >&2
+            exit 1
         else
             echo "Warning: the file $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen does mot exist. Will use autogen.lastrun :" >&2
             cat autogen.lastrun
         fi
-        exit 1
     fi
 
     source $HOME/.tinbuild/config/${PROFILE_NAME?}.cfg || (echo "Error sourcing $HOME/.tinbuild/config/${PROFILE_NAME?}.cfg" ; exit 1)
-    rc = 0
+    rc=0
 
     if [ -z "${SMTPHOST}" ] ; then
         echo "Error: missing SMTPHOST in config file" 1>&2
