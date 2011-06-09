@@ -72,7 +72,7 @@ cat << EOF
 In order to use $0 you need to:
 
 * create a directory ~/.tinbuild/config
-* create a file ~/.tinderbuild/config/<profile_name>
+* create a file ~/.tinbuild/config/<profile_name>.cfg
     where <profile_name> is the argument you pased to the mandatory parameter -p
     that <profile_name> is sourced and define at least:
        SMTPHOST=<name of you smtp host to send email>
@@ -145,17 +145,17 @@ sanity_check()
     fi
 
     if [ ! -d $HOME/.tinbuild ] ; then
-        echo "Error: the directory $HOME/.tinbuild does mot exist" >&2
+        echo "Error: the directory $HOME/.tinbuild does not exist" >&2
         display_setup_instruction
         exit 1
     fi
     if [ ! -d $HOME/.tinbuild/config ] ; then
-        echo "Error: the directory $HOME/.tinbuild/config does mot exist" >&2
+        echo "Error: the directory $HOME/.tinbuild/config does not exist" >&2
         display_setup_instruction
         exit 1
     fi
     if [ ! -f $HOME/.tinbuild/config/${PROFILE_NAME?}.cfg ] ; then
-        echo "Error: the file $HOME/.tinbuild/config/${PROFILE_NAME?} does mot exist" >&2
+        echo "Error: the file $HOME/.tinbuild/config/${PROFILE_NAME?} does not exist" >&2
         display_setup_instruction
         exit 1
     fi
@@ -164,7 +164,7 @@ sanity_check()
             echo "Error: Neither $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen or autogen.lastrun exist" >&2
             exit 1
         else
-            echo "Warning: the file $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen does mot exist. Will use autogen.lastrun :" >&2
+            echo "Warning: the file $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen does not exist. Will use autogen.lastrun :" >&2
             cat autogen.lastrun
         fi
     fi
@@ -198,6 +198,11 @@ sanity_check()
 
 	echo "test email from tinbuild" | ${BIN_DIR?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "$OWNER"  -u "tinderbuild test" || (echo "Errot sending test email" 1>&2 ; exit 1)
 
+    echo "Checking flock"
+    (
+        do_flock -x 200
+    ) 200>${lock_file?}
+
     echo "Sanity checks OK."
     exit 0
 }
@@ -208,7 +213,7 @@ sanity_check()
 # Main
 #
 
-while getopts cehinm:p:rvw:z opt ; do
+while getopts cehinm:p:r:vw:z opt ; do
     case "$opt" in
         e) LOCK=0 ;;      # whether to use flock to protect the build-cycle
         c) CHECK=1 ;;     # whether to invoke the sanity-check function
