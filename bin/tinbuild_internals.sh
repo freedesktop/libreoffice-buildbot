@@ -292,6 +292,8 @@ do_build()
         else
             log_msgs "Successfuly primed branch '$TINDER_BRANCH'."
         fi
+    elif [ "$retval" = "false_negative" ] ; then
+        log_msgs "False negative build, skip reporting"
     else
         if [ -n "${last_checkout_date}" ] ; then
 		    report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(cat build_error.log | grep -C10 "^[^[]")

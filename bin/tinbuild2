@@ -316,7 +316,9 @@ fi
 # main tinderbox loop
 while true; do
 
-    wait_for_commits
+    if [ "$retval" != "false_negative" ] ; then
+        wait_for_commits
+    fi
     last_checkout_date="$(cat tb_${B}_current-git-timestamp.log)"
     (
         do_flock -x 200
@@ -329,8 +331,8 @@ while true; do
     ) 200>${lock_file?}
 
 
-
-    log_msgs "Waiting ${PAUSE_SECOND?} seconds."
-	sleep ${PAUSE_SECOND?}
-
+    if [ "$retval" != "false_negative" ] ; then
+        log_msgs "Waiting ${PAUSE_SECOND?} seconds."
+	    sleep ${PAUSE_SECOND?}
+    fi
 done
