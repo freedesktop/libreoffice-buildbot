@@ -267,7 +267,7 @@ tb_call()
 phase()
 {
 	local f=${1}
-	for x in {pre_,do_,_post}${f} ; do
+	for x in {pre_,do_,post_}${f} ; do
 		tb_call ${x}
 	done
 }
