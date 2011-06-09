@@ -46,13 +46,9 @@ do_make()
 
 post_make()
 {
-    echo "*** post_make:"
     if [ "${retval}" != "0" ] ; then
-        echo "reval != 0"
         if [ -f build_error.log ] ; then
-            echo "build_error exist:"
             if [ -f $HOME/.tindbuild/config/${PROFILE_NAME?}.false_negatives ] ; then
-                echo "false_negatives reffile exist"
                 grep -F "$(cat $HOME/.tindbuild/config/${PROFILE_NAME?}.false_negatives)" build_error.log || reval="false_negative"
             fi
         fi
