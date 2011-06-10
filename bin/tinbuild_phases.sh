@@ -48,8 +48,11 @@ post_make()
 {
     if [ "${retval}" != "0" ] ; then
         if [ -f build_error.log ] ; then
-            if [ -f $HOME/.tindbuild/config/${PROFILE_NAME?}.false_negatives ] ; then
-                grep -F "$(cat $HOME/.tindbuild/config/${PROFILE_NAME?}.false_negatives)" build_error.log || reval="false_negative"
+            if [ -f $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives ] ; then
+                grep -F "$(cat $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives)" build_error.log && retval="false_negative"
+                if [ "${retval?}" == "false_negative" ] ; then
+                    log "False negative detected"
+                fi
             fi
         fi
     fi

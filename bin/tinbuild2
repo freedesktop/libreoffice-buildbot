@@ -300,7 +300,11 @@ if [ "${PRIME_BUILD?}" = "1" ] ; then
 
         rotate_logs
 
-        exit ${retval?}
+        if [ "$retval" = "0" ] ; then
+            exit 0
+        else
+            exit 1
+        fi
     ) 200>${lock_file?}
     retval=$?
 
@@ -332,7 +336,6 @@ while true; do
 
         rotate_logs
 
-        exit ${retval?}
     ) 200>${lock_file?}
 
 
