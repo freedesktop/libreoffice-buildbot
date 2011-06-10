@@ -293,6 +293,7 @@ do_build()
             log_msgs "Successfuly primed branch '$TINDER_BRANCH'."
         fi
     elif [ "$retval" = "false_negative" ] ; then
+        report_to_tinderbox "${last_checkout_date?}" "fold" "no"
         log_msgs "False negative build, skip reporting"
     else
         if [ -n "${last_checkout_date}" ] ; then

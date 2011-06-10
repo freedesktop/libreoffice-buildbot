@@ -51,7 +51,7 @@ post_make()
             if [ -f $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives ] ; then
                 grep -F "$(cat $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives)" build_error.log && retval="false_negative"
                 if [ "${retval?}" == "false_negative" ] ; then
-                    log "False negative detected"
+                    log_msgs "False negative detected"
                 fi
             fi
         fi
