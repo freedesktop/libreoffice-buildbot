@@ -335,11 +335,18 @@ while true; do
         do_build
 
         rotate_logs
+        if [ "$retval" = "0" ] ; then
+            exit 0
+        elif [ "$retval" = "false_negative" ] ; then
+            exit 2
+        else
+            exit 1
+        fi
 
     ) 200>${lock_file?}
 
 
-    if [ "$retval" != "false_negative" ] ; then
+    if [ "$?" != "2" ] ; then
         log_msgs "Waiting ${PAUSE_SECOND?} seconds."
 	    sleep ${PAUSE_SECOND?}
     fi
