@@ -70,15 +70,20 @@ local headers="$3"
 local bcc="$4"
 local log="$5"
 local quiet="-q"
+local smtp_auth=""
+
+    if [ -n "${SMTPUSER}" ] ; then
+        smtp_auth=-xu "${SMTPUSER?}" -xp "${SMTPPW?}"
+    fi
 
     log_msgs "send mail to ${to?} with subject \"${subject?}\""
     [ $V ] && quiet=""
     if [ -n "${log}" ] ; then
-		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
+		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
     elif [ -n "${headers?}" ] ; then
-		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
+		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
     else
-		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
+		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
     fi
 }
 

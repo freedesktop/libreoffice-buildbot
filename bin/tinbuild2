@@ -92,13 +92,13 @@ Options:
    -h           print help
    -c           sanity check (verify that tou configuration is sane and send a test email)
    -i           run with ionice -c3, can be combined with -n
-   -m [all,tb,owner,none]
+   -m <all,tb,owner,none>
                 tb=mail progress to the tinderbox,
                 all=tb + mail errors to the committer, general errors to the owner.
                 owner= tb + any other mail to the owner only
                 debug=any mail (progress or error) is sent to the owner
                 none=no mail
-                Default=all"
+                If in doubt, use "all".
    -n           run with nice, can be combined with -i
    -p <profile> profile to use.
    -r <bandwidth> push the build nightly at a rate limited by <badnwidth> (in kB/s)
@@ -177,11 +177,10 @@ sanity_check()
         rc=1
     fi
     if [ -z "${SMTPUSER}" ] ; then
-        echo "Error: missing SMTPUSER in config file" 1>&2
-        rc=1
+        echo "Warning: missing SMTPUSER in config file (can work, depends on your smtp server)" 1>&2
     fi
-    if [ -z "${SMTPPW}" ] ; then
-        echo "Error: missing SMTPPW in config file" 1>&2
+    if [ -n "${SMTPUSER}" -a -z "${SMTPPW}" ] ; then
+        echo "Error: SMTPPW empty, but SMTPUSER set in config file" 1>&2
         rc=1
     fi
     if [ -z "${TINDER_NAME}" ] ; then
@@ -196,7 +195,11 @@ sanity_check()
         exit 1
     fi
 
-	echo "test email from tinbuild" | ${BIN_DIR?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" -xu "${SMTPUSER?}" -xp "${SMTPPW?}" -t "$OWNER"  -u "tinderbuild test" || (echo "Errot sending test email" 1>&2 ; exit 1)
+    local smtp_auth=""
+    if [ -n "${SMTPUSER}" ] ; then
+        smtp_auth=-xu "${SMTPUSER?}" -xp "${SMTPPW?}"
+    fi
+    echo "test email from tinbuild" | ${BIN_DIR?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "$OWNER"  -u "tinderbuild test" || (echo "Errot sending test email" 1>&2 ; exit 1)
 
     echo "Checking flock"
     (
@@ -246,10 +249,9 @@ case "$SEND_MAIL" in
                 rc=1
             fi
             if [ -z "${SMTPUSER}" ] ; then
-                echo "Error: missing SMTPUSER" 1>&2
-                rc=1
+                echo "Warning: missing SMTPUSER (can work, depends on your smtp server)" 1>&2
             fi
-            if [ -z "${SMTPPW}" ] ; then
+            if [ -n "${SMTPUSER}" -a -z "${SMTPPW}" ] ; then
                 echo "Error: missing SMTPPW" 1>&2
                 rc=1
             fi
