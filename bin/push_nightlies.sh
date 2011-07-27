@@ -61,7 +61,12 @@ BRANCH="${CURR_HEAD#*/*/}"
 tag="${BRANCH}~${PULL_TIME}"
 ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}\"" || exit 1
 
-. ./*[Ee]nv.[Ss]et.sh
+if [ -f Env.Host.sh ] ; then
+    . Env.Host.sh
+else
+    . ./*[Ee]nv.[Ss]et.sh
+fi
+
 cd instsetoo_native/${INPATH}
 
 if [ "$ASYNC" = "1" ] ; then
