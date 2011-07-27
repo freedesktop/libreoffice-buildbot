@@ -92,7 +92,8 @@ Options:
    -h           print help
    -c           sanity check (verify that tou configuration is sane and send a test email)
    -i           run with ionice -c3, can be combined with -n
-   -m <all,tb,owner,none>
+   -k           to not override autogen.lastrun if present (usefull with -z to do a quick test)
+   -m [all,tb,owner,none]
                 tb=mail progress to the tinderbox,
                 all=tb + mail errors to the committer, general errors to the owner.
                 owner= tb + any other mail to the owner only
@@ -216,12 +217,13 @@ sanity_check()
 # Main
 #
 
-while getopts cehinm:p:r:vw:z opt ; do
+while getopts cehiknm:p:r:vw:z opt ; do
     case "$opt" in
         e) LOCK=0 ;;      # whether to use flock to protect the build-cycle
         c) CHECK=1 ;;     # whether to invoke the sanity-check function
         h) usage; exit ;; # display help
         i) NICE="$NICE ionice -c3" ;; # be gentle on i/o
+        k) KEEP_AUTOGEN="YES" ;; # do not override the local autogen.lastrun if present
         m) SEND_MAIL="$OPTARG" ;; # which email to wend and to whom
         n) NICE="$NICE nice" ;;   # build 'nicely' :-)
         p) PROFILE_NAME="$OPTARG" ;; # profile to use to deterine extra parameter (email mostly) and autogen arguments
@@ -281,12 +283,18 @@ esac
 # where to report
 # right now we are limited to local branch that match what the tinderbox server expect
 #
-B=`git branch | grep '^\*' | sed 's/^..//'`
+B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
 TINDER_BRANCH=
 case "$B" in
     master) TINDER_BRANCH='MASTER' ;;
     libreoffice-3-4) TINDER_BRANCH=$B ;;
-    *) echo "Unknown, non-registered branch, please update tinbuild, and tinderbox.libreoffice.org."2>&1 ; exit 1 ;;
+    *)
+    if [ "${PRIME_BUILD}" = "1" ] ; then
+        TINDER_BRANCH=$B
+    else
+        echo "Unknown, non-registered branch, please update tinbuild, and tinderbox.libreoffice.org."2>&1 ; exit 1;
+    fi
+    ;;
 esac
 
 collect_current_heads
@@ -329,6 +337,8 @@ while true; do
 
     if [ "$retval" != "false_negative" ] ; then
         wait_for_commits
+    else
+		collect_current_heads
     fi
     last_checkout_date="$(cat tb_${B}_current-git-timestamp.log)"
     (
@@ -351,5 +361,8 @@ while true; do
     if [ "$?" != "2" ] ; then
         log_msgs "Waiting ${PAUSE_SECOND?} seconds."
 	    sleep ${PAUSE_SECOND?}
+        retval="0"
+    else
+        retval="false_negative"
     fi
 done

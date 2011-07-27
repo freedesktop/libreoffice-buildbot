@@ -4,6 +4,17 @@
 #    License: GPLv3
 #
 
+pre_autogen()
+{
+    if [ "${retval}" = "0" ] ; then
+        if [ -f $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen ] ; then
+            if [ ! -f autogen.lastrun -o "$KEEP_AUTOGEN" != "YES" ] ; then
+                cp $HOME/.tinbuild/autogen/${PROFILE_NAME?}.autogen autogen.lastrun
+            fi
+        fi
+    fi
+}
+
 do_autogen()
 {
     if [ "${retval}" = "0" ] ; then

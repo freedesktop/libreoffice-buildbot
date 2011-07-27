@@ -116,7 +116,7 @@ tinderbox: END
 
 	if [ "$log" = "yes" ] ; then
 		gzlog="tinder.log.gz"
-		( echo "$message_content" ; cat tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_smoketest.log tb_${B}_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
+		( echo "$message_content" ; cat tb_${B}_current-git-timestamp.log  tb_${B}_current-git-heads.log tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_smoketest.log tb_${B}_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
 		xtinder="X-Tinder: gzookie"
 		subject="tinderbox gzipped logfile"
 	fi
