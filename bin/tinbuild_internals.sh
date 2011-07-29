@@ -72,7 +72,7 @@ local quiet="-q"
 local smtp_auth=""
 
     if [ -n "${SMTPUSER}" ] ; then
-        smtp_auth="-xu \"${SMTPUSER?}\" -xp \"${SMTPPW?}\""
+        smtp_auth="-xu ${SMTPUSER?} -xp ${SMTPPW?}"
     fi
 
     log_msgs "send mail to ${to?} with subject \"${subject?}\""

@@ -198,7 +198,7 @@ sanity_check()
 
     local smtp_auth=""
     if [ -n "${SMTPUSER}" ] ; then
-        smtp_auth=-xu "${SMTPUSER?}" -xp "${SMTPPW?}"
+        smtp_auth="-xu ${SMTPUSER?} -xp ${SMTPPW?}"
     fi
     echo "test email from tinbuild" | ${BIN_DIR?}/sendEmail -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "$OWNER"  -u "tinderbuild test" || (echo "Errot sending test email" 1>&2 ; exit 1)
 
