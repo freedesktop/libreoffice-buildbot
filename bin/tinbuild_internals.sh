@@ -78,31 +78,31 @@ local smtp_auth=""
     log_msgs "send mail to ${to?} with subject \"${subject?}\""
     [ $V ] && quiet=""
     if [ -n "${log}" ] ; then
-		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
+	${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
     elif [ -n "${headers?}" ] ; then
-		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
+	${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
     else
-		${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
+	${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
     fi
 }
 
 report_to_tinderbox()
 {
-	if [ -z "$SEND_MAIL" -o -z "$TINDER_NAME" ] ; then
-		return 0
-	fi
+    if [ -z "$SEND_MAIL" -o -z "$TINDER_NAME" ] ; then
+	return 0
+    fi
 
-	local start_date="$1"
-	local status="$2"
-	local log="$3"
-	local start_line=
-	local xtinder="X-Tinder: cookie"
-	local subject="tinderbox build start notification"
-	local gzlog=
-	local message_content=
+    local start_date="$1"
+    local status="$2"
+    local log="$3"
+    local start_line=
+    local xtinder="X-Tinder: cookie"
+    local subject="tinderbox build start notification"
+    local gzlog=
+    local message_content=
 
-	start_line="tinderbox: starttime: $(epoch_from_utc ${start_date})"
-	message_content="
+    start_line="tinderbox: starttime: $(epoch_from_utc ${start_date})"
+    message_content="
 tinderbox: administrator: ${OWNER?}
 tinderbox: buildname: ${TINDER_NAME?}
 tinderbox: tree: ${TINDER_BRANCH?}
@@ -113,59 +113,59 @@ tinderbox: status: ${status?}
 tinderbox: END
 "
 
-	if [ "$log" = "yes" ] ; then
-		gzlog="tinder.log.gz"
-		( echo "$message_content" ; cat tb_${B}_current-git-timestamp.log  tb_${B}_current-git-heads.log tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_smoketest.log tb_${B}_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
-		xtinder="X-Tinder: gzookie"
-		subject="tinderbox gzipped logfile"
-	fi
+    if [ "$log" = "yes" ] ; then
+	gzlog="tinder.log.gz"
+	( echo "$message_content" ; cat tb_${B}_current-git-timestamp.log  tb_${B}_current-git-heads.log tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_smoketest.log tb_${B}_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
+	xtinder="X-Tinder: gzookie"
+	subject="tinderbox gzipped logfile"
+    fi
 
     if [ "$SEND_MAIL" = "debug" ] ; then
-	    echo "$message_content" | send_mail_msg "${OWNER}" "${subject?}" "${xtinder?}" '' "${gzlog}"
+	echo "$message_content" | send_mail_msg "${OWNER}" "${subject?}" "${xtinder?}" '' "${gzlog}"
     else
-	    echo "$message_content" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" '' "${gzlog}"
+	echo "$message_content" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" '' "${gzlog}"
     fi
 }
 
 
 report_error ()
 {
-	local_to_mail=
-	local tinder1=
-	local tinder2=
-	local error_kind="$1"
-	shift
-	local rough_time="$1"
-	shift
+    local_to_mail=
+    local tinder1=
+    local tinder2=
+    local error_kind="$1"
+    shift
+    local rough_time="$1"
+    shift
 
-	local last_success=$(cat tb_${B}_last-success-git-timestamp.txt)
-	to_mail=
+    local last_success=$(cat tb_${B}_last-success-git-timestamp.txt)
+    to_mail=
     if [ "$SEND_MAIL" = "owner" -o "$SEND_MAIL" = "debug" ] ; then
         to_mail="${OWNER?}"
     else
         if [ "$SEND_MAIL" = "all" ] ; then
-		    case "$error_kind" in
-			    owner) to_mail="${OWNER?}"
-			        message="box broken" ;;
-			    *)
+	    case "$error_kind" in
+		owner) to_mail="${OWNER?}"
+		    message="box broken" ;;
+		*)
                     if [ -z "$last_success" ] ; then
 			          # we need at least one successful build to
                       # be reliable
-			            to_mail="${OWNER?}"
-		            else
-			            to_mail="$(get_committers)"
-		            fi
-		            message="last success: ${last_success?}" ;;
-		    esac
+			to_mail="${OWNER?}"
+		    else
+			to_mail="$(get_committers)"
+		    fi
+		    message="last success: ${last_success?}" ;;
+	    esac
         fi
     fi
     if [ -n "$to_mail" ] ; then
-	    echo "$*" 1>&2
-	    echo "Last success: ${last_success}" 1>&2
-		tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
-		tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
+	echo "$*" 1>&2
+	echo "Last success: ${last_success}" 1>&2
+	tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
+	tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
 
-		cat <<EOF | send_mail_msg "$to_mail" "Tinderbox failure, $message" "" "${OWNER?}" ""
+	cat <<EOF | send_mail_msg "$to_mail" "Tinderbox failure, $message" "" "${OWNER?}" ""
 Hi folks,
 
 One of you broke the build of LibreOffice with your commit :-(
@@ -187,16 +187,16 @@ The error is:
 
 $*
 EOF
-	else
-		echo "$*" 1>&2
+    else
+	echo "$*" 1>&2
     fi
 }
 
 
 collect_current_heads()
 {
-	./g -1 rev-parse HEAD > tb_${B}_current-git-heads.log
-	print_date > tb_${B}_current-git-timestamp.log
+    ./g -1 rev-parse HEAD > tb_${B}_current-git-heads.log
+    print_date > tb_${B}_current-git-timestamp.log
 }
 
 get_committers()
@@ -207,56 +207,55 @@ get_committers()
 
 rotate_logs()
 {
-
-	if [ "$retval" = "0" ] ; then
-		cp -f tb_${B}_current-git-heads.log tb_${B}_last-success-git-heads.txt 2>/dev/null
-		cp -f tb_${B}_current-git-timestamp.log tb_${B}_last-success-git-timestamp.txt 2>/dev/null
-	fi
-	for f in tb_${B}*.log ; do
-		mv -f ${f} prev-${f} 2>/dev/null
-	done
+    if [ "$retval" = "0" ] ; then
+	cp -f tb_${B}_current-git-heads.log tb_${B}_last-success-git-heads.txt 2>/dev/null
+	cp -f tb_${B}_current-git-timestamp.log tb_${B}_last-success-git-timestamp.txt 2>/dev/null
+    fi
+    for f in tb_${B}*.log ; do
+	mv -f ${f} prev-${f} 2>/dev/null
+    done
 }
 
 wait_for_commits()
 {
-	local show_once=1
-	local err_msgs=
+    local show_once=1
+    local err_msgs=
 
-	while true; do
+    while true; do
         [ $V ] && echo "pulling from the repos"
-		err_msgs="$(./g pull -r 2>&1)"
-		if [ "$?" -ne "0" ] ; then
-			report_error owner "$(date)" $(printf "git repo broken - error is:\n\n$err_msgs")
-		else
-			collect_current_heads
+	err_msgs="$(./g pull -r 2>&1)"
+	if [ "$?" -ne "0" ] ; then
+	    report_error owner "$(date)" $(printf "git repo broken - error is:\n\n$err_msgs")
+	else
+	    collect_current_heads
 
-		    if [ "$(cat tb_${B}_current-git-heads.log)" != "$(cat prev-tb_${B}_current-git-heads.log)" ] ; then
-			    log_msgs "Repo updated, going to build."
-			    break
+	    if [ "$(cat tb_${B}_current-git-heads.log)" != "$(cat prev-tb_${B}_current-git-heads.log)" ] ; then
+		log_msgs "Repo updated, going to build."
+		break
             fi
-		    if [ "$show_once" = "1" ] ; then
-			    log_msgs "Waiting until there are changes in the repo..."
-			    show_once=0
-		    fi
+	    if [ "$show_once" = "1" ] ; then
+		log_msgs "Waiting until there are changes in the repo..."
+		show_once=0
+	    fi
         fi
-		sleep 60
-	done
+	sleep 60
+    done
 }
 
 m="$(uname)"
 
 if [ -f "${BIN_DIR?}/tinbuild_internals_${m}.sh" ] ; then
-	source "${BIN_DIR?}/tinbuild_internals_${m}.sh"
+    source "${BIN_DIR?}/tinbuild_internals_${m}.sh"
 fi
 unset m
 
 ## Determine how GNU make(1) is called on the system
 for _g in make gmake gnumake; do
-	$_g --version 2> /dev/null | grep -q GNU
-	if test $? -eq 0;  then
-		MAKE=$_g
-		break
-	fi
+    $_g --version 2> /dev/null | grep -q GNU
+    if test $? -eq 0;  then
+	MAKE=$_g
+	break
+    fi
 done
 
 source ${BIN_DIR?}/tinbuild_phases.sh
@@ -264,16 +263,16 @@ source ${BIN_DIR?}/tinbuild_phases.sh
 
 tb_call()
 {
-	[ $V ] && declare -F "$1" > /dev/null && echo "call $1"
-	declare -F "$1" > /dev/null && $1
+    [ $V ] && declare -F "$1" > /dev/null && echo "call $1"
+    declare -F "$1" > /dev/null && $1
 }
 
 phase()
 {
-	local f=${1}
-	for x in {pre_,do_,post_}${f} ; do
-		tb_call ${x}
-	done
+    local f=${1}
+    for x in {pre_,do_,post_}${f} ; do
+	tb_call ${x}
+    done
 }
 
 
@@ -284,11 +283,11 @@ do_build()
     fi
 
     build_status="build_failed"
-	retval=0
-	for p in autogen clean make test push ; do
+    retval=0
+    for p in autogen clean make test push ; do
         [ $V ] && echo "phase $p"
-		phase $p
-	done
+	phase $p
+    done
     if [ "$retval" = "0" ] ; then
         build_status="success"
         if [ -n "${last_checkout_date}" ] ; then
@@ -301,10 +300,10 @@ do_build()
         log_msgs "False negative build, skip reporting"
     else
         if [ -n "${last_checkout_date}" ] ; then
-		    report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(cat build_error.log | grep -C10 "^[^[]")
+	    report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(cat build_error.log | grep -C10 "^[^[]")
 ======
 $(tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' )"
-            report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
+	    report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
         else
             log_msgs "Failed to primed branch '$TINDER_BRANCH'. see build_error.log"
         fi

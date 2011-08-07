@@ -20,10 +20,10 @@ epoch_from_utc()
 
 epoch_to_utc()
 {
-	date -juf '%s' $1
+    date -juf '%s' $1
 }
 
 print_date()
 {
-	date -u '+%Y-%m-%d %H:%M:%S'
+    date -u '+%Y-%m-%d %H:%M:%S'
 }
