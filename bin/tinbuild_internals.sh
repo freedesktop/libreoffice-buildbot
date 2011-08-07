@@ -27,39 +27,38 @@ epoch_to_utc()
 
 print_date()
 {
-	date -u '+%Y-%m-%d %H:%M:%S'
+    date -u '+%Y-%m-%d %H:%M:%S'
 }
 
 log_msgs()
 {
-	echo "[$(print_date) $TINDER_BRANCH]" "$@"
+    echo "[$(print_date) $TINDER_BRANCH]" "$@"
 }
 
 get_commits_since_last_good()
 {
     local mode=$1
-	local head=
-	local repo=
-	local sha=
+    local head=
+    local repo=
+    local sha=
 
-	if [ -f tb_${B}_last-success-git-heads.txt ] ; then
-		for head in $(cat tb_${B}_last-success-git-heads.txt) ; do
-			repo=$(echo ${head} | cut -d : -f 1)
-			sha=$(echo ${head} | cut -d : -f 2)
-			(
-				if [ "${repo?}" != "bootstrap" ] ; then
-					cd clone/${repo?}
-				fi
+    if [ -f tb_${B}_last-success-git-heads.txt ] ; then
+	for head in $(cat tb_${B}_last-success-git-heads.txt) ; do
+	    repo=$(echo ${head} | cut -d : -f 1)
+	    sha=$(echo ${head} | cut -d : -f 2)
+	    (
+		if [ "${repo?}" != "bootstrap" -a "${repo}" != "core" ] ; then
+		    cd clone/${repo?}
+		fi
                 if [ "${mode?}" = "people" ] ; then
-				    git log '--pretty=tformat:%ce' ${sha?}..HEAD
+		    git log '--pretty=tformat:%ce' ${sha?}..HEAD
                 else
                     echo "==== ${repo} ===="
                     git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
-
                 fi
-			)
-		done
-	fi
+	    )
+	done
+    fi
 }
 
 send_mail_msg()
