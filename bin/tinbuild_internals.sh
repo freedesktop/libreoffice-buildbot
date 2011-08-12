@@ -89,7 +89,7 @@ local smtp_auth=""
 report_to_tinderbox()
 {
     if [ -z "$SEND_MAIL" -o -z "$TINDER_NAME" ] ; then
-	return 0
+        return 0
     fi
 
     local start_date="$1"
@@ -114,16 +114,16 @@ tinderbox: END
 "
 
     if [ "$log" = "yes" ] ; then
-	gzlog="tinder.log.gz"
-	( echo "$message_content" ; cat tb_${B}_current-git-timestamp.log  tb_${B}_current-git-heads.log tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_smoketest.log tb_${B}_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
-	xtinder="X-Tinder: gzookie"
-	subject="tinderbox gzipped logfile"
+       gzlog="tinder.log.gz"
+       ( echo "$message_content" ; cat tb_${B}_current-git-timestamp.log  tb_${B}_current-git-heads.log tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_smoketest.log tb_${B}_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
+       xtinder="X-Tinder: gzookie"
+       subject="tinderbox gzipped logfile"
     fi
 
     if [ "$SEND_MAIL" = "debug" ] ; then
-	echo "$message_content" | send_mail_msg "${OWNER}" "${subject?}" "${xtinder?}" '' "${gzlog}"
+        echo "$message_content" | send_mail_msg "${OWNER}" "${subject?}" "${xtinder?}" '' "${gzlog}"
     else
-	echo "$message_content" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" '' "${gzlog}"
+        echo "$message_content" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" '' "${gzlog}"
     fi
 }
 

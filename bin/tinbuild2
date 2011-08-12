@@ -301,7 +301,9 @@ collect_current_heads
 
 # do a build without involving the tinderbox to establish a good baseline
 if [ "${PRIME_BUILD?}" = "1" ] ; then
-    SEND_MAIL=""  # we don't want to notify the tinderbox
+    if [ "$SEND_MAIL" != "owner" ] ; then
+        SEND_MAIL=""  # we don't want to notify the tinderbox
+    fi
     log_msgs "Starting primer for branch '$TINDER_BRANCH'."
     (
         do_flock -x 200
