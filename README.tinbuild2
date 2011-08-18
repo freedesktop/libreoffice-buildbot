@@ -30,6 +30,10 @@ TINDER_NAME=<your value>
 OWNER=<your value>
 EOF
 
+# save you autogen configuration.
+mkdir -p ~/.tinbuild/autogen
+cp ~/master/autogen.lastrun ~/.tinbuild/autogen/your_name.autogen
+
 # check the configuration
 cd ~/master
 ~/buildbot/bin/tinbuild2 -c
