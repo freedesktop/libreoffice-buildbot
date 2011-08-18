@@ -1,6 +1,53 @@
+Tinbuild2 - automatic building of LibreOffice
+=============================================
 
-tinbuild2 is an evolution of tinbuild....
-Warning: this work is not fully operational yet
+tinbuild2 is an evolution of tinbuild - it periodically pulls from the
+LibreOffice git, builds the thing, and optionally mails those who broke the
+build, or uploads the build results to http://dev-builds.libreoffice.org/daily/
+
+Short version
+-------------
+
+# clone tinbuild
+git clone git://anongit.freedesktop.org/libreoffice/contrib/buildbot ~/buildbot
+
+# clone LibreOffice
+git clone git://anongit.freedesktop.org/libreoffice/core ~/master
+
+# make the LibreOffice build
+cd ~/master
+./autogen.sh
+make
+make dev-install
+
+# after the above succeeded, configure buildbot
+mkdir -p ~/.tinbuild/config
+cat > ~/.tinbuild/config/your_name.cfg <<EOF
+SMTPHOST=<your value>
+SMTPUSER=<your value>
+SMTPPW=<your value>
+TINDER_NAME=<your value>
+OWNER=<your value>
+EOF
+
+# check the configuration
+cd ~/master
+~/buildbot/bin/tinbuild2 -c
+
+# prime the tinderbox
+cd ~/master
+~/buildbot/bin/tinbuild2 -p your_name -z
+
+# and if that succeeds, start the periodical building
+cd ~/master
+~/buildbot/bin/tinbuild2 -m all -p your_name
+
+That's it; for more possibilities, like uploading the builds, or what to do
+when it complains that your architecture does not have flock, see the help,
+the below explanation, or the sources :-)
+
+Longer explanation
+------------------
 
 Why:
 
