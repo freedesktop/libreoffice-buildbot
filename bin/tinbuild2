@@ -103,6 +103,7 @@ Options:
    -n           run with nice, can be combined with -i
    -p <profile> profile to use.
    -r <bandwidth> push the build nightly at a rate limited by <badnwidth> (in kB/s)
+   -t           run the tests after a sucessfull build
    -v           verbose. print more progress messages
    -w           specify minimum wait between build attempt
    -z           bootstrap/prime the tinbuild
@@ -217,7 +218,7 @@ sanity_check()
 # Main
 #
 
-while getopts cehiknm:p:r:vw:z opt ; do
+while getopts cehiknm:p:r:tvw:z opt ; do
     case "$opt" in
         e) LOCK=0 ;;      # whether to use flock to protect the build-cycle
         c) CHECK=1 ;;     # whether to invoke the sanity-check function
@@ -228,6 +229,7 @@ while getopts cehiknm:p:r:vw:z opt ; do
         n) NICE="$NICE nice" ;;   # build 'nicely' :-)
         p) PROFILE_NAME="$OPTARG" ;; # profile to use to deterine extra parameter (email mostly) and autogen arguments
         r) PUSH_NIGHTLIES=1 ; BANDWIDTH="$OPTARG" ;; # whether to upload daily build.
+        t) DO_TESTS=1 ;; # whether to run tests after the build
         v) V=1 ;;         # print more messages
         w) PAUSE_SECONDS="$OPTARG" ;; # cool-down time after a build, in seconds
         z) PRIME_BUILD=1 ;;           # to run an initial build (without sending any email) to establish a 'baseline'
