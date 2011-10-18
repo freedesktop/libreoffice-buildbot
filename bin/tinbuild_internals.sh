@@ -6,6 +6,13 @@
 
 lock_file=/tmp/tinbuid-lockfile
 
+# Do we have timeout? If yes, guard git pull with that - which has a
+# tendency to hang forever, when connection is flaky
+if which timeout > /dev/null 2>&1 ; then
+	# std coreutils - timeout is two hours
+	timeout="`which timeout` 2h"
+fi
+
 do_flock()
 {
     if [ "$LOCK" = "1" ] ; then
@@ -223,7 +230,7 @@ wait_for_commits()
 
     while true; do
         [ $V ] && echo "pulling from the repos"
-	err_msgs="$(./g pull -r 2>&1)"
+	err_msgs="$( $timeout ./g pull -r 2>&1)"
 	if [ "$?" -ne "0" ] ; then
 	    report_error owner "$(date)" $(printf "git repo broken - error is:\n\n$err_msgs")
 	else
