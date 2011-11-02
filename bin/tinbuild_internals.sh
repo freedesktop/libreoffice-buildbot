@@ -180,7 +180,7 @@ tinderbox: END
 
     if [ "$log" = "yes" ] ; then
        gzlog="tinder.log.gz"
-       ( echo "$message_content" ; cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"  "${METADATA_DIR?}/tb_${B}_current-git-heads.log" tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_tests.log 2>/dev/null ) | gzip -c > "${gzlog}"
+       ( echo "$message_content" ; cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"  "${METADATA_DIR?}/tb_${B}_current-git-heads.log" tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
        xtinder="X-Tinder: gzookie"
        subject="tinderbox gzipped logfile"
     fi
@@ -206,6 +206,8 @@ report_error ()
     local error_kind="$1"
     shift
     local rough_time="$1"
+    shift
+    local error_log="$1"
     shift
 
     local last_success=$(cat "${METADATA_DIR?}/tb_${B}_last-success-git-timestamp.txt")
@@ -257,10 +259,10 @@ $(get_commits_since_last_good commits)
 
 The error is:
 
-$*
+$(cat "$error_log")
 EOF
     else
-	echo "$*" 1>&2
+	cat $error_log
     fi
 }
 
@@ -374,7 +376,8 @@ wait_for_commits()
         [ $V ] && echo "pulling from the repos"
         err_msgs="$( $timeout ./g pull -r 2>&1)"
         if [ "$?" -ne "0" ] ; then
-            report_error owner "$(date)" $(printf "git repo broken - error is:\n\n$err_msgs")
+	    printf "git repo broken - error is:\n\n$err_msgs" > error_log.log
+	    report_error owner "$(date)" error_log.log
         else
             collect_current_heads
 
@@ -467,17 +470,15 @@ do_build()
             fi
         else
             if [ -n "${last_checkout_date}" ] ; then
-                if [ -f build_error.log ] ; then
-	            report_error committer "$last_checkout_date" "${report_msgs?}" "
-======
-$(cat build_error.log | grep -C10 "^[^[]")
-======
-$(tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' )"
+                printf "${report_msgs?}:\n\n" > report_error.log
+                echo "======" >> report_error.log
+                if [ "${report_log?}" == "tb_${B}_build.log" ] ; then
+                    cat build_error.log | grep -C10 "^[^[]" >> report_error.log
+                    tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' >> report_error.log
                 else
-                    report_error committer "$last_checkout_date" "${report_msgs?}" "
-======
-$(tail -n25 ${report_log?})"
+                    cat ${report_log?} >> report_error.log
                 fi
+                report_error committer "$last_checkout_date" report_error.log
 	        report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
             else
                 log_msgs "Failed to primed branch '$TINDER_BRANCH'. see build_error.log"
