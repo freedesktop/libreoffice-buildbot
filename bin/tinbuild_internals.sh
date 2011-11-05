@@ -129,6 +129,11 @@ tinderbox: END
 
     if [ "$SEND_MAIL" = "debug" ] ; then
         echo "$message_content" | send_mail_msg "${OWNER}" "${subject?}" "${xtinder?}" '' "${gzlog}"
+    elif [ "$SEND_MAIL" = "author" ] ; then
+        echo "$message_content" | send_mail_msg "${OWNER}" "${subject?}" "${xtinder?}" '' "${gzlog}"
+        if [ -n "${BRANCH_AUTHOR}" ] ; then
+            echo "$message_content" | send_mail_msg "${BRANCH_AUTHOR}" "${subject?}" "${xtinder?}" '' "${gzlog}"
+        fi
     else
         echo "$message_content" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" '' "${gzlog}"
     fi
@@ -147,7 +152,7 @@ report_error ()
 
     local last_success=$(cat tb_${B}_last-success-git-timestamp.txt)
     to_mail=
-    if [ "$SEND_MAIL" = "owner" -o "$SEND_MAIL" = "debug" ] ; then
+    if [ "$SEND_MAIL" = "owner" -o "$SEND_MAIL" = "debug" -o "$SEND_MAIL" = "author" ] ; then
         to_mail="${OWNER?}"
     else
         if [ "$SEND_MAIL" = "all" ] ; then

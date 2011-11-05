@@ -90,14 +90,17 @@ cat << EOF
 Usage $0 [options] -p <profile_name>
 Options:
    -h           print help
+   -a <email>   'author'. This is for branch that are not under tb supervision. that is the email of the
+                'author' of the branch. email are sent to that email address for sucess and failure
    -c           sanity check (verify that tou configuration is sane and send a test email)
    -i           run with ionice -c3, can be combined with -n
    -k           to not override autogen.lastrun if present (usefull with -z to do a quick test)
-   -m [all,tb,owner,none]
+   -m [all,tb,owner,author,none]
                 tb=mail progress to the tinderbox,
                 all=tb + mail errors to the committer, general errors to the owner.
                 owner= tb + any other mail to the owner only
                 debug=any mail (progress or error) is sent to the owner
+                author=send failure email to the authors + owner tb is not in the loop
                 none=no mail
                 If in doubt, use "all".
    -n           run with nice, can be combined with -i
@@ -218,8 +221,9 @@ sanity_check()
 # Main
 #
 
-while getopts cehiknm:p:r:tvw:z opt ; do
+while getopts a:cehiknm:p:r:vw:z opt ; do
     case "$opt" in
+        a) BRANCH_AUTHOR="$OPTARG" ;; # email to the branch's author for out-of-tinderbox branch buildbot
         e) LOCK=0 ;;      # whether to use flock to protect the build-cycle
         c) CHECK=1 ;;     # whether to invoke the sanity-check function
         h) usage; exit ;; # display help
@@ -245,7 +249,7 @@ load_profile "$PROFILE_NAME"
 
 # if we want email to be sent, we must make sure that the required parameters are set in the profile (or in the environment)
 case "$SEND_MAIL" in
-    all|tb|owner|debug)
+    all|tb|owner|debug|author)
         if [ -n "${SEND_MAIL}" ] ; then
             rc=0
             if [ -z "${SMTPHOST}" ] ; then
@@ -294,7 +298,11 @@ case "$B" in
     if [ "${PRIME_BUILD}" = "1" ] ; then
         TINDER_BRANCH=$B
     else
-        echo "Unknown, non-registered branch, please update tinbuild, and tinderbox.libreoffice.org."2>&1 ; exit 1;
+        if [ "$SEND_MAIL" = "all" -o "$SEND_MAIL" = "" ] ; then
+            echo "Unknown, non-registered branch, please update tinbuild, and tinderbox.libreoffice.org."2>&1 ; exit 1;
+        else
+            TINDER_BRANCH=$B
+        fi
     fi
     ;;
 esac
