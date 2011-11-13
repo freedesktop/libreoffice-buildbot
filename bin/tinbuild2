@@ -221,7 +221,7 @@ sanity_check()
 # Main
 #
 
-while getopts a:cehiknm:p:r:vw:z opt ; do
+while getopts a:cehiknm:p:r:tvw:z opt ; do
     case "$opt" in
         a) BRANCH_AUTHOR="$OPTARG" ;; # email to the branch's author for out-of-tinderbox branch buildbot
         e) LOCK=0 ;;      # whether to use flock to protect the build-cycle

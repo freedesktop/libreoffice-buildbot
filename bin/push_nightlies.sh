@@ -2,6 +2,7 @@
 
 bin_dir=$(dirname "$0")
 lock_file="/tmp/tinbuild-upload"
+core_dir=$(pwd)
 
 ## subroutines
 usage ()
@@ -87,6 +88,15 @@ do
 	    mv $file "$stage/$target"
     fi
 done;
+
+if [ -f ${core_dir}/build_info.txt ] ; then
+    target="${tag}_build_info.txt"
+    if [ "$ASYNC" = "1" ] ; then
+	    cp ${core_dir}/build_info.txt  "$stage/$target"
+    else
+	    mv ${core_dir}/build_info.txt  "$stage/$target"
+    fi
+fi
 
 if [ "$ASYNC" = "1" ] ; then
 (

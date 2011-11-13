@@ -42,6 +42,24 @@ log_msgs()
     echo "[$(print_date) $TINDER_BRANCH]" "$@"
 }
 
+prepare_upload_manifest()
+{
+    local manifest_file="build_info.txt"
+
+    echo "Build Info" > $manifest_file
+
+    echo "tinderbox: administrator: ${OWNER?}" >> $manifest_file
+    echo "tinderbox: buildname: ${TINDER_NAME?}" >> $manifest_file
+    echo "tinderbox: tree: ${TINDER_BRANCH?}" >> $manifest_file
+    echo "tinderbox: pull time $(cat tb_${B}_current-git-timestamp.log)" >> $manifest_file
+    echo "tinderbox: git sha1s"  >> $manifest_file
+    cat tb_${B}_current-git-heads.log  >> $manifest_file
+    echo ""  >> $manifest_file
+    echo "tinderbox: autogen log"  >> $manifest_file
+    cat tb_${B}_autogen.log  >> $manifest_file
+
+}
+
 get_commits_since_last_good()
 {
     local mode=$1

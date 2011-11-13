@@ -97,6 +97,7 @@ do_push()
             [ $V ] && echo "curr_day=$curr_day"
             [ $V ] && echo "last_day_upload=$last_day_upload"
             if [ $last_day_upload -lt $curr_day ] ; then
+                prepare_upload_manifest
                 ${BIN_DIR?}/push_nightlies.sh -a -t "$(cat tb_${B}_current-git-timestamp.log)" -n "$TINDER_NAME" -l "$BANDWIDTH"
                 if [ "$?" == "0" ] ; then
                     echo "$curr_day" > tb_${B}_last-upload-day.txt
