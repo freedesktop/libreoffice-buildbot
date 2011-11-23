@@ -78,7 +78,7 @@ else
 fi
 
 echo "find packages"
-for file in $(find . -name "*.dmg" -o -name "LibO*.tar.gz" -o -name "LibO*.exe" | grep -v "/push/")
+for file in $(find . -name "*.dmg" -o -name "LibO*.tar.gz" -o -name "LibO*.exe" -o -path '*/LibreOffice_Dev/native/install/*.msi' | grep -v "/push/")
 do
 	target=$(basename $file)
 	target="${tag}_${target}"
