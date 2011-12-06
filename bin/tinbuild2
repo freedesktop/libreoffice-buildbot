@@ -294,6 +294,7 @@ TINDER_BRANCH=
 case "$B" in
     master) TINDER_BRANCH='MASTER' ;;
     libreoffice-3-4) TINDER_BRANCH=$B ;;
+    libreoffice-3-5) TINDER_BRANCH=$B ;;
     *)
     if [ "${PRIME_BUILD}" = "1" ] ; then
         TINDER_BRANCH=$B
