@@ -47,7 +47,7 @@ do_clean()
 do_make()
 {
     if [ "${retval}" = "0" ] ; then
-        if ! $NICE ${MAKE?} $target >tb_${B}_build.log 2>&1 ; then
+        if ! $NICE ${MAKE?} -s $target >tb_${B}_build.log 2>&1 ; then
             report_log=tb_${B}_build.log
             report_msgs="build failed - error is:"
             retval=1
