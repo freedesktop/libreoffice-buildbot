@@ -8,6 +8,7 @@ BIN_DIR=$(dirname "$0")
 
 PAUSE_SECOND=$((15*60))
 PUSH_NIGHTLIES=0
+STAGE_DIR="/tmp/pre-release"
 SEND_MAIL="all"
 LOCK=1
 NICE=
@@ -15,7 +16,7 @@ PROFILE_NAME=
 PRIME_BUILD=0
 V=
 CHECK=0
-
+FORCE_REBUILD=0
 
 # load the internal functions. note that
 # tinderbuild_internals_<uname>.sh is sourced at the tail
@@ -221,11 +222,12 @@ sanity_check()
 # Main
 #
 
-while getopts a:cehiknm:p:r:tvw:z opt ; do
+while getopts a:cefhiknm:p:r:tvw:z opt ; do
     case "$opt" in
         a) BRANCH_AUTHOR="$OPTARG" ;; # email to the branch's author for out-of-tinderbox branch buildbot
         e) LOCK=0 ;;      # whether to use flock to protect the build-cycle
         c) CHECK=1 ;;     # whether to invoke the sanity-check function
+        f) FORCE_REBUILD=1;; # whether to force an initial rebuild on restart, even if the pull-info are unchanged
         h) usage; exit ;; # display help
         i) NICE="$NICE ionice -c3" ;; # be gentle on i/o
         k) KEEP_AUTOGEN="YES" ;; # do not override the local autogen.lastrun if present
@@ -233,6 +235,7 @@ while getopts a:cehiknm:p:r:tvw:z opt ; do
         n) NICE="$NICE nice" ;;   # build 'nicely' :-)
         p) PROFILE_NAME="$OPTARG" ;; # profile to use to deterine extra parameter (email mostly) and autogen arguments
         r) PUSH_NIGHTLIES=1 ; BANDWIDTH="$OPTARG" ;; # whether to upload daily build.
+        s) STAGE_DIR="$OTPARG" ;; # where to stage the build in case of -z with upload
         t) DO_TESTS=1 ;; # whether to run tests after the build
         v) V=1 ;;         # print more messages
         w) PAUSE_SECONDS="$OPTARG" ;; # cool-down time after a build, in seconds
@@ -289,24 +292,30 @@ esac
 # where to report
 # right now we are limited to local branch that match what the tinderbox server expect
 #
-B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
-TINDER_BRANCH=
-case "$B" in
+if [ -n "$BRANCH" ] ; then
+    TINDER_BRANCH="$BRANCH"
+    B="$BRANCH"
+else
+    B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
+    TINDER_BRANCH=
+    case "$B" in
+
     master) TINDER_BRANCH='MASTER' ;;
     libreoffice-3-4) TINDER_BRANCH=$B ;;
     libreoffice-3-5) TINDER_BRANCH=$B ;;
     *)
-    if [ "${PRIME_BUILD}" = "1" ] ; then
-        TINDER_BRANCH=$B
-    else
-        if [ "$SEND_MAIL" = "all" -o "$SEND_MAIL" = "" ] ; then
-            echo "Unknown, non-registered branch, please update tinbuild, and tinderbox.libreoffice.org."2>&1 ; exit 1;
-        else
+        if [ "${PRIME_BUILD}" = "1" ] ; then
             TINDER_BRANCH=$B
+        else
+            if [ "$SEND_MAIL" = "all" -o "$SEND_MAIL" = "" ] ; then
+                echo "Unknown, non-registered branch, please update tinbuild, and tinderbox.libreoffice.org."2>&1 ; exit 1;
+            else
+                TINDER_BRANCH=$B
+            fi
         fi
-    fi
-    ;;
-esac
+        ;;
+    esac
+fi
 
 collect_current_heads
 
@@ -315,6 +324,11 @@ if [ "${PRIME_BUILD?}" = "1" ] ; then
     if [ "$SEND_MAIL" != "owner" ] ; then
         SEND_MAIL=""  # we don't want to notify the tinderbox
     fi
+    # if we want to upload after a prime, we really want to upload, not just once a day
+    if [ "$PUSH_NIGHTLIES" = "1" ] ; then
+        rm -f "tb_${B}_last-upload-day.txt"
+    fi
+
     log_msgs "Starting primer for branch '$TINDER_BRANCH'."
     (
         do_flock -x 200
@@ -338,7 +352,11 @@ else
         exit 1;
     else
         # reset to at the last sucessfull build
-        retval=0
+        if [ "$FORCE_REBUILD" = "1" ] ; then
+            retval="false_negative" # to force a rebuild the first time around
+        else
+            retval=0
+        fi
         cp tb_${B}_last-success-git-heads.txt tb_${B}_current-git-heads.log
         cp tb_${B}_last-success-git-timestamp.txt tb_${B}_current-git-timestamp.log
         rotate_logs

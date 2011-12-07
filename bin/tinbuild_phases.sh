@@ -89,18 +89,33 @@ do_push()
     if [ "${retval}" = "0" ] ; then
         #upload new daily build?
         if [ "$PUSH_NIGHTLIES" = "1" ] ; then
-            curr_day=$(date -u '+%Y%j')
-            last_day_upload="$(cat tb_${B}_last-upload-day.txt 2>/dev/null)"
-            if [ -z "$last_day_upload" ] ; then
-                last_day_upload=0
-            fi
-            [ $V ] && echo "curr_day=$curr_day"
-            [ $V ] && echo "last_day_upload=$last_day_upload"
-            if [ $last_day_upload -lt $curr_day ] ; then
-                prepare_upload_manifest
-                ${BIN_DIR?}/push_nightlies.sh -a -t "$(cat tb_${B}_current-git-timestamp.log)" -n "$TINDER_NAME" -l "$BANDWIDTH"
-                if [ "$?" == "0" ] ; then
-                    echo "$curr_day" > tb_${B}_last-upload-day.txt
+            if [ "$PRIME_BUILD" = "1" ] ; then
+                if [ -n "$STAGE_DIR" ] ; then
+                    [ $V ] && echo "stage to $STAGE_DIR"
+                    (
+                        rm -f $STAGE_DIR/*
+                        source_build_env
+                        cd instsetoo_native/${INPATH}
+                        for file in $(find . -name "*.dmg" -o -name "LibO*.tar.gz" -o -name "LibO*.exe" | grep -v "/push/") ; do
+	                        target=$(basename $file)
+	                        cp $file "$STAGE_DIR/$target"
+                        done
+                    )
+                fi
+            else
+                curr_day=$(date -u '+%Y%j')
+                last_day_upload="$(cat tb_${B}_last-upload-day.txt 2>/dev/null)"
+                if [ -z "$last_day_upload" ] ; then
+                    last_day_upload=0
+                fi
+                [ $V ] && echo "curr_day=$curr_day"
+                [ $V ] && echo "last_day_upload=$last_day_upload"
+                if [ $last_day_upload -lt $curr_day ] ; then
+                    prepare_upload_manifest
+                    ${BIN_DIR?}/push_nightlies.sh -a -t "$(cat tb_${B}_current-git-timestamp.log)" -n "$TINDER_NAME" -l "$BANDWIDTH"
+                    if [ "$?" == "0" ] ; then
+                        echo "$curr_day" > tb_${B}_last-upload-day.txt
+                    fi
                 fi
             fi
         fi

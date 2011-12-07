@@ -42,6 +42,17 @@ log_msgs()
     echo "[$(print_date) $TINDER_BRANCH]" "$@"
 }
 
+source_build_env()
+{
+    if test -f ./config.mk ; then
+        . ./config.mk
+    fi
+
+    if test -f ./Env.Host.sh ; then
+        . ./Env.Host.sh
+    fi
+}
+
 prepare_upload_manifest()
 {
     local manifest_file="build_info.txt"
@@ -253,22 +264,22 @@ wait_for_commits()
 
     while true; do
         [ $V ] && echo "pulling from the repos"
-	err_msgs="$( $timeout ./g pull -r 2>&1)"
-	if [ "$?" -ne "0" ] ; then
-	    report_error owner "$(date)" $(printf "git repo broken - error is:\n\n$err_msgs")
-	else
-	    collect_current_heads
+        err_msgs="$( $timeout ./g pull -r 2>&1)"
+        if [ "$?" -ne "0" ] ; then
+            report_error owner "$(date)" $(printf "git repo broken - error is:\n\n$err_msgs")
+        else
+            collect_current_heads
 
-	    if [ "$(cat tb_${B}_current-git-heads.log)" != "$(cat prev-tb_${B}_current-git-heads.log)" ] ; then
-		log_msgs "Repo updated, going to build."
-		break
+            if [ "$(cat tb_${B}_current-git-heads.log)" != "$(cat prev-tb_${B}_current-git-heads.log)" ] ; then
+                log_msgs "Repo updated, going to build."
+                break
             fi
-	    if [ "$show_once" = "1" ] ; then
-		log_msgs "Waiting until there are changes in the repo..."
-		show_once=0
-	    fi
+            if [ "$show_once" = "1" ] ; then
+                log_msgs "Waiting until there are changes in the repo..."
+                show_once=0
+            fi
         fi
-	sleep 60
+        sleep 60
     done
 }
 
@@ -314,28 +325,40 @@ do_build()
 
     build_status="build_failed"
     retval=0
-    for p in autogen clean make test push ; do
-        [ $V ] && echo "phase $p"
-	phase $p
-    done
-    if [ "$retval" = "0" ] ; then
-        build_status="success"
-        if [ -n "${last_checkout_date}" ] ; then
-            report_to_tinderbox "$last_checkout_date" "success" "yes"
+    retry_count=3
+    phase_list="autogen clean make test push"
+
+    while [ "$phase_list" != "" ] ; do
+        for p in $phase_list ; do
+            [ $V ] && echo "phase $p"
+	        phase $p
+        done
+        phase_list=
+        if [ "$retval" = "0" ] ; then
+            build_status="success"
+            if [ -n "${last_checkout_date}" ] ; then
+                report_to_tinderbox "$last_checkout_date" "success" "yes"
+            else
+                log_msgs "Successfuly primed branch '$TINDER_BRANCH'."
+            fi
+        elif [ "$retval" = "false_negative" ] ; then
+            report_to_tinderbox "${last_checkout_date?}" "fold" "no"
+            log_msgs "False negative build, skip reporting"
+            # false negative foes not need a full clea build, let's just redo make and after
+            phase_list="make test push"
+            retry_count=$((retry_count - 1))
+            if [ "$retry_count" = "0" ] ; then
+                phase_list=
+            fi
         else
-            log_msgs "Successfuly primed branch '$TINDER_BRANCH'."
-        fi
-    elif [ "$retval" = "false_negative" ] ; then
-        report_to_tinderbox "${last_checkout_date?}" "fold" "no"
-        log_msgs "False negative build, skip reporting"
-    else
-        if [ -n "${last_checkout_date}" ] ; then
-	    report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(cat build_error.log | grep -C10 "^[^[]")
+            if [ -n "${last_checkout_date}" ] ; then
+	        report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(cat build_error.log | grep -C10 "^[^[]")
 ======
 $(tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' )"
-	    report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
-        else
-            log_msgs "Failed to primed branch '$TINDER_BRANCH'. see build_error.log"
+	        report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
+            else
+                log_msgs "Failed to primed branch '$TINDER_BRANCH'. see build_error.log"
+            fi
         fi
-    fi
+    done
 }
