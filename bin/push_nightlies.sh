@@ -11,6 +11,7 @@ usage ()
 	echo "Options:"
 	echo "-a          push asynchronously"
 	echo "-h          this help"
+	echo "-s          staging dir for async upload (default /tmp/${B}"
 	echo "-t <time>   pull time of this checkout"
 	echo "-n <name>   name of this tinderbox"
 	echo "-l <kbps>   bandwidth limit for upload (KBps)"
@@ -33,11 +34,13 @@ BUILDER_NAME=
 PULL_TIME=
 BANDWIDTH_LIMIT=20
 ASYNC=0
+STAGE_DIR=/tmp
 
 while getopts aht:n:l: opt ; do
 	case "$opt" in
         a) ASYNC=1 ;;
 		h) usage; exit ;;
+        s) STAGE_DIR="${OPTARG}";;
 		t) PULL_TIME="${OPTARG// /_}" ;;
 		n) BUILDER_NAME="${OPTARG// /_}" ;;
 		l) BANDWIDTH_LIMIT="$OPTARG" ;;
@@ -71,7 +74,7 @@ fi
 cd instsetoo_native/${INPATH}
 
 if [ "$ASYNC" = "1" ] ; then
-    stage="/tmp"
+    stage="$STAGE_DIR"
 else
     mkdir push 2>/dev/null
     stage="./push"

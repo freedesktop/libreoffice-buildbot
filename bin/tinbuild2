@@ -8,7 +8,6 @@ BIN_DIR=$(dirname "$0")
 
 PAUSE_SECOND=$((15*60))
 PUSH_NIGHTLIES=0
-STAGE_DIR="/tmp/pre-release"
 SEND_MAIL="all"
 LOCK=1
 NICE=

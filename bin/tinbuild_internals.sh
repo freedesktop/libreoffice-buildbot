@@ -5,6 +5,7 @@
 #
 
 lock_file=/tmp/tinbuid-lockfile
+push_opts="-a"
 
 # Do we have timeout? If yes, guard git pull with that - which has a
 # tendency to hang forever, when connection is flaky
