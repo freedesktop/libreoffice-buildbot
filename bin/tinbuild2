@@ -161,7 +161,7 @@ sanity_check()
         exit 1
     fi
     if [ ! -f $HOME/.tinbuild/config/${PROFILE_NAME?}.cfg ] ; then
-        echo "Error: the file $HOME/.tinbuild/config/${PROFILE_NAME?} does not exist" >&2
+        echo "Error: the file $HOME/.tinbuild/config/${PROFILE_NAME?}.cfg does not exist" >&2
         display_setup_instruction
         exit 1
     fi
