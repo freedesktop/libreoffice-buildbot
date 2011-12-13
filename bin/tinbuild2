@@ -351,6 +351,7 @@ else
         echo "You need a valid baseline. run once with -z or make sure you have a valid tb_${B}_last-success-git-heads.txt" 1>&2
         exit 1;
     else
+#        rm -f tb_${B}_stop
         # reset to at the last sucessfull build
         if [ "$FORCE_REBUILD" = "1" ] ; then
             retval="false_negative" # to force a rebuild the first time around
@@ -366,10 +367,17 @@ fi
 # main tinderbox loop
 while true; do
 
+    if [ -f tb_${B}_stop ] ; then
+        break
+    fi
+
     if [ "$retval" != "false_negative" ] ; then
         wait_for_commits
     else
 		collect_current_heads
+    fi
+    if [ -f tb_${B}_stop ] ; then
+        break
     fi
     last_checkout_date="$(cat tb_${B}_current-git-timestamp.log)"
     (
@@ -388,6 +396,9 @@ while true; do
 
     ) 200>${lock_file?}
 
+    if [ -f tb_${B}_stop ] ; then
+        break
+    fi
 
     if [ "$?" != "2" ] ; then
         log_msgs "Waiting ${PAUSE_SECOND?} seconds."
@@ -397,3 +408,8 @@ while true; do
         retval="false_negative"
     fi
 done
+
+if [ -f tb_${B}_stop ] ; then
+    log_msgs "Stoped by request"
+    rm tb_${B}_stop
+fi
