@@ -221,9 +221,10 @@ sanity_check()
 # Main
 #
 
-while getopts a:cefhiknm:p:r:tvw:z opt ; do
+while getopts a:b:cefhiknm:p:r:tvw:z opt ; do
     case "$opt" in
         a) BRANCH_AUTHOR="$OPTARG" ;; # email to the branch's author for out-of-tinderbox branch buildbot
+        b) BRANCH="$OPTARG";; # to override the branch name to use
         e) LOCK=0 ;;      # whether to use flock to protect the build-cycle
         c) CHECK=1 ;;     # whether to invoke the sanity-check function
         f) FORCE_REBUILD=1;; # whether to force an initial rebuild on restart, even if the pull-info are unchanged
