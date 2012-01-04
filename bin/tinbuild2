@@ -29,7 +29,7 @@ FORCE_REBUILD=0
 #
 # The build cycle, invoked in this script with do_build, consist
 # of 5 phases that are processed in this order: autogen, clean, make, test, push
-# eeach phase execution try to invoke pre_<phase>, do_<phase> and post_<pahse>
+# each phase execution tries to invoke pre_<phase>, do_<phase> and post_<phase>
 # in this order, if the respective bash function are defined.
 #
 # In order to implement a specific step, pre_build for instance, you need
@@ -374,7 +374,7 @@ while true; do
     if [ "$retval" != "false_negative" ] ; then
         wait_for_commits
     else
-		collect_current_heads
+        collect_current_heads
     fi
     if [ -f tb_${B}_stop ] ; then
         break

@@ -98,6 +98,32 @@ get_commits_since_last_good()
     fi
 }
 
+get_commits_since_last_bad()
+{
+    local mode=$1
+    local head=
+    local repo=
+    local sha=
+
+    if [ -f tb_${B}_last-failure-git-heads.txt ] ; then
+	for head in $(cat tb_${B}_last-failure-git-heads.txt) ; do
+	    repo=$(echo ${head} | cut -d : -f 1)
+	    sha=$(echo ${head} | cut -d : -f 2)
+	    (
+		if [ "${repo?}" != "bootstrap" -a "${repo}" != "core" ] ; then
+		    cd clone/${repo?}
+		fi
+                if [ "${mode?}" = "people" ] ; then
+		    git log '--pretty=tformat:%ce' ${sha?}..HEAD
+                else
+                    echo "==== ${repo} ===="
+                    git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+                fi
+	    )
+	done
+    fi
+}
+
 send_mail_msg()
 {
 local to="$1"
@@ -191,7 +217,7 @@ report_error ()
 		    message="box broken" ;;
 		*)
                     if [ -z "$last_success" ] ; then
-			          # we need at least one successful build to
+                      # we need at least one successful build to
                       # be reliable
 			to_mail="${OWNER?}"
 		    else
@@ -234,6 +260,75 @@ EOF
     fi
 }
 
+report_fixed ()
+{
+    local_to_mail=
+    local tinder1=
+    local tinder2=
+    local mail_tail=
+    local success_kind="$1"
+    shift
+    local rough_time="$1"
+    shift
+
+    local previous_success=$(cat tb_${B}_last-success-git-timestamp.txt)
+    local last_failure=$(cat tb_${B}_last-failure-git-timestamp.txt)
+    to_mail=
+    if [ "$SEND_MAIL" = "owner" -o "$SEND_MAIL" = "debug" -o "$SEND_MAIL" = "author" ] ; then
+        to_mail="${OWNER?}"
+    else
+        if [ "$SEND_MAIL" = "all" ] ; then
+	    case "$success_kind" in
+		owner) to_mail="${OWNER?}"
+		    message="box fixed" ;;
+		*)
+                    if [ -z "$previous_success" ] ; then
+                      # we need at least one successful build to
+                      # be reliable
+			to_mail="${OWNER?}"
+		    else
+			to_mail="$(get_committers)"
+		    fi
+		    message="previous success: ${previous_success?}" ;;
+	    esac
+        fi
+    fi
+    if [ -n "$to_mail" ] ; then
+	echo "$*" 1>&2
+	echo "Previous success: ${previous_success}" 1>&2
+	echo "Last failure: ${last_failure}" 1>&2
+	tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
+	tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
+	if [ "$*" != "" ]; then
+	    mail_tail = $'\nAdditional information:\n\n'"$*"
+	fi
+
+	cat <<EOF | send_mail_msg "$to_mail" "Tinderbox fixed, $message" "" "${OWNER?}" ""
+Hi folks,
+
+The previously reported build failure is fixed. Thanks!
+
+${tinder1}
+
+Tinderbox info:
+
+  ${tinder2}
+  Machine: `uname -a`
+  Configured with: `cat autogen.lastrun`
+
+Commits since last failure:
+
+$(get_commits_since_last_bad commits)
+
+Commits since the previous success:
+
+$(get_commits_since_last_good commits)
+${mail_tail}
+EOF
+    else
+	echo "$*" 1>&2
+    fi
+}
 
 collect_current_heads()
 {
@@ -243,7 +338,7 @@ collect_current_heads()
 
 get_committers()
 {
-    echo "get_commiter: $(get_commits_since_last_good people)" 1>&2
+    echo "get_committers: $(get_commits_since_last_good people)" 1>&2
     get_commits_since_last_good people | sort | uniq | tr '\n' ','
 }
 
@@ -252,6 +347,9 @@ rotate_logs()
     if [ "$retval" = "0" ] ; then
 	cp -f tb_${B}_current-git-heads.log tb_${B}_last-success-git-heads.txt 2>/dev/null
 	cp -f tb_${B}_current-git-timestamp.log tb_${B}_last-success-git-timestamp.txt 2>/dev/null
+    elif [ "$retval" != "false_negative" ]; then
+	cp -f tb_${B}_current-git-heads.log tb_${B}_last-failure-git-heads.txt 2>/dev/null
+	cp -f tb_${B}_current-git-timestamp.log tb_${B}_last-failure-git-timestamp.txt 2>/dev/null
     fi
     for f in tb_${B}*.log ; do
 	mv -f ${f} prev-${f} 2>/dev/null
@@ -324,6 +422,7 @@ do_build()
         report_to_tinderbox "${last_checkout_date?}" "building" "no"
     fi
 
+    previous_build_status="${build_status}"
     build_status="build_failed"
     retval=0
     retry_count=3
@@ -339,8 +438,11 @@ do_build()
             build_status="success"
             if [ -n "${last_checkout_date}" ] ; then
                 report_to_tinderbox "$last_checkout_date" "success" "yes"
+		if [ "${previous_build_status}" = "build_failed" ]; then
+		    report_fixed committer "$last_checkout_date"
+		fi
             else
-                log_msgs "Successfuly primed branch '$TINDER_BRANCH'."
+                log_msgs "Successfully primed branch '$TINDER_BRANCH'."
             fi
         elif [ "$retval" = "false_negative" ] ; then
             report_to_tinderbox "${last_checkout_date?}" "fold" "no"
