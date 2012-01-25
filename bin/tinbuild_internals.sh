@@ -233,7 +233,7 @@ report_error ()
 	tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
 	tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
 
-	cat <<EOF | send_mail_msg "$to_mail" "Tinderbox failure, $message" "" "${OWNER?}" ""
+	cat <<EOF | send_mail_msg "$to_mail" "Tinderbox failure, $TINDER_NAME, $TINDER_BRANCH, $message" "" "${OWNER?}" ""
 Hi folks,
 
 One of you broke the build of LibreOffice with your commit :-(
@@ -244,6 +244,8 @@ ${tinder1}
 Tinderbox info:
 
   ${tinder2}
+  Branch: $TINDER_BRANCH
+  "starttime": $(epoch_from_utc "$rough_time")
   Machine: `uname -a`
   Configured with: `cat autogen.lastrun`
 
