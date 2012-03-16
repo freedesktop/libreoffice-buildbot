@@ -36,7 +36,7 @@ cp ~/master/autogen.lastrun ~/.tinbuild/autogen/your_name.autogen
 
 # check the configuration
 cd ~/master
-~/buildbot/bin/tinbuild2 -c
+~/buildbot/bin/tinbuild2 -p your_name -c
 
 # prime the tinderbox
 cd ~/master
