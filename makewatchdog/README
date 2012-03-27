@@ -1,0 +1,6 @@
+This is a wrapper that watches stdout and stderr of the launched command
+for activity. If there's no activity for a given time, the command
+is interrupted and restarted up to a given number of retries if possible,
+otherwise it is killed.
+
+Currently the /proc filesystem is required (so this works on Linux and Cygwin).

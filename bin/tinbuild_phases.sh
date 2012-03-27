@@ -36,7 +36,7 @@ pre_clean()
 do_clean()
 {
     if [ "${retval}" = "0" ] ; then
-        if ! $NICE ${MAKE?} clean >tb_${B}_clean.log 2>&1 ; then
+        if ! $NICE $WATCHDOG ${MAKE?} clean >tb_${B}_clean.log 2>&1 ; then
             report_log=tb_${B}_clean.log
             report_msgs="cleaning up failed - error is:"
             retval=1
@@ -47,7 +47,7 @@ do_clean()
 do_make()
 {
     if [ "${retval}" = "0" ] ; then
-        if ! $NICE ${MAKE?} -s $target >tb_${B}_build.log 2>&1 ; then
+        if ! $NICE $WATCHDOG ${MAKE?} -s $target >tb_${B}_build.log 2>&1 ; then
             report_log=tb_${B}_build.log
             report_msgs="build failed - error is:"
             retval=1
@@ -59,7 +59,7 @@ do_test()
 {
     if [ "${retval}" = "0" ] ; then
         if [ "$DO_TESTS" = "1" ] ; then
-            if ! $NICE ${MAKE?} check >tb_${B}_tests.log 2>&1 ; then
+            if ! $NICE $WATCHDOG ${MAKE?} check >tb_${B}_tests.log 2>&1 ; then
                 report_log=tb_${B}_tests.log
                 report_msgs="check failed - error is:"
                 retval=1

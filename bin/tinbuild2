@@ -16,6 +16,7 @@ PRIME_BUILD=0
 V=
 CHECK=0
 FORCE_REBUILD=0
+WATCHDOG=
 
 # load the internal functions. note that
 # tinderbuild_internals_<uname>.sh is sourced at the tail
@@ -110,6 +111,7 @@ Options:
    -v           verbose. print more progress messages
    -w           specify minimum wait between build attempt
    -z           bootstrap/prime the tinbuild
+   -d <timeout> wrap make commands in a watchdog that will interrupt them if they get stuck for <timeout>
 
 EOF
 }
@@ -221,12 +223,13 @@ sanity_check()
 # Main
 #
 
-while getopts a:b:cefhiknm:p:r:tvw:z opt ; do
+while getopts a:b:cd:efhiknm:p:r:tvw:z opt ; do
     case "$opt" in
         a) BRANCH_AUTHOR="$OPTARG" ;; # email to the branch's author for out-of-tinderbox branch buildbot
         b) BRANCH="$OPTARG";; # to override the branch name to use
         e) LOCK=0 ;;      # whether to use flock to protect the build-cycle
         c) CHECK=1 ;;     # whether to invoke the sanity-check function
+        d) WATCHDOG="makewatchdog $OPTARG 5 -- " ;; # wrap make in a watchdog
         f) FORCE_REBUILD=1;; # whether to force an initial rebuild on restart, even if the pull-info are unchanged
         h) usage; exit ;; # display help
         i) NICE="$NICE ionice -c3" ;; # be gentle on i/o
