@@ -63,9 +63,9 @@ prepare_upload_manifest()
     echo "tinderbox: administrator: ${OWNER?}" >> $manifest_file
     echo "tinderbox: buildname: ${TINDER_NAME?}" >> $manifest_file
     echo "tinderbox: tree: ${TINDER_BRANCH?}" >> $manifest_file
-    echo "tinderbox: pull time $(cat tb_${B}_current-git-timestamp.log)" >> $manifest_file
+    echo "tinderbox: pull time $(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")" >> $manifest_file
     echo "tinderbox: git sha1s"  >> $manifest_file
-    cat tb_${B}_current-git-heads.log  >> $manifest_file
+    cat "${METADATA_DIR?}/tb_${B}_current-git-heads.log"  >> $manifest_file
     echo ""  >> $manifest_file
     echo "tinderbox: autogen log"  >> $manifest_file
     cat tb_${B}_autogen.log  >> $manifest_file
@@ -79,8 +79,8 @@ get_commits_since_last_good()
     local repo=
     local sha=
 
-    if [ -f tb_${B}_last-success-git-heads.txt ] ; then
-	for head in $(cat tb_${B}_last-success-git-heads.txt) ; do
+    if [ -f "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" ] ; then
+	for head in $(cat "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt") ; do
 	    repo=$(echo ${head} | cut -d : -f 1)
 	    sha=$(echo ${head} | cut -d : -f 2)
 	    (
@@ -178,7 +178,7 @@ tinderbox: END
 
     if [ "$log" = "yes" ] ; then
        gzlog="tinder.log.gz"
-       ( echo "$message_content" ; cat tb_${B}_current-git-timestamp.log  tb_${B}_current-git-heads.log tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_tests.log 2>/dev/null ) | gzip -c > "${gzlog}"
+       ( echo "$message_content" ; cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"  "${METADATA_DIR?}/tb_${B}_current-git-heads.log" tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_tests.log 2>/dev/null ) | gzip -c > "${gzlog}"
        xtinder="X-Tinder: gzookie"
        subject="tinderbox gzipped logfile"
     fi
@@ -206,7 +206,7 @@ report_error ()
     local rough_time="$1"
     shift
 
-    local last_success=$(cat tb_${B}_last-success-git-timestamp.txt)
+    local last_success=$(cat "${METADATA_DIR?}/tb_${B}_last-success-git-timestamp.txt")
     to_mail=
     if [ "$SEND_MAIL" = "owner" -o "$SEND_MAIL" = "debug" -o "$SEND_MAIL" = "author" ] ; then
         to_mail="${OWNER?}"
@@ -334,8 +334,8 @@ EOF
 
 collect_current_heads()
 {
-    ./g -1 rev-parse HEAD > tb_${B}_current-git-heads.log
-    print_date > tb_${B}_current-git-timestamp.log
+    ./g -1 rev-parse HEAD > "${METADATA_DIR?}/tb_${B}_current-git-heads.log"
+    print_date > "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"
 }
 
 get_committers()
@@ -347,8 +347,8 @@ get_committers()
 rotate_logs()
 {
     if [ "$retval" = "0" ] ; then
-	cp -f tb_${B}_current-git-heads.log tb_${B}_last-success-git-heads.txt 2>/dev/null
-	cp -f tb_${B}_current-git-timestamp.log tb_${B}_last-success-git-timestamp.txt 2>/dev/null
+	cp -f "${METADATA_DIR?}/tb_${B}_current-git-heads.log" "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" 2>/dev/null
+	cp -f "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log" "${METADATA_DIR?}/tb_${B}_last-success-git-timestamp.txt" 2>/dev/null
     elif [ "$retval" != "false_negative" ]; then
 	cp -f tb_${B}_current-git-heads.log tb_${B}_last-failure-git-heads.txt 2>/dev/null
 	cp -f tb_${B}_current-git-timestamp.log tb_${B}_last-failure-git-timestamp.txt 2>/dev/null
@@ -356,6 +356,11 @@ rotate_logs()
     for f in tb_${B}*.log ; do
 	mv -f ${f} prev-${f} 2>/dev/null
     done
+    pushd "${METADATA_DIR?}" > /dev/null
+    for f in tb_${B}*.log ; do
+	mv -f ${f} prev-${f} 2>/dev/null
+    done
+    popd > /dev/null
 }
 
 wait_for_commits()
@@ -371,7 +376,7 @@ wait_for_commits()
         else
             collect_current_heads
 
-            if [ "$(cat tb_${B}_current-git-heads.log)" != "$(cat prev-tb_${B}_current-git-heads.log)" ] ; then
+            if [ "$(cat "${METADATA_DIR?}/tb_${B}_current-git-heads.log")" != "$(cat "${METADATA_DIR?}/prev-tb_${B}_current-git-heads.log")" ] ; then
                 log_msgs "Repo updated, going to build."
                 break
             fi

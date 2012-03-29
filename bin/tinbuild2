@@ -16,6 +16,7 @@ PRIME_BUILD=0
 V=
 CHECK=0
 FORCE_REBUILD=0
+METADATA_DIR="."
 WATCHDOG=
 
 # load the internal functions. note that
@@ -253,6 +254,10 @@ fi
 
 load_profile "$PROFILE_NAME"
 
+if [ ! -d ${METADATA_DIR} ] ; then
+    mkdir -p "${METADATA_DIR?}" || exit 1
+fi
+
 # if we want email to be sent, we must make sure that the required parameters are set in the profile (or in the environment)
 case "$SEND_MAIL" in
     all|tb|owner|debug|author)
@@ -329,7 +334,7 @@ if [ "${PRIME_BUILD?}" = "1" ] ; then
     fi
     # if we want to upload after a prime, we really want to upload, not just once a day
     if [ "$PUSH_NIGHTLIES" = "1" ] ; then
-        rm -f "tb_${B}_last-upload-day.txt"
+        rm -f "${METADATA_DIR?}/tb_${B?}_last-upload-day.txt"
     fi
 
     log_msgs "Starting primer for branch '$TINDER_BRANCH'."
@@ -350,8 +355,8 @@ if [ "${PRIME_BUILD?}" = "1" ] ; then
 
     exit ${retval?}
 else
-    if [ ! -f "tb_${B}_last-success-git-heads.txt" ] ; then
-        echo "You need a valid baseline. run once with -z or make sure you have a valid tb_${B}_last-success-git-heads.txt" 1>&2
+    if [ ! -f "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" ] ; then
+        echo "You need a valid baseline. run once with -z or make sure you have a valid ${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" 1>&2
         exit 1;
     else
 #        rm -f tb_${B}_stop
@@ -361,8 +366,8 @@ else
         else
             retval=0
         fi
-        cp tb_${B}_last-success-git-heads.txt tb_${B}_current-git-heads.log
-        cp tb_${B}_last-success-git-timestamp.txt tb_${B}_current-git-timestamp.log
+        cp "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" "${METADATA_DIR?}/tb_${B}_current-git-heads.log"
+        cp "${METADATA_DIR?}/tb_${B}_last-success-git-timestamp.txt" "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"
         rotate_logs
     fi
 fi
@@ -382,7 +387,7 @@ while true; do
     if [ -f tb_${B}_stop ] ; then
         break
     fi
-    last_checkout_date="$(cat tb_${B}_current-git-timestamp.log)"
+    last_checkout_date="$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")"
     (
         do_flock -x 200
 

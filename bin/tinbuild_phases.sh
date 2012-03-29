@@ -90,7 +90,7 @@ do_push()
         #upload new daily build?
         if [ "$PUSH_NIGHTLIES" = "1" ] ; then
             curr_day=$(date -u '+%Y%j')
-            last_day_upload="$(cat tb_${B}_last-upload-day.txt 2>/dev/null)"
+            last_day_upload="$(cat "${METADATA_DIR?}/tb_${B}_last-upload-day.txt" 2>/dev/null)"
             if [ -z "$last_day_upload" ] ; then
                 last_day_upload=0
             fi
@@ -98,9 +98,9 @@ do_push()
             [ $V ] && echo "last_day_upload=$last_day_upload"
             if [ $last_day_upload -lt $curr_day ] ; then
                 prepare_upload_manifest
-                ${BIN_DIR?}/push_nightlies.sh $push_opts -t "$(cat tb_${B}_current-git-timestamp.log)" -n "$TINDER_NAME" -l "$BANDWIDTH"
+                ${BIN_DIR?}/push_nightlies.sh $push_opts -t "$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")" -n "$TINDER_NAME" -l "$BANDWIDTH"
                 if [ "$?" == "0" ] ; then
-                    echo "$curr_day" > tb_${B}_last-upload-day.txt
+                    echo "$curr_day" > "${METADATA_DIR?}/tb_${B}_last-upload-day.txt"
                 fi
             fi
         fi
