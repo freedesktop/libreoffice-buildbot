@@ -64,6 +64,7 @@ WATCHDOG=
 # }
 
 
+unset CDPATH
 
 
 source ${BIN_DIR?}/tinbuild_internals.sh
