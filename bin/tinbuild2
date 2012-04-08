@@ -231,7 +231,7 @@ while getopts a:b:cd:efhiknm:p:r:tvw:z opt ; do
         b) BRANCH="$OPTARG";; # to override the branch name to use
         e) LOCK=0 ;;      # whether to use flock to protect the build-cycle
         c) CHECK=1 ;;     # whether to invoke the sanity-check function
-        d) WATCHDOG="makewatchdog $OPTARG 5 -- " ;; # wrap make in a watchdog
+        d) WATCHDOG="makewatchdog $OPTARG 3 -- " ;; # wrap make in a watchdog
         f) FORCE_REBUILD=1;; # whether to force an initial rebuild on restart, even if the pull-info are unchanged
         h) usage; exit ;; # display help
         i) NICE="$NICE ionice -c3" ;; # be gentle on i/o
