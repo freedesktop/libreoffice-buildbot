@@ -463,13 +463,13 @@ do_build()
         else
             if [ -n "${last_checkout_date}" ] ; then
                 if [ -f build_error.log ] ; then
-	            report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "
+	            report_error committer "$last_checkout_date" "${report_msgs?}" "
 ======
 $(cat build_error.log | grep -C10 "^[^[]")
 ======
 $(tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' )"
                 else
-                    report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "
+                    report_error committer "$last_checkout_date" "${report_msgs?}" "
 ======
 $(tail -n25 ${report_log?})"
                 fi
