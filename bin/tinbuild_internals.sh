@@ -462,9 +462,17 @@ do_build()
             fi
         else
             if [ -n "${last_checkout_date}" ] ; then
-	        report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "$(cat build_error.log | grep -C10 "^[^[]")
+                if [ -f build_error.log ] ; then
+	            report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "
+======
+$(cat build_error.log | grep -C10 "^[^[]")
 ======
 $(tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' )"
+                else
+                    report_error committer "$last_checkout_date" `printf "${report_msgs?}:\n\n"` "
+======
+$(tail -n25 ${report_log?})"
+                fi
 	        report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
             else
                 log_msgs "Failed to primed branch '$TINDER_BRANCH'. see build_error.log"
