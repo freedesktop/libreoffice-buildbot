@@ -8,6 +8,8 @@ build, or uploads the build results to http://dev-builds.libreoffice.org/daily/
 Short version
 -------------
 
+Read http://wiki.documentfoundation.org/Development/Tinderbox .
+
 # clone tinbuild
 git clone git://anongit.freedesktop.org/libreoffice/contrib/buildbot ~/buildbot
 
