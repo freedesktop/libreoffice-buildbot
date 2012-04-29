@@ -18,6 +18,8 @@ do_flock()
 {
     if [ "$LOCK" = "1" ] ; then
         flock $@
+    else
+        true
     fi
 }
 

@@ -388,9 +388,24 @@ while true; do
     if [ -f tb_${B}_stop ] ; then
         break
     fi
-    last_checkout_date="$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")"
     (
-        do_flock -x 200
+        do_flock -x -n 200
+
+        if [ "$?" != "0" ] ; then
+            log_msgs "Waiting for a lock."
+            do_flock -x 200
+            # pull again, to have a more recent checkout
+            if [ "$retval" != "false_negative" ] ; then
+                wait_for_commits
+            else
+                collect_current_heads
+            fi
+            if [ -f tb_${B}_stop ] ; then
+                break
+            fi
+        fi
+
+        last_checkout_date="$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")"
 
         do_build
 
