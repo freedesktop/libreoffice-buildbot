@@ -435,8 +435,11 @@ do_build()
     build_status="build_failed"
     retval=0
     retry_count=3
-    phase_list="autogen clean make test push"
-
+    if [ "$DO_NOT_CLEAN" = "1" ] ; then
+        phase_list="autogen make test push"
+    else
+        phase_list="autogen clean make test push"
+    fi
     while [ "$phase_list" != "" ] ; do
         for p in $phase_list ; do
             [ $V ] && echo "phase $p"
