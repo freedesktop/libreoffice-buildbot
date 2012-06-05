@@ -267,6 +267,7 @@ case "$current_branch" in
     master) TINDER_BRANCH='MASTER' ;;
     libreoffice-3-4) TINDER_BRANCH=$current_branch ;;
     libreoffice-3-5) TINDER_BRANCH=$current_branch ;;
+    libreoffice-3-6) TINDER_BRANCH=$current_branch ;;
     *) echo "Unknown, non-registered branch, please update tinbuild, and tinderbox.libreoffice.org." ; exit 1 ;;
 esac
 
