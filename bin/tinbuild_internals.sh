@@ -56,6 +56,15 @@ source_build_env()
     fi
 }
 
+generate_cgit_link()
+{
+    line="$1"
+    repo=$(echo $line | cut -f 1 -d \:)
+    sha=$(echo $line | cut -f 2 -d \:)
+
+    echo "<a href='http://cgit.freedesktop.org/libreoffice/${repo}/commit/?id=$sha'>$repo</a>"
+}
+
 prepare_upload_manifest()
 {
     local manifest_file="build_info.txt"
@@ -180,7 +189,12 @@ tinderbox: END
 
     if [ "$log" = "yes" ] ; then
        gzlog="tinder.log.gz"
-       ( echo "$message_content" ; cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"  "${METADATA_DIR?}/tb_${B}_current-git-heads.log" tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_install.log 2>/dev/null ) | gzip -c > "${gzlog}"
+       (
+           echo "$message_content"
+           cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"
+           for cm in $(cat ${METADATA_DIR?}/tb_${B}_current-git-heads.log) ; do echo "TinderboxPrint: $(generate_cgit_link ${cm})" ; done
+           cat tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_install.log 2>/dev/null
+       ) | gzip -c > "${gzlog}"
        xtinder="X-Tinder: gzookie"
        subject="tinderbox gzipped logfile"
     fi
