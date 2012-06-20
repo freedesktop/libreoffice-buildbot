@@ -335,6 +335,7 @@ fi
 if [ -z "$GERRIT_REF" ] ; then
     collect_current_heads
 else
+    GERRIT_PREV_B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
     git fetch ssh://gerrit/core $GERRIT_REF && git checkout FETCH_HEAD || die "Error setting up the ref";
 fi
 
@@ -350,12 +351,28 @@ if [ "${PRIME_BUILD?}" = "1" ] ; then
 
     log_msgs "Starting primer for branch '$TINDER_BRANCH'."
     (
+        if [ -n "$GERRIT_REF" ] ; then
+            echo "ssh gerrit gerrit review --project core --force-message -m \"Starting Build on ${TINDER_NAME}\" $(git rev-parse HEAD)"
+            ssh gerrit gerrit review --project core --force-message -m \"Starting Build on ${TINDER_NAME}\" $(git rev-parse HEAD)
+        fi
         do_flock -x 200
 
         do_build
 
         if [ -z "$GERRIT_REF" ] ; then
             rotate_logs
+        fi
+        if [ -n "$GERRIT_REF" ] ; then
+            if [ "${retval}" = "0" ] ; then
+                echo "ssh gerrit gerrit review --project core --force-message -m \"Successful build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified +1 $(git rev-parse HEAD)"
+                ssh gerrit gerrit review --project core --force-message -m \"Successful build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified +1 $(git rev-parse HEAD)
+            else
+                echo "ssh gerrit gerrit review --project core --force-message -m \"Failed build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified -1 $(git rev-parse HEAD)"
+                ssh gerrit gerrit review --project core --force-message -m \"Failed build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified -1 $(git rev-parse HEAD)
+            fi
+            if [ -n "$GERRIT_PREV_B" ] ; then
+                git checkout "$GERRIT_PREV_B"
+                fi
         fi
         if [ "$retval" = "0" ] ; then
             exit 0
@@ -365,15 +382,6 @@ if [ "${PRIME_BUILD?}" = "1" ] ; then
     ) 200>${lock_file?}
     retval=$?
 
-    if [ -n "$GERRIT_REF" ] ; then
-        if [ "${retval}" = "0" ] ; then
-            echo "ssh gerrit gerrit review --project core --force-message -m \"Successful build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified +1 $(git rev-parse HEAD)"
-            ssh gerrit gerrit review --project core --force-message -m \"Successful build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified +1 $(git rev-parse HEAD)
-        else
-            echo "ssh gerrit gerrit review --project core --force-message -m \"Failed build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified -1 $(git rev-parse HEAD)"
-            ssh gerrit gerrit review --project core --force-message -m \"Failed build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified -1 $(git rev-parse HEAD)
-        fi
-    fi
     exit ${retval?}
 else
     if [ ! -f "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" ] ; then
