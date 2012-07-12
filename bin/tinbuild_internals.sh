@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-#    Copyright (C) 2011 Norbert Thiebaud
+#    Copyright (C) 2011-2012 Norbert Thiebaud, Robinson Tryon
 #    License: GPLv3
 #
 
@@ -499,4 +499,90 @@ do_build()
             fi
         fi
     done
+}
+
+# Copy the build into the bibisect repository (given the opt/
+# directory and the bibisect repository's directory)
+copy_build_into_bibisect_repository()
+{
+    [ $V ] && echo "Bibisect: copy_build_into_bibisect_repository()"
+    # If OPTDIR or ARTIFACTDIR are not set, error-out.
+    if [ -z $OPTDIR ] ||
+       [ -z $ARTIFACTDIR ] ; then
+        report_log=tb_${B}_bibisect.log
+        report_msgs="Bibisect: OPTDIR '$OPTDIR' and ARTIFACTDIR '$ARTIFACTDIR' must both be non-null."
+        retval=1
+        return;
+    fi
+    cp -R $OPTDIR ${ARTIFACTDIR}/opt
+}
+
+# Get the current build into the bibisect repository (find it, format
+# it, then copy it in).
+#
+# This function may need to be overridden on platforms that diverge
+# from the basic assumptions that we rely on here, including:
+#   - Build goes into an opt/ directory
+#   - Build is uncompressed in opt/ (no zip/tar/msi/etc...)
+#   - Basic command-line tools like 'find' exist
+#   - The command 'make dev-install' is supported
+format_build_and_copy_into_repository()
+{
+    [ $V ] && echo "Bibisect: Adding build to local bibisect repository"
+
+    # At this point, we don't expect to have an 'opt' directory
+    # (unless we've disabled the 'make clean' part of the build).
+    #
+    # If we do have an 'opt' directory, make a note of it and carry
+    # on. If we don't have 'opt', we'll have to run 'make dev-install'
+    # to create a suitably packaged build for us to shove into our
+    # bibisect repository.
+    [ $V ] && echo "Bibisect: Locating opt/ and performing dev-install if necessary"
+    OPTSEARCH="find . -name opt -type d"
+    OPTDIR=`$OPTSEARCH`
+    if [ -n "$OPTDIR" ] &&
+       [ "$DO_NOT_CLEAN" != "1" ] ; then
+        echo "Bibisect: UNEXPECTED: 'opt' dir exists before dev-install!"
+    else
+        [ $V ] && echo "Bibisect: Running 'make dev-install'"
+        # Run 'make dev-install' to package up our files (is there an
+        # easier way to do this, perhaps with an option in autogen?)
+        if ! $NICE $WATCHDOG ${MAKE?} dev-install >>tb_${B}_dev-install.log 2>&1 ; then
+            report_log=tb_${B}_dev-install.log
+            report_msgs="Bibisect: dev-install failed - error is:"
+            retval=1
+            return;
+        fi
+
+        # Opt directory should now exist after dev-install. Error-out
+        # if we still can't find it.
+        OPTDIR=`$OPTSEARCH`
+        if [ -z "$OPTDIR" ] ; then
+            report_log=tb_${B}_bibisect.log
+            report_msgs="Bibisect: Can't find 'opt' directory."
+            retval=1
+            return;
+        fi
+
+	# We only expect to find a single opt/ directory. Warn if we
+	# find multiple matches.
+        if [ -n "`echo $OPTDIR | grep ' '`" ]; then
+          echo "Bibisect: WARNING: Multiple 'opt' directories: '${OPTDIR}'"
+        fi
+    fi
+
+    [ $V ] && echo "Bibisect: Copying build from opt/ into repository"
+    #mv $OPTDIR ${ARTIFACTDIR}/opt
+    copy_build_into_bibisect_repository
+    if [ "${retval}" != "0" ] ; then
+        return;
+    fi
+
+    # Run a quick sanity check after we copy the build.
+    if [ ! -f ${ARTIFACTDIR}/opt/program/soffice ] ; then
+        report_log=tb_${B}_bibisect.log
+        report_msgs="Bibisect: soffice binary not found in $ARTIFACTDIR after build copied."
+        retval=1
+        return;
+    fi
 }

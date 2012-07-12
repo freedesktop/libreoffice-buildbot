@@ -8,6 +8,10 @@ BIN_DIR=$(dirname "$0")
 
 PAUSE_SECONDS=$((15*60))
 PUSH_NIGHTLIES=0
+PUSH_TO_BIBISECT_REPO=0
+BUILDDIR=`pwd`
+ARTIFACTDIR="${BUILDDIR}/../bibisect-repository"
+BUILDCOMMIT=
 SEND_MAIL="all"
 LOCK=1
 NICE=
@@ -116,6 +120,7 @@ Options:
    -t           run the tests after a sucessfull build
    -v           verbose. print more progress messages
    -w           specify minimum wait between build attempt
+   -x           push the build (nightly?) into the bibisect repository
    -z           bootstrap/prime the tinbuild
 
 EOF
@@ -228,7 +233,7 @@ sanity_check()
 # Main
 #
 
-while getopts 0a:b:cd:efg:hiknm:p:r:tvw:z opt ; do
+while getopts 0a:b:cd:efg:hiknm:p:r:tvw:xz opt ; do
     case "$opt" in
         0) DO_NOT_CLEAN=1 ;; # avoid calling *_clean functions (incremental build)
         a) BRANCH_AUTHOR="$OPTARG" ;; # email to the branch's author for out-of-tinderbox branch buildbot
@@ -249,6 +254,7 @@ while getopts 0a:b:cd:efg:hiknm:p:r:tvw:z opt ; do
         t) DO_TESTS=1 ;; # whether to run tests after the build
         v) V=1 ;;         # print more messages
         w) PAUSE_SECONDS="$OPTARG" ;; # cool-down time after a build, in seconds
+        x) PUSH_TO_BIBISECT_REPO=1 ;; # Push builds to bibisect repo (per buildbot and major version)
         z) PRIME_BUILD=1 ;;           # to run an initial build (without sending any email) to establish a 'baseline'
         ?) usage; exit ;;
     esac
