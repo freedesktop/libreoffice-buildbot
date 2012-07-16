@@ -193,7 +193,7 @@ tinderbox: END
            echo "$message_content"
            cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"
            for cm in $(cat ${METADATA_DIR?}/tb_${B}_current-git-heads.log) ; do echo "TinderboxPrint: $(generate_cgit_link ${cm})" ; done
-           cat tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_install.log 2>/dev/null
+           cat tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_tests.log 2>/dev/null
        ) | gzip -c > "${gzlog}"
        xtinder="X-Tinder: gzookie"
        subject="tinderbox gzipped logfile"
