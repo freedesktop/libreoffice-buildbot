@@ -8,16 +8,16 @@ Howto setup a tinderbox
 LibreOffice tinderbox - a script that builds the project over and over
 again, and reports success or problems to
 
-http://tinderbox.go-oo.org/MASTER/status.html
+http://tinderbox.libreoffice.org/MASTER/status.html
 
 or to a branch, like
 
-http://tinderbox.go-oo.org/libreoffice-3-4/status.html
+http://tinderbox.libreoffice.org/libreoffice-3-6/status.html
 
 Short version
 -------------
 
-$ git clone git://anongit.freedesktop.org/libreoffice/bootstrap tinderbox
+$ git clone git://anongit.freedesktop.org/libreoffice/core tinderbox
 $ cd tinderbox
 $ ./autogen.sh [params]
 [make sure that you fulfill all the configure needs]
@@ -85,7 +85,7 @@ Tinderboxing more branches on one machine
 
 The tinbuild script synchronizes the 'expensive' operations using the 'flock'
 command, when you are on a system that actually has flock.  So on Linux, it is
-enough to have 2 trees, like ~/master and ~/libreoffice-3-4, switched to the
+enough to have 2 trees, like ~/master and ~/libreoffice-3-6, switched to the
 respective branches, and run tinbuild from there, and it should work just
 fine, taking care of not building both at the same time.
 
@@ -93,10 +93,10 @@ Example:
 
 $ cd ~/master
 $ screen -d -m ~/buildbot/bin/tinbuild -n -i ... etc.
-$ cd ~/libreoffice-3-4
-$ ./g checkout -b libreoffice-3-4 origin/libreoffice-3-4
+$ cd ~/libreoffice-3-6
+$ ./g checkout -b libreoffice-3-6 origin/libreoffice-3-6
 $ screen -d -m ~/buildbot/bin/tinbuild -n -i ... etc.
 
-will result in 2 screen sessions running the master and libreoffice-3-4 builds
+will result in 2 screen sessions running the master and libreoffice-3-6 builds
 respectively, with the same load as if you were running just one; only the
 time to build will prolong.
