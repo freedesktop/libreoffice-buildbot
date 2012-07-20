@@ -6,7 +6,7 @@
 
 BIN_DIR=$(dirname "$0")
 
-PAUSE_SECOND=$((15*60))
+PAUSE_SECONDS=$((15*60))
 PUSH_NIGHTLIES=0
 SEND_MAIL="all"
 LOCK=1
@@ -453,8 +453,8 @@ while true; do
     fi
 
     if [ "$?" != "2" ] ; then
-        log_msgs "Waiting ${PAUSE_SECOND?} seconds."
-	    sleep ${PAUSE_SECOND?}
+        log_msgs "Waiting ${PAUSE_SECONDS?} seconds."
+	    sleep ${PAUSE_SECONDS?}
         retval="0"
     else
         retval="false_negative"
