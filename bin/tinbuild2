@@ -270,13 +270,13 @@ fi
 
 if [ "${PUSH_TO_BIBISECT_REPO}" != "0" ] ; then
     if  [ -z "${ARTIFACTDIR}" ] ; then
-	echo "Error: to do bibisect you must define ARTIFACTDIR to point to your bibisect git repo" 1>&2
-	rc=1
+        echo "Error: to do bibisect you must define ARTIFACTDIR to point to your bibisect git repo" 1>&2
+        exit 1
     else
-	if [ ! -d "${ARTIFACTDIR}" -o ! -d "${ARTIFACTDIR}/.git" ] ; then
-	    echo "Error: ARTIFACTDIR:${ARTIFACTDIR} is not a git repositor" 1>&2
-	    rc=1
-	fi
+        if [ ! -d "${ARTIFACTDIR}" -o ! -d "${ARTIFACTDIR}/.git" ] ; then
+            echo "Error: ARTIFACTDIR:${ARTIFACTDIR} is not a git repository" 1>&2
+            exit 1
+        fi
     fi
 fi
 # if we want email to be sent, we must make sure that the required parameters are set in the profile (or in the environment)
