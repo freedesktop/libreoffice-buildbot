@@ -10,8 +10,6 @@ PAUSE_SECONDS=$((15*60))
 PUSH_NIGHTLIES=0
 PUSH_TO_BIBISECT_REPO=0
 ARTIFACTDIR=
-BUILDDIR=`pwd`
-BUILDCOMMIT=
 SEND_MAIL="all"
 LOCK=1
 NICE=
@@ -347,6 +345,13 @@ else
         fi
         ;;
     esac
+fi
+
+# if we want to deliver bibisect make sure that bibisect is on the right branch
+# we will recheck that before each build just in case someone crazy were to mess
+# with bibisect while the tinderbox is running... but failing early is good
+if [ "${PUSH_TO_BIBISECT_REPO}" != "0" ] ; then
+    position_bibisect_branch
 fi
 
 if [ -z "$GERRIT_REF" ] ; then

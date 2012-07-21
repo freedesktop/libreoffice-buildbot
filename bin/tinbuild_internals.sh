@@ -422,181 +422,150 @@ wait_for_commits()
     done
 }
 
-m="$(uname)"
+determine_make()
+{
+    ## Determine how GNU make is called on the system
+    for _g in make gmake gnumake; do
+	$_g --version 2> /dev/null | grep -q GNU
+	if test $? -eq 0;  then
+	    MAKE=$_g
+	    break
+	fi
+    done
+}
 
-if [ -f "${BIN_DIR?}/tinbuild_internals_${m}.sh" ] ; then
-    source "${BIN_DIR?}/tinbuild_internals_${m}.sh"
-fi
-unset m
+find_dev_install_location()
+{
+    find . -name opt -type d
+}
 
-## Determine how GNU make(1) is called on the system
-for _g in make gmake gnumake; do
-    $_g --version 2> /dev/null | grep -q GNU
-    if test $? -eq 0;  then
-	MAKE=$_g
-	break
+
+position_bibisect_branch()
+{
+    pushd ${ARTIFACTDIR} > /dev/null
+    git checkout -q ${B}
+    if [ "$?" -ne "0" ] ; then
+	echo "Error could not position the bibisect repository to the branch $B" 1>&2
+	exit 1;
     fi
-done
+    popd > /dev/null
+}
+
+deliver_to_bibisect()
+{
+local cc=""
+local oc=""
+
+    [ $V ] && echo "deliver_to_bibisect()"
+    if [ -n $optdir ] ; then
+
+	# verify that someone did not screw-up bibisect repo
+        # while we were running
+	if [ "${PUSH_TO_BIBISECT_REPO}" != "0" ] ; then
+	    # note: this function will exit if something is wrong
+	    position_bibisect_branch
+	fi
+
+	# avoid delivering the same build twice to bibisect
+	cc=$(git rev-list -1 HEAD)
+	if [ -f  ${ARTIFACTDIR}/commit.hash ] ; then
+	    oc="$(cat ${ARTIFACTDIR}/commit.hash)"
+	fi
+	if [ "${cc}" != "${oc}" ] ; then
+	    cp -fR $optdir ${ARTIFACTDIR}/
+
+	    git log -1 --pretty=format:"source-hash-%H%n%n" $BUILDCOMMIT > ${ARTIFACTDIR}/commitmsg
+	    git log -1 --pretty=fuller $BUILDCOMMIT >> ${ARTIFACTDIR}/commitmsg
+
+	    [ $V ] && echo "Bibisect: Include interesting logs/other data"
+            # Include the autogen log.
+	    cp tb_${B}_autogen.log $ARTIFACTDIR
+
+            # Include the build, test logs.
+	    cp tb_${B}_build.log $ARTIFACTDIR
+
+            # Make it easy to grab the commit id.
+	    git rev-list -1 HEAD > ${ARTIFACTDIR}/commit.hash
+
+            # Commit build to the local repo and push to the remote.
+	    [ $V ] && echo "Bibisect: Committing to local bibisect repo"
+	    pushd "${ARTIFACTDIR}" >/dev/null
+	    git add *
+	    git commit -q --file=commitmsg
+	    popd > /dev/null
+	fi
+    fi
+}
+
+push_bibisect()
+{
+    # TODO: push the local bibisect to the remote one
+    # this need to be async with lock the same way push_bightly works
+    # (note that git may actually already provide the lock to be verified
+    #  so that git push & may be enough here)
+    # optionally we can push once in a while
+    # or at a certain time of the day...
+    true
+}
+
+push_nightly()
+{
+    local curr_day=
+
+    # Push build up to the project server (if enabled).
+    if [ "$PUSH_NIGHTLIES" = "1" ] ; then
+        [ $V ] && echo "Push: Nightly builds enabled"
+        curr_day=$(date -u '+%Y%j')
+	last_day_upload="$(cat "${METADATA_DIR?}/tb_${B}_last-upload-day.txt" 2>/dev/null)"
+	if [ -z "$last_day_upload" ] ; then
+            last_day_upload=0
+	fi
+	[ $V ] && echo "curr_day=$curr_day"
+	[ $V ] && echo "last_day_upload=$last_day_upload"
+
+        # If it has been less than a day since we pushed the last build
+        # (based on calendar date), skip the rest of the push phase.
+	if [ $last_day_upload -ge $curr_day ] ; then
+            return 0;
+	fi
+        [ $V ] && echo "Push Nightly builds"
+        prepare_upload_manifest
+        ${BIN_DIR?}/push_nightlies.sh $push_opts -t "$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")" -n "$TINDER_NAME" -l "$BANDWIDTH"
+        # If we had a failure in pushing the build up, return
+        # immediately (making sure we do not mark this build as the
+        # last uploaded daily build).
+        if [ "$?" != "0" ] ; then
+            return 0;
+        fi
+	echo "$curr_day" > "${METADATA_DIR?}/tb_${B}_last-upload-day.txt"
+    fi
+
+}
+
+
+################
+# ATTENTION:
+# Nothing below this point can be overriden at the platform-level
+# so you should probably add code above this point
+# unless you have a darn good reason not to
+
+# source the platform specific override
+
+mo="$(uname -o 2>/dev/null)"
+ms="$(uname -s 2>/dev/null)"
+if [ -n "${mo}" -a -f "${BIN_DIR?}/tinbuild_internals_${mo}.sh" ] ; then
+    source "${BIN_DIR?}/tinbuild_internals_${mo}.sh"
+else
+    if [ -n "${ms}" -a -f "${BIN_DIR?}/tinbuild_internals_${ms}.sh" ] ; then
+	source "${BIN_DIR?}/tinbuild_internals_${ms}.sh"
+    fi
+fi
+unset mo
+unset ms
+
+
+determine_make
+
 
 source ${BIN_DIR?}/tinbuild_phases.sh
 
-
-tb_call()
-{
-    [ $V ] && declare -F "$1" > /dev/null && echo "call $1"
-    declare -F "$1" > /dev/null && $1
-}
-
-phase()
-{
-    local f=${1}
-    for x in {pre_,do_,post_}${f} ; do
-	tb_call ${x}
-    done
-}
-
-
-do_build()
-{
-    if [ -n "${last_checkout_date}" ] ; then
-        report_to_tinderbox "${last_checkout_date?}" "building" "no"
-    fi
-
-    previous_build_status="${build_status}"
-    build_status="build_failed"
-    retval=0
-    retry_count=3
-    if [ "$DO_NOT_CLEAN" = "1" ] ; then
-        phase_list="autogen make test push"
-    else
-        phase_list="autogen clean make test push"
-    fi
-    while [ "$phase_list" != "" ] ; do
-        for p in $phase_list ; do
-            [ $V ] && echo "phase $p"
-	        phase $p
-        done
-        phase_list=
-        if [ "$retval" = "0" ] ; then
-            build_status="success"
-            if [ -n "${last_checkout_date}" ] ; then
-                report_to_tinderbox "$last_checkout_date" "success" "yes"
-		if [ "${previous_build_status}" = "build_failed" ]; then
-		    report_fixed committer "$last_checkout_date"
-		fi
-            else
-                log_msgs "Successfully primed branch '$TINDER_BRANCH'."
-            fi
-        elif [ "$retval" = "false_negative" ] ; then
-            report_to_tinderbox "${last_checkout_date?}" "fold" "no"
-            log_msgs "False negative build, skip reporting"
-            # false negative foes not need a full clea build, let's just redo make and after
-            phase_list="make test push"
-            retry_count=$((retry_count - 1))
-            if [ "$retry_count" = "0" ] ; then
-                phase_list=
-            fi
-        else
-            if [ -n "${last_checkout_date}" ] ; then
-                printf "${report_msgs?}:\n\n" > report_error.log
-                echo "======" >> report_error.log
-                if [ "${report_log?}" == "tb_${B}_build.log" ] ; then
-                    cat build_error.log | grep -C10 "^[^[]" >> report_error.log
-                    tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' >> report_error.log
-                else
-                    cat ${report_log?} >> report_error.log
-                fi
-                report_error committer "$last_checkout_date" report_error.log
-	        report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
-            else
-                log_msgs "Failed to primed branch '$TINDER_BRANCH'. see build_error.log"
-            fi
-        fi
-    done
-}
-
-# Copy the build into the bibisect repository (given the opt/
-# directory and the bibisect repository's directory)
-copy_build_into_bibisect_repository()
-{
-    [ $V ] && echo "Bibisect: copy_build_into_bibisect_repository()"
-    # If OPTDIR or ARTIFACTDIR are not set, error-out.
-    if [ -z $OPTDIR ] ||
-       [ -z $ARTIFACTDIR ] ; then
-        report_log=tb_${B}_bibisect.log
-        report_msgs="Bibisect: OPTDIR '$OPTDIR' and ARTIFACTDIR '$ARTIFACTDIR' must both be non-null."
-        retval=1
-        return;
-    fi
-    cp -R $OPTDIR ${ARTIFACTDIR}/opt
-}
-
-# Get the current build into the bibisect repository (find it, format
-# it, then copy it in).
-#
-# This function may need to be overridden on platforms that diverge
-# from the basic assumptions that we rely on here, including:
-#   - Build goes into an opt/ directory
-#   - Build is uncompressed in opt/ (no zip/tar/msi/etc...)
-#   - Basic command-line tools like 'find' exist
-#   - The command 'make dev-install' is supported
-format_build_and_copy_into_repository()
-{
-    [ $V ] && echo "Bibisect: Adding build to local bibisect repository"
-
-    # At this point, we don't expect to have an 'opt' directory
-    # (unless we've disabled the 'make clean' part of the build).
-    #
-    # If we do have an 'opt' directory, make a note of it and carry
-    # on. If we don't have 'opt', we'll have to run 'make dev-install'
-    # to create a suitably packaged build for us to shove into our
-    # bibisect repository.
-    [ $V ] && echo "Bibisect: Locating opt/ and performing dev-install if necessary"
-    OPTSEARCH="find . -name opt -type d"
-    OPTDIR=`$OPTSEARCH`
-    if [ -n "$OPTDIR" ] &&
-       [ "$DO_NOT_CLEAN" != "1" ] ; then
-        echo "Bibisect: UNEXPECTED: 'opt' dir exists before dev-install!"
-    else
-        [ $V ] && echo "Bibisect: Running 'make dev-install'"
-        # Run 'make dev-install' to package up our files (is there an
-        # easier way to do this, perhaps with an option in autogen?)
-        if ! $NICE $WATCHDOG ${MAKE?} dev-install >>tb_${B}_dev-install.log 2>&1 ; then
-            report_log=tb_${B}_dev-install.log
-            report_msgs="Bibisect: dev-install failed - error is:"
-            retval=1
-            return;
-        fi
-
-        # Opt directory should now exist after dev-install. Error-out
-        # if we still can't find it.
-        OPTDIR=`$OPTSEARCH`
-        if [ -z "$OPTDIR" ] ; then
-            report_log=tb_${B}_bibisect.log
-            report_msgs="Bibisect: Can't find 'opt' directory."
-            retval=1
-            return;
-        fi
-
-	# We only expect to find a single opt/ directory. Warn if we
-	# find multiple matches.
-        if [ -n "`echo $OPTDIR | grep ' '`" ]; then
-          echo "Bibisect: WARNING: Multiple 'opt' directories: '${OPTDIR}'"
-        fi
-    fi
-
-    [ $V ] && echo "Bibisect: Copying build from opt/ into repository"
-    #mv $OPTDIR ${ARTIFACTDIR}/opt
-    copy_build_into_bibisect_repository
-    if [ "${retval}" != "0" ] ; then
-        return;
-    fi
-
-    # Run a quick sanity check after we copy the build.
-    if [ ! -f ${ARTIFACTDIR}/opt/program/soffice ] ; then
-        report_log=tb_${B}_bibisect.log
-        report_msgs="Bibisect: soffice binary not found in $ARTIFACTDIR after build copied."
-        retval=1
-        return;
-    fi
-}

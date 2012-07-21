@@ -46,14 +46,27 @@ do_clean()
 
 do_make()
 {
+    optdir=""
     if [ "${retval}" = "0" ] ; then
         if ! $NICE $WATCHDOG ${MAKE?} -s $target >tb_${B}_build.log 2>&1 ; then
             report_log=tb_${B}_build.log
             report_msgs="build failed - error is:"
             retval=1
-        fi
+        else
+	    # if we want to populate bibisect we need to 'install'
+	    if [ $PUSH_TO_BIBISECT_REPO != "0" ] ; then
+		if ! $NICE $WATCHDOG ${MAKE?} -s install-tb >>tb_${B}_build.log 2>&1 ; then
+		    report_log=tb_${B}_build.log
+		    report_msgs="build failed - error is:"
+		    retval=1
+		else
+		    optdir="$(find_dev_install_location)"
+		fi
+	    fi
+	fi
     fi
 }
+
 
 do_test()
 {
@@ -79,155 +92,100 @@ post_make()
                 fi
             fi
         fi
+    else
+	if [ $PUSH_TO_BIBISECT_REPO != "0" -a -n "${optdir}" ] ; then
+	    deliver_to_bibisect
+	fi
     fi
-}
-
-# Push the data into the bibisect repository.
-do_bibisect_push()
-{
-    [ $V ] && echo "do_bibisect_push() started"
-
-    if [ "${retval}" != "0" ] ||
-       [ $PUSH_TO_BIBISECT_REPO != "1" ] ; then
-        return 0;
-    fi
-
-    # BUILDCOMMIT contains the sha1 of the current commit used in the
-    # build. We can't set this variable in tinbuild2, because it needs
-    # to be updated for each new build. We could set it in an earlier
-    # phase, but because tinbuild allows functions to be replaced, we
-    # have no guarantee that it would be properly set when we enter
-    # do_bibisect_push().
-    cd $BUILDDIR
-    BUILDCOMMIT=`git rev-list -1 HEAD`
-    LATEST_BIBISECT_COMMIT=
-    OPTDIR=
-
-    # Error-out if local bibisect repository does not exist.
-    if [ ! -d "${ARTIFACTDIR}/.git" ] ; then
-        report_log=tb_${B}_bibisect.log
-        report_msgs="Bibisect: '$ARTIFACTDIR' is not a git repository."
-        retval=1
-        return;
-    fi
-
-    # Make sure that
-    # 1) The local bibisect repo is up to date, and
-    # 2) That the latest build in the bibisect repo is of an
-    #    ancestor commit to BUILDCOMMIT (i.e. we're going forward
-    #    and we're on the right branch)
-    [ $V ] && echo "Bibisect repo exists; updating from remote"
-    cd $ARTIFACTDIR
-    # Fetch isn't very verbose, so we'll keep its output for now.
-    git fetch
-    git pull -q
-
-    if [ -f "commit.hash" ] ; then
-        LATEST_BIBISECT_COMMIT=$(<commit.hash)
-    fi
-
-    cd $BUILDDIR
-    if [ -z "$LATEST_BIBISECT_COMMIT" ] ; then
-        # If LATEST_BIBISECT_COMMIT is empty, then this is the first
-        # build added to the bibisect repository and there's no
-        # need to check commit order.
-        echo "Bibisect: Empty bibisect repository detected."
-    elif [ "$BIBISECT_TEST" = "1" ] ; then
-        echo "Bibisect: TEST: Skipping commit checks."
-    elif [ "$LATEST_BIBISECT_COMMIT" = "$BUILDCOMMIT" ] ; then
-        # If we've already pushed this build into the bibisect
-        # repository, skip the rest of the bibisect phase and continue
-        # with the next commit.
-        echo "Bibisect: WARNING: Build of commit '$BUILDCOMMIT' already in repository; skipping rest of bibisect step"
-        return 0;
-    elif [ -z "`git rev-list --boundary ${LATEST_BIBISECT_COMMIT}..${BUILDCOMMIT}`" ] ; then
-        report_log=tb_${B}_bibisect.log
-        report_msgs="Latest bibisect commit '$LATEST_BIBISECT_COMMIT' is not an ancestor of current build commit '$BUILDCOMMIT'."
-        retval=1
-        return;
-    fi
-
-    [ $V ] && echo "Bibisect: Build commit verified monotonic WRT repo."
-
-    # Get the build into the local bibisect repository.
-    format_build_and_copy_into_repository
-    if [ "${retval}" != "0" ] ; then
-        return;
-    fi
-
-    # Create additional files for bibisect.
-
-    # The commitmsg is a concatenation of short and long logs.
-    [ $V ] && echo "Bibisect: Create commitmsg"
-    git log -1 --pretty=format:"source-hash-%H%n%n" $BUILDCOMMIT > ${ARTIFACTDIR}/commitmsg
-    git log -1 --pretty=fuller $BUILDCOMMIT >> ${ARTIFACTDIR}/commitmsg
-
-    [ $V ] && echo "Bibisect: Include interesting logs/other data"
-    # Include the autogen log.
-    # (Even with a failed build, this should be properly overwritten by
-    #  the next build)
-    cp tb_${B}_autogen.log $ARTIFACTDIR
-
-    # Include the build, test logs.
-    cp tb_${B}_build.log $ARTIFACTDIR
-    #cp tb_${B}_tests.log $ARTIFACTDIR
-
-    # Make it easy to grab the commit id.
-    echo $BUILDCOMMIT > ${ARTIFACTDIR}/commit.hash
-
-    # Commit build to the local repo and push to the remote.
-    [ $V ] && echo "Bibisect: Committing to local bibisect repo"
-    cd $ARTIFACTDIR
-    git add *
-    git commit -q --file=commitmsg
-    [ $V ] && echo "Bibisect: Pushing to remote bibisect repo"
-    git push -q
-
-    cd $BUILDDIR
-
-    [ $V ] && echo "Bibisect: complete"
-    return 0;
 }
 
 do_push()
 {
     [ $V ] && echo "Push: phase starting"
-    local curr_day=
 
     if [ "${retval}" != "0" ] ; then
         return 0;
     fi
 
-    curr_day=$(date -u '+%Y%j')
-    last_day_upload="$(cat "${METADATA_DIR?}/tb_${B}_last-upload-day.txt" 2>/dev/null)"
-    if [ -z "$last_day_upload" ] ; then
-        last_day_upload=0
-    fi
-    [ $V ] && echo "curr_day=$curr_day"
-    [ $V ] && echo "last_day_upload=$last_day_upload"
+    # Push nightly build if needed
+    push_nightly
 
-    # If it has been less than a day since we pushed the last build
-    # (based on calendar date), skip the rest of the push phase.
-    if [ $last_day_upload -ge $curr_day ] ; then
-        return 0;
-    fi
+    # Push bibisect to remote bibisect if needed
+    push_bibisect
 
-    # Push build into the bibisect repository (if enabled).
-    do_bibisect_push
-
-    # Push build up to the project server (if enabled).
-    if [ "$PUSH_NIGHTLIES" = "1" ] ; then
-        [ $V ] && echo "Push: Nightly builds enabled"
-        prepare_upload_manifest
-        ${BIN_DIR?}/push_nightlies.sh $push_opts -t "$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")" -n "$TINDER_NAME" -l "$BANDWIDTH"
-        # If we had a failure in pushing the build up, return
-        # immediately (making sure we do not mark this build as the
-        # last uploaded daily build).
-        if [ "$?" != "0" ] ; then
-            return 0;
-        fi
-    fi
-
-    echo "$curr_day" > "${METADATA_DIR?}/tb_${B}_last-upload-day.txt"
     return 0;
+}
+
+tb_call()
+{
+    [ $V ] && declare -F "$1" > /dev/null && echo "call $1"
+    declare -F "$1" > /dev/null && $1
+}
+
+phase()
+{
+    local f=${1}
+    for x in {pre_,do_,post_}${f} ; do
+	tb_call ${x}
+    done
+}
+
+
+do_build()
+{
+    if [ -n "${last_checkout_date}" ] ; then
+        report_to_tinderbox "${last_checkout_date?}" "building" "no"
+    fi
+
+    previous_build_status="${build_status}"
+    build_status="build_failed"
+    retval=0
+    retry_count=3
+    if [ "$DO_NOT_CLEAN" = "1" ] ; then
+        phase_list="autogen make test push"
+    else
+        phase_list="autogen clean make test push"
+    fi
+    while [ "$phase_list" != "" ] ; do
+        for p in $phase_list ; do
+            [ $V ] && echo "phase $p"
+	        phase $p
+        done
+        phase_list=
+        if [ "$retval" = "0" ] ; then
+            build_status="success"
+            if [ -n "${last_checkout_date}" ] ; then
+                report_to_tinderbox "$last_checkout_date" "success" "yes"
+		if [ "${previous_build_status}" = "build_failed" ]; then
+		    report_fixed committer "$last_checkout_date"
+		fi
+            else
+                log_msgs "Successfully primed branch '$TINDER_BRANCH'."
+            fi
+        elif [ "$retval" = "false_negative" ] ; then
+            report_to_tinderbox "${last_checkout_date?}" "fold" "no"
+            log_msgs "False negative build, skip reporting"
+            # false negative foes not need a full clea build, let's just redo make and after
+            phase_list="make test push"
+            retry_count=$((retry_count - 1))
+            if [ "$retry_count" = "0" ] ; then
+                phase_list=
+            fi
+        else
+            if [ -n "${last_checkout_date}" ] ; then
+                printf "${report_msgs?}:\n\n" > report_error.log
+                echo "======" >> report_error.log
+                if [ "${report_log?}" == "tb_${B}_build.log" ] ; then
+                    cat build_error.log | grep -C10 "^[^[]" >> report_error.log
+                    tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' >> report_error.log
+                else
+                    cat ${report_log?} >> report_error.log
+                fi
+                report_error committer "$last_checkout_date" report_error.log
+	        report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
+            else
+                log_msgs "Failed to primed branch '$TINDER_BRANCH'. see build_error.log"
+            fi
+        fi
+    done
 }
