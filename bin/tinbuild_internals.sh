@@ -14,12 +14,26 @@ if which timeout > /dev/null 2>&1 ; then
 	timeout="`which timeout` 2h"
 fi
 
+if [ -z "$FLOCK" ] ; then
+    if [ -x ${BIN_DIR?}/flock ] ; then
+	FLOCK="${BIN_DIR?}/flock"
+    else
+	FLOCK="$(which flock)"
+    fi
+fi
+
 do_flock()
 {
     if [ "$LOCK" = "1" ] ; then
-        flock $@
+        if [ -n "${FLOCK}" -a -x "$FLOCK" ] ; then
+            [ $V ] && echo "locking..."
+            ${FLOCK} $@
+        else
+            echo "no flock implementation, please build it from buildbot/flock or use -e" 1>&2
+            exit 1;
+        fi
     else
-        true
+	true
     fi
 }
 
