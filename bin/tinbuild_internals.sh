@@ -490,7 +490,7 @@ local oc=""
             # Commit build to the local repo and push to the remote.
 	    [ $V ] && echo "Bibisect: Committing to local bibisect repo"
 	    pushd "${ARTIFACTDIR}" >/dev/null
-	    git add *
+	    git add -A
 	    git commit -q --file=commitmsg
 	    popd > /dev/null
 	fi
