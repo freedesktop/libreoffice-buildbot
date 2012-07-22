@@ -65,13 +65,25 @@ BRANCH="${CURR_HEAD#*/*/}"
 tag="${BRANCH}~${PULL_TIME}"
 ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}\"" || exit 1
 
-if [ -f Env.Host.sh ] ; then
+if [ -f config_host.mk ]; then
+    INPATH=$(make -s cmd cmd='echo INPATH=$$INPATH' | grep INPATH | sed 's/INPATH=//')
+elif [ -f Env.Host.sh ] ; then
     . Env.Host.sh
 else
     . ./*[Ee]nv.[Ss]et.sh
 fi
 
+if [ -z "$INPATH" ]; then
+    echo "failed to read INPATH" 1>&2
+    exit 1
+fi
+
 cd instsetoo_native/${INPATH}
+
+if [ $? != 0 ]; then
+    echo "cd instsetoo_native/${INPATH} failed" 1>&2
+    exit 1
+fi
 
 if [ "$ASYNC" = "1" ] ; then
     stage="$STAGE_DIR"
