@@ -66,7 +66,7 @@ tag="${BRANCH}~${PULL_TIME}"
 ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}\"" || exit 1
 
 if [ -f config_host.mk ] ; then
-    INPATH=$(grep INPATH config_host.mk | sed -e "s/.*=//"
+    INPATH=$(grep INPATH= config_host.mk | sed -e "s/.*=//")
 fi
 
 cd instsetoo_native/${INPATH}
