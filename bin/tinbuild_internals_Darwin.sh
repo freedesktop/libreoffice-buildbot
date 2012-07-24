@@ -25,3 +25,10 @@ print_date()
 {
     date -u '+%Y-%m-%d %H:%M:%S'
 }
+
+deliver_lo_to_bibisect()
+{
+    rm -fr ${ARTIFACTDIR?}/opt
+    mkdir ${ARTIFACTDIR?}/opt
+    cp -fR ${optdir}/LibreOffice.app ${ARTIFACTDIR?}/opt/
+}

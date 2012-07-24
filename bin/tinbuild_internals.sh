@@ -451,50 +451,74 @@ position_bibisect_branch()
     popd > /dev/null
 }
 
+deliver_lo_to_bibisect()
+{
+    # copy the content of lo proper to bibisect
+    # this is  separate function so it can easily be overriden
+	cp -fR ${optdir?} ${ARTIFACTDIR?}/
+
+}
+
+bibisect_gc()
+{
+    pushd ${ARTIFACTDIR?} > /dev/null
+    git gc --aggressive
+    popd > /dev/null
+}
+
 deliver_to_bibisect()
 {
 local cc=""
 local oc=""
 
     [ $V ] && echo "deliver_to_bibisect()"
-    if [ -n $optdir ] ; then
+    (
+        do_flock -x -n 201
 
-	# verify that someone did not screw-up bibisect repo
-        # while we were running
-	if [ "${PUSH_TO_BIBISECT_REPO}" != "0" ] ; then
-	    # note: this function will exit if something is wrong
-	    position_bibisect_branch
-	fi
+        if [ -n ${optdir} ] ; then
+            # verify that someone did not screw-up bibisect repo
+            # while we were running
+            if [ "${PUSH_TO_BIBISECT_REPO}" != "0" ] ; then
+                # note: this function will exit if something is wrong
+                position_bibisect_branch
+            # avoid delivering the same build twice to bibisect
+                cc=$(git rev-list -1 HEAD)
+                if [ -f  ${ARTIFACTDIR?}/commit.hash ] ; then
+                    oc="$(cat ${ARTIFACTDIR}/commit.hash)"
+                fi
+                if [ "${cc}" != "${oc}" ] ; then
+                    deliver_lo_to_bibisect
 
-	# avoid delivering the same build twice to bibisect
-	cc=$(git rev-list -1 HEAD)
-	if [ -f  ${ARTIFACTDIR}/commit.hash ] ; then
-	    oc="$(cat ${ARTIFACTDIR}/commit.hash)"
-	fi
-	if [ "${cc}" != "${oc}" ] ; then
-	    cp -fR $optdir ${ARTIFACTDIR}/
+                    git log -1 --pretty=format:"source-hash-%H%n%n" $BUILDCOMMIT > ${ARTIFACTDIR?}/commitmsg
+                    git log -1 --pretty=fuller $BUILDCOMMIT >> ${ARTIFACTDIR?}/commitmsg
 
-	    git log -1 --pretty=format:"source-hash-%H%n%n" $BUILDCOMMIT > ${ARTIFACTDIR}/commitmsg
-	    git log -1 --pretty=fuller $BUILDCOMMIT >> ${ARTIFACTDIR}/commitmsg
+                    [ $V ] && echo "Bibisect: Include interesting logs/other data"
+                    # Include the autogen log.
+                    cp tb_${B?}_autogen.log ${ARTIFACTDIR?}
 
-	    [ $V ] && echo "Bibisect: Include interesting logs/other data"
-            # Include the autogen log.
-	    cp tb_${B}_autogen.log $ARTIFACTDIR
+                    # Include the build, test logs.
+                    cp tb_${B?}_build.log ${ARTIFACTDIR?}
 
-            # Include the build, test logs.
-	    cp tb_${B}_build.log $ARTIFACTDIR
+                    # Make it easy to grab the commit id.
+                    git rev-list -1 HEAD > ${ARTIFACTDIR?}/commit.hash
 
-            # Make it easy to grab the commit id.
-	    git rev-list -1 HEAD > ${ARTIFACTDIR}/commit.hash
-
-            # Commit build to the local repo and push to the remote.
-	    [ $V ] && echo "Bibisect: Committing to local bibisect repo"
-	    pushd "${ARTIFACTDIR}" >/dev/null
-	    git add -A
-	    git commit -q --file=commitmsg
-	    popd > /dev/null
-	fi
-    fi
+                    # Commit build to the local repo and push to the remote.
+                    [ $V ] && echo "Bibisect: Committing to local bibisect repo"
+                    pushd "${ARTIFACTDIR?}" >/dev/null
+                    git add -A
+                    git commit -q --file=commitmsg
+                    popd > /dev/null
+                fi
+            fi
+        fi
+    ) 201> ${lock_file?}.bibisect
+    # asynchhronously compact the bibisect repo, but still hold a lock to avoid try to mess with the reo while being compressed
+    (
+        do_flock -x -n 201
+        #close the upper-level lock
+        exec 200>&-
+        bibisect_gc
+    )  201> ${lock_file?}.bibisect &
 }
 
 push_bibisect()
