@@ -442,8 +442,8 @@ find_dev_install_location()
 
 position_bibisect_branch()
 {
-    pushd ${ARTIFACTDIR} > /dev/null
-    git checkout -q ${B}
+    pushd ${ARTIFACTDIR?} > /dev/null
+    git checkout -q ${B?}
     if [ "$?" -ne "0" ] ; then
 	echo "Error could not position the bibisect repository to the branch $B" 1>&2
 	exit 1;
