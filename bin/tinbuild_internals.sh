@@ -462,7 +462,7 @@ deliver_lo_to_bibisect()
 bibisect_gc()
 {
     pushd ${ARTIFACTDIR?} > /dev/null
-    git gc --aggressive
+    git gc
     popd > /dev/null
 }
 
