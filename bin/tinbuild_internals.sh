@@ -405,7 +405,7 @@ wait_for_commits()
         err_msgs="$( $timeout ./g pull -r 2>&1)"
         if [ "$?" -ne "0" ] ; then
 	    printf "git repo broken - error is:\n\n$err_msgs" > error_log.log
-	    report_error owner "$(date)" error_log.log
+	    report_error owner "$(print_date)" error_log.log
         else
             collect_current_heads
 
