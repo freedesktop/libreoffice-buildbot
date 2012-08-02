@@ -406,6 +406,8 @@ wait_for_commits()
         if [ "$?" -ne "0" ] ; then
 	    printf "git repo broken - error is:\n\n$err_msgs" > error_log.log
 	    report_error owner "$(print_date)" error_log.log
+	    log_msgs "Waiting ${PAUSE_SECOND?} seconds."
+	    sleep ${PAUSE_SECOND?}
         else
             collect_current_heads
 
@@ -417,8 +419,8 @@ wait_for_commits()
                 log_msgs "Waiting until there are changes in the repo..."
                 show_once=0
             fi
+            sleep 60
         fi
-        sleep 60
     done
 }
 
