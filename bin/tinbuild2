@@ -231,31 +231,176 @@ sanity_check()
 # Main
 #
 
-while getopts 0a:b:cd:efg:hiknm:p:r:tvw:xz opt ; do
-    case "$opt" in
-        0) DO_NOT_CLEAN=1 ;; # avoid calling *_clean functions (incremental build)
-        a) BRANCH_AUTHOR="$OPTARG" ;; # email to the branch's author for out-of-tinderbox branch buildbot
-        b) BRANCH="$OPTARG";; # to override the branch name to use
-        c) CHECK=1 ;;     # whether to invoke the sanity-check function
-        d) WATCHDOG="makewatchdog $OPTARG -- " ;; # wrap make in a watchdog
-        e) LOCK=0 ;;      # whether to use flock to protect the build-cycle
-        f) FORCE_REBUILD=1;; # whether to force an initial rebuild on restart, even if the pull-info are unchanged
-        g) GERRIT_REF="$OPTARG" ; BRANCH="gerrit"; SEND_MAIL="none"; PRIME_BUILD=1 ;; # gerit's ref to fetch. This imply a one time build, no memory
-        h) usage; exit ;; # display help
-        i) NICE="$NICE ionice -c3" ;; # be gentle on i/o
-        k) KEEP_AUTOGEN="YES" ;; # do not override the local autogen.lastrun if present
-        m) SEND_MAIL="$OPTARG" ;; # which email to wend and to whom
-        n) NICE="$NICE nice" ;;   # build 'nicely' :-)
-        p) PROFILE_NAME="$OPTARG" ;; # profile to use to deterine extra parameter (email mostly) and autogen arguments
-        r) PUSH_NIGHTLIES=1 ; BANDWIDTH="$OPTARG" ;; # whether to upload daily build.
-        s) STAGE_DIR="$OTPARG" ;; # where to stage the build in case of -z with upload
-        t) DO_TESTS=1 ;; # whether to run tests after the build
-        v) V=1 ;;         # print more messages
-        w) PAUSE_SECONDS="$OPTARG" ;; # cool-down time after a build, in seconds
-        x) PUSH_TO_BIBISECT_REPO=1 ;; # Push builds to bibisect repo (per buildbot and major version)
-        z) PRIME_BUILD=1 ;;           # to run an initial build (without sending any email) to establish a 'baseline'
-        ?) usage; exit ;;
+while [ "${1}" != "" ]; do
+    parm=${1%%=*}
+    arg=${1#*=}
+    if [ "${arg}" = "$1" ] ; then
+	arg=""
+    fi
+    echo "parm=!${parm}!"
+    echo "arg=!${arg}!"
+    case "${parm}" in
+        -0)  # avoid calling *_clean functions (incremental build)
+	    DO_NOT_CLEAN=1
+	    ;;
+        -a)  # email to the branch's author for out-of-tinderbox branch buildbot
+	    if [ -z "${arg}" ] ; then
+		shift;
+		parm="$1"
+	    fi
+	    if [ -z "${arg}" ] ; then
+		echo "Missing argument for option $parm" 1>&2
+		exit -1
+	    else
+		BRANCH_AUTHOR="$parm"
+	    fi
+	    ;;
+        -b)  # to override the branch name to use
+	    if [ -z "${arg}" ] ; then
+		shift;
+		arg="$1"
+	    fi
+	    if [ -z "${arg}" ] ; then
+		echo "Missing argument for option $parm" 1>&2
+		exit -1
+	    else
+		BRANCH="$arg"
+	    fi
+	    ;;
+        -c)  # whether to invoke the sanity-check function
+	    CHECK=1
+	    ;;
+        -d)  # wrap make in a watchdog
+	    if [ -z "${arg}" ] ; then
+		shift;
+		arg="$1"
+	    fi
+	    if [ -z "${arg}" ] ; then
+		echo "Missing argument for option $parm" 1>&2
+		exit -1
+	    else
+		WATCHDOG="makewatchdog $arg -- "
+	    fi
+	    ;;
+        -e)  # whether to use flock to protect the build-cycle
+	    LOCK=0
+	    ;;
+        -f)  # whether to force an initial rebuild on restart, even if the pull-info are unchanged
+	    FORCE_REBUILD=1
+	    ;;
+        -g)  # gerit's ref to fetch. This imply a one time build, no memory
+	    if [ -z "${arg}" ] ; then
+		shift;
+		arg="$1"
+	    fi
+	    if [ -z "${arg}" ] ; then
+		echo "Missing argument for option $parm" 1>&2
+		exit -1
+	    else
+		GERRIT_REF="${arg}"
+		BRANCH="gerrit"
+		SEND_MAIL="none"
+		PRIME_BUILD=1
+	    fi
+	    ;;
+        -h)  # display help
+	    usage;
+	    exit
+	    ;;
+        -i)  # be gentle on i/o
+	    NICE="$NICE ionice -c3"
+	    ;;
+        -k)  # do not override the local autogen.lastrun if present
+	    KEEP_AUTOGEN="YES"
+	    ;;
+        -m)  # which email to wend and to whom
+	    if [ -z "${arg}" ] ; then
+		shift;
+		arg="$1"
+	    fi
+	    if [ -z "${arg}" ] ; then
+		echo "Missing argument for option $parm" 1>&2
+		exit -1
+	    else
+		SEND_MAIL="${arg}"
+	    fi
+	    ;;
+        -n)  # build 'nicely' :-)
+	    NICE="$NICE nice"
+	    ;;
+        -p)  # profile to use to deterine extra parameter (email mostly) and autogen arguments
+	    if [ -z "${arg}" ] ; then
+		shift;
+		arg="$1"
+	    fi
+	    if [ -z "${arg}" ] ; then
+		echo "Missing argument for option $parm" 1>&2
+		exit -1
+	    else
+		PROFILE_NAME="${arg}"
+	    fi
+	    ;;
+        -r)  # whether to upload daily build.
+	    if [ -z "${arg}" ] ; then
+		shift;
+		arg="$1"
+	    fi
+	    if [ -z "${arg}" ] ; then
+		echo "Missing argument for option $parm" 1>&2
+		exit -1
+	    else
+		PUSH_NIGHTLIES=1
+		BANDWIDTH="${arg}"
+	    fi
+	    ;;
+        -s)  # where to stage the build in case of -z with upload
+	    if [ -z "${arg}" ] ; then
+		shift;
+		arg="$1"
+	    fi
+	    if [ -z "${arg}" ] ; then
+		echo "Missing argument for option $parm" 1>&2
+		exit -1
+	    else
+		STAGE_DIR="${arg}"
+	    fi
+	    ;;
+        -t)  # whether to run tests after the build
+	    DO_TESTS=1
+	    ;;
+        -v)  # print more messages
+	    V=1
+	    ;;
+        -w)  # cool-down time after a build, in seconds
+	    if [ -z "${arg}" ] ; then
+		shift;
+		arg="$1"
+	    fi
+	    if [ -z "${arg}" ] ; then
+		echo "Missing argument for option $parm" 1>&2
+		exit -1
+	    else
+		PAUSE_SECONDS="${arg}"
+	    fi
+	    ;;
+        -x)  # Push builds to bibisect repo (per buildbot and major version)
+	    PUSH_TO_BIBISECT_REPO=1
+	    ;;
+        -z)
+            # to run an initial build (without sending any email) to establish a 'baseline'
+	    PRIME_BUILD=1
+	    ;;
+        -*)
+	    echo "Invalid option $1" 1>&2
+	    usage;
+	    exit -1
+	    ;;
+	*)
+	    echo "Invalid argument $1" 1>&2
+            exit -1
+	    ;;
     esac
+    shift
 done
 
 if [ "$CHECK" = "1" ] ; then
