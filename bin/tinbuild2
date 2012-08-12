@@ -16,7 +16,6 @@ NICE=
 PROFILE_NAME=
 PRIME_BUILD=0
 V=
-CHECK=0
 FORCE_REBUILD=0
 METADATA_DIR="."
 WATCHDOG=
@@ -268,7 +267,7 @@ while [ "${1}" != "" ]; do
 	    fi
 	    ;;
         -c)  # whether to invoke the sanity-check function
-	    CHECK=1
+	    sanity_check # do not return
 	    ;;
         -d)  # wrap make in a watchdog
 	    if [ -z "${arg}" ] ; then
@@ -402,10 +401,6 @@ while [ "${1}" != "" ]; do
     esac
     shift
 done
-
-if [ "$CHECK" = "1" ] ; then
-    sanity_check
-fi
 
 load_profile "$PROFILE_NAME"
 
