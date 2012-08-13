@@ -54,7 +54,7 @@ do_make()
             retval=1
         else
 	    # if we want to populate bibisect we need to 'install'
-	    if [ $PUSH_TO_BIBISECT_REPO != "0" ] ; then
+	    if [ "${build_type}" = "tb" -a $PUSH_TO_BIBISECT_REPO != "0" ] ; then
 		if ! $NICE $WATCHDOG ${MAKE?} -s install-tb >>tb_${B}_build.log 2>&1 ; then
 		    report_log=tb_${B}_build.log
 		    report_msgs="build failed - error is:"
@@ -93,7 +93,7 @@ post_make()
             fi
         fi
     else
-	if [ $PUSH_TO_BIBISECT_REPO != "0" -a -n "${optdir}" ] ; then
+	if [ "${build_type}" = "tb" -a $PUSH_TO_BIBISECT_REPO != "0" -a -n "${optdir}" ] ; then
 	    deliver_to_bibisect
 	fi
     fi
@@ -133,59 +133,14 @@ phase()
 
 do_build()
 {
-    if [ -n "${last_checkout_date}" ] ; then
-        report_to_tinderbox "${last_checkout_date?}" "building" "no"
-    fi
+    build_type="${1:-tb}"
 
-    previous_build_status="${build_status}"
-    build_status="build_failed"
-    retval=0
-    retry_count=3
-    if [ "$DO_NOT_CLEAN" = "1" ] ; then
-        phase_list="autogen make test push"
-    else
-        phase_list="autogen clean make test push"
-    fi
-    while [ "$phase_list" != "" ] ; do
-        for p in $phase_list ; do
-            [ $V ] && echo "phase $p"
-	        phase $p
-        done
-        phase_list=
-        if [ "$retval" = "0" ] ; then
-            build_status="success"
-            if [ -n "${last_checkout_date}" ] ; then
-                report_to_tinderbox "$last_checkout_date" "success" "yes"
-		if [ "${previous_build_status}" = "build_failed" ]; then
-		    report_fixed committer "$last_checkout_date"
-		fi
-            else
-                log_msgs "Successfully primed branch '$TINDER_BRANCH'."
-            fi
-        elif [ "$retval" = "false_negative" ] ; then
-            report_to_tinderbox "${last_checkout_date?}" "fold" "no"
-            log_msgs "False negative build, skip reporting"
-            # false negative foes not need a full clea build, let's just redo make and after
-            phase_list="make test push"
-            retry_count=$((retry_count - 1))
-            if [ "$retry_count" = "0" ] ; then
-                phase_list=
-            fi
-        else
-            if [ -n "${last_checkout_date}" ] ; then
-                printf "${report_msgs?}:\n\n" > report_error.log
-                echo "======" >> report_error.log
-                if [ "${report_log?}" == "tb_${B}_build.log" ] ; then
-                    cat build_error.log | grep -C10 "^[^[]" >> report_error.log
-                    tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' >> report_error.log
-                else
-                    cat ${report_log?} >> report_error.log
-                fi
-                report_error committer "$last_checkout_date" report_error.log
-	        report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
-            else
-                log_msgs "Failed to primed branch '$TINDER_BRANCH'. see build_error.log"
-            fi
-        fi
+    [ $V ] && echo "do_build ($build_type) PHASE_LIST=$PHASE_LIST"
+
+    for p in ${PHASE_LIST?} ; do
+        [ $V ] && echo "phase $p"
+	phase $p
     done
+    PHASE_LIST=
+
 }

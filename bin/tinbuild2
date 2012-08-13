@@ -12,15 +12,16 @@ PUSH_TO_BIBISECT_REPO=0
 ARTIFACTDIR=
 SEND_MAIL="all"
 LOCK=1
+MODE="tb"
 NICE=
 PROFILE_NAME=
-PRIME_BUILD=0
 V=
 FORCE_REBUILD=0
 METADATA_DIR="."
 WATCHDOG=
 GERRIT_REF=
 DO_NOT_CLEAN=
+GERRIT_HOST="logerrit"
 
 # load the internal functions. note that
 # tinderbuild_internals_<uname>.sh is sourced at the tail
@@ -299,7 +300,7 @@ while [ "${1}" != "" ]; do
 		GERRIT_REF="${arg}"
 		BRANCH="gerrit"
 		SEND_MAIL="none"
-		PRIME_BUILD=1
+		mode="gerrit-patch"
 	    fi
 	    ;;
         -h)  # display help
@@ -322,6 +323,20 @@ while [ "${1}" != "" ]; do
 		exit -1
 	    else
 		SEND_MAIL="${arg}"
+	    fi
+	    ;;
+	--mode)
+	    # operating mode of the tinbuild
+	    # tb,prime,gerrit,tb-gerrit,gerrit-tb
+	    if [ -z "${arg}" ] ; then
+		shift;
+		arg="$1"
+	    fi
+	    if [ -z "${arg}" ] ; then
+		echo "Missing argument for option $parm" 1>&2
+		exit -1
+	    else
+		MODE="${arg}"
 	    fi
 	    ;;
         -n)  # build 'nicely' :-)
@@ -387,7 +402,7 @@ while [ "${1}" != "" ]; do
 	    ;;
         -z)
             # to run an initial build (without sending any email) to establish a 'baseline'
-	    PRIME_BUILD=1
+	    MODE="prime"
 	    ;;
         -*)
 	    echo "Invalid option $1" 1>&2
@@ -472,9 +487,9 @@ else
     master) TINDER_BRANCH='MASTER' ;;
     libreoffice-3-4) TINDER_BRANCH=$B ;;
     libreoffice-3-5) TINDER_BRANCH=$B ;;
-	libreoffice-3-6) TINDER_BRANCH=$B ;;
+    libreoffice-3-6) TINDER_BRANCH=$B ;;
     *)
-        if [ "${PRIME_BUILD}" = "1" ] ; then
+        if [ "${MODE}" = "prime" -o "${MODE}" = "gerrit-patch" -o "${MODE?}" = "gerrit" ] ; then
             TINDER_BRANCH=$B
         else
             if [ "$SEND_MAIL" = "all" -o "$SEND_MAIL" = "" ] ; then
@@ -491,139 +506,43 @@ fi
 # we will recheck that before each build just in case someone crazy were to mess
 # with bibisect while the tinderbox is running... but failing early is good
 if [ "${PUSH_TO_BIBISECT_REPO}" != "0" ] ; then
-    position_bibisect_branch
-fi
-
-if [ -z "$GERRIT_REF" ] ; then
-    collect_current_heads
-else
-    GERRIT_PREV_B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
-    git fetch ssh://gerrit/core $GERRIT_REF && git checkout FETCH_HEAD || die "Error setting up the ref";
-fi
-
-# do a build without involving the tinderbox to establish a good baseline
-if [ "${PRIME_BUILD?}" = "1" ] ; then
-    if [ "$SEND_MAIL" != "owner" ] ; then
-        SEND_MAIL=""  # we don't want to notify the tinderbox
-    fi
-    # if we want to upload after a prime, we really want to upload, not just once a day
-    if [ "$PUSH_NIGHTLIES" = "1" ] ; then
-        rm -f "${METADATA_DIR?}/tb_${B?}_last-upload-day.txt"
-    fi
-
-    log_msgs "Starting primer for branch '$TINDER_BRANCH'."
-    (
-        if [ -n "$GERRIT_REF" ] ; then
-            echo "ssh gerrit gerrit review --project core --force-message -m \"Starting Build on ${TINDER_NAME}\" $(git rev-parse HEAD)"
-            ssh gerrit gerrit review --project core --force-message -m \"Starting Build on ${TINDER_NAME}\" $(git rev-parse HEAD)
-        fi
-        do_flock -x 200
-
-        do_build
-
-        if [ -z "$GERRIT_REF" ] ; then
-            rotate_logs
-        fi
-        if [ -n "$GERRIT_REF" ] ; then
-            if [ "${retval}" = "0" ] ; then
-                echo "ssh gerrit gerrit review --project core --force-message -m \"Successful build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified +1 $(git rev-parse HEAD)"
-                ssh gerrit gerrit review --project core --force-message -m \"Successful build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified +1 $(git rev-parse HEAD)
-            else
-                echo "ssh gerrit gerrit review --project core --force-message -m \"Failed build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified -1 $(git rev-parse HEAD)"
-                ssh gerrit gerrit review --project core --force-message -m \"Failed build of $(git rev-parse HEAD) on tinderbox: $TINDER_NAME\" --verified -1 $(git rev-parse HEAD)
-            fi
-            if [ -n "$GERRIT_PREV_B" ] ; then
-                git checkout "$GERRIT_PREV_B"
-                fi
-        fi
-        if [ "$retval" = "0" ] ; then
-            exit 0
-        else
-            exit 1
-        fi
-    ) 200>${lock_file?}
-    retval=$?
-
-    exit ${retval?}
-else
-    if [ ! -f "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" ] ; then
-        echo "You need a valid baseline. run once with -z or make sure you have a valid ${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" 1>&2
-        exit 1;
+    if [ "${MODE?}" = "gerrit" -o "${MODE?}" = "gerrit-patch" -o "${MODE?}" = "prime" ] ; then
+        echo "Warning: bibisect delivery is ignored for non tb build" 1>&2
+	PUSH_TO_BIBISECT_REPO=0
     else
-#        rm -f tb_${B}_stop
-        # reset to at the last sucessfull build
-        if [ "$FORCE_REBUILD" = "1" ] ; then
-            retval="false_negative" # to force a rebuild the first time around
-        else
-            retval=0
-        fi
-        cp "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" "${METADATA_DIR?}/tb_${B}_current-git-heads.log"
-        cp "${METADATA_DIR?}/tb_${B}_last-success-git-timestamp.txt" "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"
-        rotate_logs
+	position_bibisect_branch
     fi
 fi
 
-# main tinderbox loop
-while true; do
 
-    if [ -f tb_${B}_stop ] ; then
-        break
-    fi
+case "${MODE?}" in
+    prime)
+	if [ "$SEND_MAIL" != "owner" ] ; then
+            SEND_MAIL=""  # we don't want to notify the tinderbox
+	fi
+	if [ "$PUSH_NIGHTLIES" = "1" ] ; then
+            rm -f "${METADATA_DIR?}/tb_${B?}_last-upload-day.txt"
+	fi
+	run_primer
+	;;
+    tb)
+	run_tb_loop
+	;;
+    gerrit)
+	run_gerrit_loop
+	;;
+    tb-gerrit)
+	run_tb_gerrit_loop "tb"
+	;;
+    gerrit-tb)
+	run_tb_gerrit_loop "gerrit"
+	;;
+    fair)
+	run_tb_gerrit_loop "fair"
+	;;
 
-    if [ "$retval" != "false_negative" ] ; then
-        wait_for_commits
-    else
-        collect_current_heads
-    fi
-    if [ -f tb_${B}_stop ] ; then
-        break
-    fi
-    (
-        do_flock -x -n 200
+    gerrit-patch)
+	run_gerrit_patch
+	;;
+esac
 
-        if [ "$?" != "0" ] ; then
-            log_msgs "Waiting for a lock."
-            do_flock -x 200
-            # pull again, to have a more recent checkout
-            if [ "$retval" != "false_negative" ] ; then
-                wait_for_commits
-            else
-                collect_current_heads
-            fi
-            if [ -f tb_${B}_stop ] ; then
-                break
-            fi
-        fi
-
-        last_checkout_date="$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")"
-
-        do_build
-
-        rotate_logs
-        if [ "$retval" = "0" ] ; then
-            exit 0
-        elif [ "$retval" = "false_negative" ] ; then
-            exit 2
-        else
-            exit 1
-        fi
-
-    ) 200>${lock_file?}
-
-    if [ -f tb_${B}_stop ] ; then
-        break
-    fi
-
-    if [ "$?" != "2" ] ; then
-        log_msgs "Waiting ${PAUSE_SECONDS?} seconds."
-	    sleep ${PAUSE_SECONDS?}
-        retval="0"
-    else
-        retval="false_negative"
-    fi
-done
-
-if [ -f tb_${B}_stop ] ; then
-    log_msgs "Stoped by request"
-    rm tb_${B}_stop
-fi
