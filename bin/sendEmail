@@ -88,7 +88,7 @@ my %opt = (
     "message-content-type" => 'auto',                              ## auto, text, html or an actual string to put into the content-type header.
     
     ## Network
-    "timeout"              => 60,                                  ## Default timeout for connects and reads, this is copied to $conf{'alarm'} later.
+    "timeout"              => 200,                                 ## Default timeout for connects and reads, this is copied to $conf{'alarm'} later.
     "fqdn"                 => 'changeme',                          ## FQDN of this machine, used during SMTP communication (is updated later in the script).
     
     ## eSMTP
