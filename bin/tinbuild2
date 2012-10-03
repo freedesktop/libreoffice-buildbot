@@ -3,6 +3,9 @@
 #    Copyright (C) 2011 Norbert Thiebaud
 #    License: GPLv3
 #
+if [ -n "$debug" ] ; then
+set -x
+fi
 
 BIN_DIR=$(dirname "$0")
 
@@ -234,29 +237,32 @@ sanity_check()
 while [ "${1}" != "" ]; do
     parm=${1%%=*}
     arg=${1#*=}
-    if [ "${arg}" = "$1" ] ; then
+    has_arg=
+    if [ "${1}" != "${parm?}" ] ; then
+	has_arg=1
+    else
 	arg=""
     fi
-    echo "parm=!${parm}!"
-    echo "arg=!${arg}!"
+#    echo "parm=!${parm}!"
+#    echo "arg=!${arg}!"
     case "${parm}" in
         -0)  # avoid calling *_clean functions (incremental build)
 	    DO_NOT_CLEAN=1
 	    ;;
         -a)  # email to the branch's author for out-of-tinderbox branch buildbot
-	    if [ -z "${arg}" ] ; then
+	    if [ -z "${has_arg}" ] ; then
 		shift;
-		parm="$1"
+		arg="$1"
 	    fi
 	    if [ -z "${arg}" ] ; then
 		echo "Missing argument for option $parm" 1>&2
 		exit -1
 	    else
-		BRANCH_AUTHOR="$parm"
+		BRANCH_AUTHOR="$arg"
 	    fi
 	    ;;
         -b)  # to override the branch name to use
-	    if [ -z "${arg}" ] ; then
+	    if [ -z "${has_arg}" ] ; then
 		shift;
 		arg="$1"
 	    fi
@@ -271,7 +277,7 @@ while [ "${1}" != "" ]; do
 	    sanity_check # do not return
 	    ;;
         -d)  # wrap make in a watchdog
-	    if [ -z "${arg}" ] ; then
+	    if [ -z "${has_arg}" ] ; then
 		shift;
 		arg="$1"
 	    fi
@@ -289,7 +295,7 @@ while [ "${1}" != "" ]; do
 	    FORCE_REBUILD=1
 	    ;;
         -g)  # gerit's ref to fetch. This imply a one time build, no memory
-	    if [ -z "${arg}" ] ; then
+	    if [ -z "${has_arg}" ] ; then
 		shift;
 		arg="$1"
 	    fi
@@ -314,7 +320,7 @@ while [ "${1}" != "" ]; do
 	    KEEP_AUTOGEN="YES"
 	    ;;
         -m)  # which email to wend and to whom
-	    if [ -z "${arg}" ] ; then
+	    if [ -z "${has_arg}" ] ; then
 		shift;
 		arg="$1"
 	    fi
@@ -328,7 +334,7 @@ while [ "${1}" != "" ]; do
 	--mode)
 	    # operating mode of the tinbuild
 	    # tb,prime,gerrit,tb-gerrit,gerrit-tb
-	    if [ -z "${arg}" ] ; then
+	    if [ -z "${has_arg}" ] ; then
 		shift;
 		arg="$1"
 	    fi
@@ -343,7 +349,7 @@ while [ "${1}" != "" ]; do
 	    NICE="$NICE nice"
 	    ;;
         -p)  # profile to use to deterine extra parameter (email mostly) and autogen arguments
-	    if [ -z "${arg}" ] ; then
+	    if [ -z "${has_arg}" ] ; then
 		shift;
 		arg="$1"
 	    fi
@@ -355,7 +361,7 @@ while [ "${1}" != "" ]; do
 	    fi
 	    ;;
         -r)  # whether to upload daily build.
-	    if [ -z "${arg}" ] ; then
+	    if [ -z "${has_arg}" ] ; then
 		shift;
 		arg="$1"
 	    fi
@@ -368,7 +374,7 @@ while [ "${1}" != "" ]; do
 	    fi
 	    ;;
         -s)  # where to stage the build in case of -z with upload
-	    if [ -z "${arg}" ] ; then
+	    if [ -z "${has_arg}" ] ; then
 		shift;
 		arg="$1"
 	    fi
@@ -386,7 +392,7 @@ while [ "${1}" != "" ]; do
 	    V=1
 	    ;;
         -w)  # cool-down time after a build, in seconds
-	    if [ -z "${arg}" ] ; then
+	    if [ -z "${has_arg}" ] ; then
 		shift;
 		arg="$1"
 	    fi

@@ -26,9 +26,9 @@ do_flock()
 {
     if [ "$LOCK" = "1" ] ; then
         if [ -n "${FLOCK}" -a -x "$FLOCK" ] ; then
-            [ $V ] && echo "locking..."
+            [ $V ] && echo "locking... $@"
             ${FLOCK} $@
-            [ $V ] && echo "locked."
+            [ $V ] && echo "locked. $@"
         else
             echo "no flock implementation, please build it from buildbot/flock or use -e" 1>&2
             exit 1;
@@ -111,22 +111,34 @@ get_commits_since_last_good()
     local repo=
     local sha=
 
-    if [ -f "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" ] ; then
-	for head in $(cat "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt") ; do
-	    repo=$(echo ${head} | cut -d : -f 1)
-	    sha=$(echo ${head} | cut -d : -f 2)
-	    (
-		if [ "${repo?}" != "bootstrap" -a "${repo}" != "core" ] ; then
-		    cd clone/${repo?}
-		fi
-                if [ "${mode?}" = "people" ] ; then
-		    git log '--pretty=tformat:%ce' ${sha?}..HEAD
-                else
-                    echo "==== ${repo} ===="
-                    git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
-                fi
-	    )
-	done
+    if [ -f .gitmodules ] ; then
+	head=$(head -n1 "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt")
+	repo=$(echo ${head} | cut -d : -f 1)
+	sha=$(echo ${head} | cut -d : -f 2)
+        if [ "${mode?}" = "people" ] ; then
+	    git log '--pretty=tformat:%ce' ${sha?}..HEAD
+        else
+	    echo "==== ${repo} ===="
+	    git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+        fi
+    else
+	if [ -f "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" ] ; then
+	    for head in $(cat "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt") ; do
+		repo=$(echo ${head} | cut -d : -f 1)
+		sha=$(echo ${head} | cut -d : -f 2)
+		(
+		    if [ "${repo?}" != "bootstrap" -a "${repo}" != "core" ] ; then
+			cd clone/${repo?}
+		    fi
+                    if [ "${mode?}" = "people" ] ; then
+			git log '--pretty=tformat:%ce' ${sha?}..HEAD
+                    else
+			echo "==== ${repo} ===="
+			git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+                    fi
+		)
+	    done
+	fi
     fi
 }
 
@@ -137,22 +149,34 @@ get_commits_since_last_bad()
     local repo=
     local sha=
 
-    if [ -f tb_${B}_last-failure-git-heads.txt ] ; then
-	for head in $(cat tb_${B}_last-failure-git-heads.txt) ; do
-	    repo=$(echo ${head} | cut -d : -f 1)
-	    sha=$(echo ${head} | cut -d : -f 2)
-	    (
-		if [ "${repo?}" != "bootstrap" -a "${repo}" != "core" ] ; then
-		    cd clone/${repo?}
-		fi
-                if [ "${mode?}" = "people" ] ; then
-		    git log '--pretty=tformat:%ce' ${sha?}..HEAD
-                else
-                    echo "==== ${repo} ===="
-                    git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
-                fi
-	    )
-	done
+    if [ -f .gitmodules ] ; then
+	head=$(head -n1 "${METADATA_DIR?}/tb_${B}_last-failure-git-heads.txt")
+	repo=$(echo ${head} | cut -d : -f 1)
+	sha=$(echo ${head} | cut -d : -f 2)
+        if [ "${mode?}" = "people" ] ; then
+	    git log '--pretty=tformat:%ce' ${sha?}..HEAD
+        else
+	    echo "==== ${repo} ===="
+	    git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+        fi
+    else
+	if [ -f tb_${B}_last-failure-git-heads.txt ] ; then
+	    for head in $(cat "${METADATA_DIR?}/tb_${B}_last-failure-git-heads.txt") ; do
+		repo=$(echo ${head} | cut -d : -f 1)
+		sha=$(echo ${head} | cut -d : -f 2)
+		(
+		    if [ "${repo?}" != "bootstrap" -a "${repo}" != "core" ] ; then
+			cd clone/${repo?}
+		    fi
+                    if [ "${mode?}" = "people" ] ; then
+			git log '--pretty=tformat:%ce' ${sha?}..HEAD
+                    else
+			echo "==== ${repo} ===="
+			git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+                    fi
+		)
+	    done
+	fi
     fi
 }
 
@@ -313,8 +337,8 @@ report_fixed ()
     local rough_time="$1"
     shift
 
-    local previous_success=$(cat tb_${B}_last-success-git-timestamp.txt)
-    local last_failure=$(cat tb_${B}_last-failure-git-timestamp.txt)
+    local previous_success="$(cat tb_${B}_last-success-git-timestamp.txt)"
+    local last_failure="$(cat tb_${B}_last-failure-git-timestamp.txt)"
     to_mail=
     if [ "$SEND_MAIL" = "owner" -o "$SEND_MAIL" = "debug" -o "$SEND_MAIL" = "author" ] ; then
         to_mail="${OWNER?}"
@@ -375,7 +399,11 @@ EOF
 collect_current_heads()
 {
     [ $V ] && echo "collect_current_head"
-    ./g -1 rev-parse HEAD > "${METADATA_DIR?}/tb_${B}_current-git-heads.log"
+    if [ -f .gitmodules ] ; then
+	echo "core:$(git rev-parse HEAD)" > "${METADATA_DIR?}/tb_${B}_current-git-heads.log"
+    else
+	./g -1 rev-parse HEAD > "${METADATA_DIR?}/tb_${B}_current-git-heads.log"
+    fi
     print_date > "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"
 }
 
@@ -391,8 +419,8 @@ rotate_logs()
 	cp -f "${METADATA_DIR?}/tb_${B}_current-git-heads.log" "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" 2>/dev/null
 	cp -f "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log" "${METADATA_DIR?}/tb_${B}_last-success-git-timestamp.txt" 2>/dev/null
     elif [ "$retval" != "false_negative" ]; then
-	cp -f tb_${B}_current-git-heads.log tb_${B}_last-failure-git-heads.txt 2>/dev/null
-	cp -f tb_${B}_current-git-timestamp.log tb_${B}_last-failure-git-timestamp.txt 2>/dev/null
+	cp -f "${METADATA_DIR?}/tb_${B}_current-git-heads.log" "${METADATA_DIR?}/tb_${B}_last-failure-git-heads.txt" 2>/dev/null
+	cp -f "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log" "${METADATA_DIR?}/tb_${B}_last-failure-git-timestamp.txt" 2>/dev/null
     fi
     for f in tb_${B}*.log ; do
 	mv -f ${f} prev-${f} 2>/dev/null
@@ -421,6 +449,7 @@ check_for_commit()
 	    IS_NEW_COMMIT="no"
 	fi
     fi
+    [ $V ] && echo "pulling from the repos -> new commit : ${IS_NEW_COMMIT?}"
 }
 
 check_for_gerrit()
@@ -456,6 +485,7 @@ wait_for_commits()
                     log_msgs "Waiting until there are changes in the repo..."
                     show_once=0
 		fi
+		[ $V ] && echo "sleep 60"
 		sleep 60
 		;;
 	    yes)
@@ -555,12 +585,14 @@ local oc=""
             fi
         fi
     ) 201> ${lock_file?}.bibisect
+    [ $V ] && echo "unlock ${lock_file?}.bibisect"
     # asynchhronously compact the bibisect repo, but still hold a lock to avoid try to mess with the reo while being compressed
     (
         do_flock -x -n 201
         #close the upper-level lock
         exec 200>&-
         bibisect_gc
+	[ $V ] && echo "unlock ${lock_file?}.bibisect"
     )  201> ${lock_file?}.bibisect &
 }
 
@@ -661,6 +693,7 @@ run_primer()
         fi
     ) 200>${lock_file?}
     retval=$?
+    [ $V ] && echo "unlock ${lock_file?}"
     return ${retval?}
 }
 
@@ -707,6 +740,7 @@ run_gerrit_patch()
         fi
     ) 200>${lock_file?}
     retval=$?
+    [ $V ] && echo "unlock ${lock_file?}"
     return ${retval?}
 }
 
@@ -750,10 +784,12 @@ run_gerrit_loop()
 	    fi
 	) 200>${lock_file?}
 	retval=$?
+	[ $V ] && echo "unlock ${lock_file?}"
 	if [ -f tb_${B}_stop -o "${retval?}" = "-1" ] ; then
             break
 	fi
 	if [ "$retval" = "3" ] ; then
+	    [ $V ] && echo "sleep 60"
 	    sleep 60
             retval="0"
 	fi
@@ -922,6 +958,7 @@ local retry_count
 	if [ "${ret?}" == "2" ] ; then
             retval="false_negative"
 	elif [ "$ret" == "3" ] ; then
+	    [ $V ] && echo "sleep 60"
 	    sleep 60
             retval="0"
 	else
@@ -1036,14 +1073,16 @@ run_tb_loop()
 	    fi
 
 	) 200>${lock_file?}
-
 	ret="$?"
+	[ $V ] && echo "unlock ${lock_file?}"
+
 	if [ -f tb_${B}_stop ] ; then
             break
 	fi
 	if [ "$ret" == "2" ] ; then
             retval="false_negative"
 	elif [ "$ret" == "3" ] ; then
+	    [ $V ] && echo "sleep 60"
 	    sleep 60
             retval="0"
 	else
