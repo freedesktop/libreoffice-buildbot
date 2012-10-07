@@ -505,10 +505,15 @@ deliver_lo_to_bibisect()
 
 }
 
-bibisect_gc()
+bibisect_post()
 {
     pushd ${ARTIFACTDIR?} > /dev/null
-    git gc
+    if [ "${BIBISECT_GC}" = "Y" ] ; then
+        git gc
+    fi
+    if [ "${BIBISECT_PUSH}" = "Y" ] ; then
+        git push
+    fi
     popd > /dev/null
 }
 
@@ -518,88 +523,100 @@ local cc=""
 local oc=""
 
     [ $V ] && echo "deliver_to_bibisect()"
-    (
-        do_flock -x 201
 
-        if [ -n ${optdir} ] ; then
-            # verify that someone did not screw-up bibisect repo
-            # while we were running
-            if [ "${PUSH_TO_BIBISECT_REPO}" != "0" ] ; then
-                # note: this function will exit if something is wrong
-                position_bibisect_branch
+    if [ -n ${optdir} ] ; then
+        # verify that someone did not screw-up bibisect repo
+        # while we were running
+        if [ "${PUSH_TO_BIBISECT_REPO}" != "0" ] ; then
+            # note: this function will exit if something is wrong
+
             # avoid delivering the same build twice to bibisect
-                cc=$(git rev-list -1 HEAD)
-                if [ -f  ${ARTIFACTDIR?}/commit.hash ] ; then
-                    oc="$(cat ${ARTIFACTDIR}/commit.hash)"
-                fi
-                if [ "${cc}" != "${oc}" ] ; then
-                    deliver_lo_to_bibisect
+            cc=$(git rev-list -1 HEAD)
+            if [ -f  ${ARTIFACTDIR?}/commit.hash ] ; then
+                oc="$(cat ${ARTIFACTDIR?}/commit.hash)"
+            fi
+            if [ "${cc}" != "${oc}" ] ; then
+                deliver_lo_to_bibisect
 
-                    git log -1 --pretty=format:"source-hash-%H%n%n" $BUILDCOMMIT > ${ARTIFACTDIR?}/commitmsg
-                    git log -1 --pretty=fuller $BUILDCOMMIT >> ${ARTIFACTDIR?}/commitmsg
+                git log -1 --pretty=format:"source-hash-%H%n%n" $BUILDCOMMIT > ${ARTIFACTDIR?}/commitmsg
+                git log -1 --pretty=fuller $BUILDCOMMIT >> ${ARTIFACTDIR?}/commitmsg
 
-                    [ $V ] && echo "Bibisect: Include interesting logs/other data"
-                    # Include the autogen log.
-                    cp tb_${B?}_autogen.log ${ARTIFACTDIR?}
+                [ $V ] && echo "Bibisect: Include interesting logs/other data"
+                # Include the autogen log.
+                cp tb_${B?}_autogen.log ${ARTIFACTDIR?}
 
-                    # Include the build, test logs.
-                    cp tb_${B?}_build.log ${ARTIFACTDIR?}
+                # Include the build, test logs.
+                cp tb_${B?}_build.log ${ARTIFACTDIR?}
 
-                    # Make it easy to grab the commit id.
-                    git rev-list -1 HEAD > ${ARTIFACTDIR?}/commit.hash
+                # Make it easy to grab the commit id.
+                git rev-list -1 HEAD > ${ARTIFACTDIR?}/commit.hash
 
-                    # Commit build to the local repo and push to the remote.
-                    [ $V ] && echo "Bibisect: Committing to local bibisect repo"
-                    pushd "${ARTIFACTDIR?}" >/dev/null
-                    git add -A
-                    git commit -q --file=commitmsg
-                    popd > /dev/null
-                fi
+                # Commit build to the local repo and push to the remote.
+                [ $V ] && echo "Bibisect: Committing to local bibisect repo"
+                pushd "${ARTIFACTDIR?}" >/dev/null
+                git add -A
+                git commit -q --file=commitmsg
+                popd > /dev/null
+
+                bibisect_post
+
             fi
         fi
-    ) 201> ${lock_file?}.bibisect
+    fi
     [ $V ] && echo "unlock ${lock_file?}.bibisect"
-    # asynchhronously compact the bibisect repo, but still hold a lock to avoid try to mess with the reo while being compressed
-    (
-        do_flock -x 201
-        #close the upper-level lock
-        exec 200>&-
-        bibisect_gc
 	[ $V ] && echo "unlock ${lock_file?}.bibisect"
-    )  201> ${lock_file?}.bibisect &
 }
 
 push_bibisect()
 {
-    # TODO: push the local bibisect to the remote one
-    # this need to be async with lock the same way push_bightly works
-    # (note that git may actually already provide the lock to be verified
-    #  so that git push & may be enough here)
-    # optionally we can push once in a while
-    # or at a certain time of the day...
-    true
+local curr_day=
+local last_day_upload=
+
+	if [ $PUSH_TO_BIBISECT_REPO != "0" -a -n "${optdir}" ] ; then
+
+        [ $V ] && echo "Push: bibisec builds enabled"
+        curr_day=$(date -u '+%Y%j')
+	    last_day_upload="$(cat "${METADATA_DIR?}/tb_${B}_last-bibisect-day.txt" 2>/dev/null)"
+	    if [ -z "$last_day_upload" ] ; then
+            last_day_upload=0
+	    fi
+	    [ $V ] && echo "bibisect curr_day=$curr_day"
+	    [ $V ] && echo "bibisect last_day_upload=$last_day_upload"
+
+        # If it has been less than a day since we pushed the last build
+        # (based on calendar date), skip the rest of the push phase.
+	    if [ $last_day_upload -ge $curr_day ] ; then
+            return 0;
+	    fi
+        [ $V ] && echo "Record bibisect"
+        deliver_to_bibisect
+
+	    echo "$curr_day" > "${METADATA_DIR?}/tb_${B}_last-bibisect-day.txt"
+
+	fi
 }
 
 push_nightly()
 {
     local curr_day=
+    local last_day_upload
 
     # Push build up to the project server (if enabled).
     if [ "$PUSH_NIGHTLIES" = "1" ] ; then
         [ $V ] && echo "Push: Nightly builds enabled"
         curr_day=$(date -u '+%Y%j')
-	last_day_upload="$(cat "${METADATA_DIR?}/tb_${B}_last-upload-day.txt" 2>/dev/null)"
-	if [ -z "$last_day_upload" ] ; then
+	    last_day_upload="$(cat "${METADATA_DIR?}/tb_${B}_last-upload-day.txt" 2>/dev/null)"
+	    if [ -z "$last_day_upload" ] ; then
             last_day_upload=0
-	fi
-	[ $V ] && echo "curr_day=$curr_day"
-	[ $V ] && echo "last_day_upload=$last_day_upload"
+	    fi
+	    [ $V ] && echo "curr_day=$curr_day"
+	    [ $V ] && echo "last_day_upload=$last_day_upload"
 
         # If it has been less than a day since we pushed the last build
         # (based on calendar date), skip the rest of the push phase.
-	if [ $last_day_upload -ge $curr_day ] ; then
+	    if [ $last_day_upload -ge $curr_day ] ; then
             return 0;
-	fi
+	    fi
         [ $V ] && echo "Push Nightly builds"
         prepare_upload_manifest
         ${BIN_DIR?}/push_nightlies.sh $push_opts -t "$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")" -n "$TINDER_NAME" -l "$BANDWIDTH"
@@ -609,7 +626,7 @@ push_nightly()
         if [ "$?" != "0" ] ; then
             return 0;
         fi
-	echo "$curr_day" > "${METADATA_DIR?}/tb_${B}_last-upload-day.txt"
+	    echo "$curr_day" > "${METADATA_DIR?}/tb_${B}_last-upload-day.txt"
     fi
 
 }

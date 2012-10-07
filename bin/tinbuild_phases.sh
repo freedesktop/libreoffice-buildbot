@@ -94,10 +94,6 @@ post_make()
                 fi
             fi
         fi
-    else
-	if [ "${build_type}" = "tb" -a $PUSH_TO_BIBISECT_REPO != "0" -a -n "${optdir}" ] ; then
-	    deliver_to_bibisect
-	fi
     fi
 }
 
