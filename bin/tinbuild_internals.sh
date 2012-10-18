@@ -4,7 +4,7 @@
 #    License: GPLv3
 #
 
-lock_file=/tmp/tinbuid-lockfile
+lock_file=/tmp/tinbuild-lockfile
 push_opts="-a"
 
 # Do we have timeout? If yes, guard git pull with that - which has a
@@ -546,7 +546,7 @@ local oc=""
 
     [ $V ] && echo "deliver_to_bibisect()"
     (
-        do_flock -x -n 201
+        do_flock -x 201
 
         if [ -n ${optdir} ] ; then
             # verify that someone did not screw-up bibisect repo
@@ -588,7 +588,7 @@ local oc=""
     [ $V ] && echo "unlock ${lock_file?}.bibisect"
     # asynchhronously compact the bibisect repo, but still hold a lock to avoid try to mess with the reo while being compressed
     (
-        do_flock -x -n 201
+        do_flock -x 201
         #close the upper-level lock
         exec 200>&-
         bibisect_gc
@@ -814,7 +814,7 @@ local retry_count
             break
 	fi
 	(
-            do_flock -x -n 200
+            do_flock -x 200
 	    build_type=""
 	    if [ "${next_priority?}" = "tb" ] ; then
 		check_for_commit
@@ -1000,7 +1000,7 @@ run_tb_loop()
             break
 	fi
 	(
-            do_flock -x -n 200
+            do_flock -x 200
 
 	    if [ "$retval" != "false_negative" ] ; then
 		check_for_commit
