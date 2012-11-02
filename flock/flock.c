@@ -131,7 +131,6 @@ int main(int argc, char *argv[])
     int err;
     int status;
     char *eon;
-    char **cmd_argv = NULL, *sh_c_argv[4];
     const char *filename = NULL;
     struct sigaction sa, old_sa;
 
