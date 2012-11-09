@@ -468,33 +468,6 @@ local result
     fi
 }
 
-wait_for_commits()
-{
-    local show_once=1
-    local err_msgs=
-
-    while true; do
-	check_for_commit
-	case "${IS_NEW_COMMIT?}" in
-	    error)
-		log_msgs "Error pulling... Waiting ${PAUSE_SECONDS?} seconds."
-		sleep ${PAUSE_SECONDS?}
-		;;
-	    no)
-		if [ "$show_once" = "1" ] ; then
-                    log_msgs "Waiting until there are changes in the repo..."
-                    show_once=0
-		fi
-		[ $V ] && echo "sleep 60"
-		sleep 60
-		;;
-	    yes)
-		return
-		;;
-	esac
-    done
-}
-
 determine_make()
 {
     ## Determine how GNU make is called on the system
