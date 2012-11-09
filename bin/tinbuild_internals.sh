@@ -1068,6 +1068,8 @@ run_tb_loop()
 		else
 		    exit 1
 		fi
+	    elif [ "${IS_NEW_COMMIT?}" = "error" ] ; then
+	        exit 1
 	    else
 		exit 3
 	    fi
