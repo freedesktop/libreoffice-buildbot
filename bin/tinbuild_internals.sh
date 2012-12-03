@@ -400,9 +400,9 @@ collect_current_heads()
 {
     [ $V ] && echo "collect_current_head"
     if [ -f .gitmodules ] ; then
-	echo "core:$(git rev-parse HEAD)" > "${METADATA_DIR?}/tb_${B}_current-git-heads.log"
+        echo "core:$(git rev-parse HEAD)" > "${METADATA_DIR?}/tb_${B}_current-git-heads.log"
     else
-	./g -1 rev-parse HEAD > "${METADATA_DIR?}/tb_${B}_current-git-heads.log"
+        ./g -1 rev-parse HEAD > "${METADATA_DIR?}/tb_${B}_current-git-heads.log"
     fi
     print_date > "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"
 }
@@ -731,6 +731,11 @@ run_gerrit_patch()
     ) 200>${lock_file?}
     retval=$?
     [ $V ] && echo "unlock ${lock_file?}"
+    if [ "${retval?}" = "0" ] ; then
+        log_msgs "Primer for branch '$TINDER_BRANCH' Successful."
+    else
+        log_msgs "Primer for branch '$TINDER_BRANCH' Failed."
+    fi
     return ${retval?}
 }
 
