@@ -83,7 +83,7 @@ generate_cgit_link()
     repo=$(echo $line | cut -f 1 -d \:)
     sha=$(echo $line | cut -f 2 -d \:)
 
-    echo "<a href='http://cgit.freedesktop.org/libreoffice/${repo}/commit/?id=$sha'>$repo</a>"
+    echo "<a href='http://cgit.freedesktop.org/libreoffice/${repo}/log/?id=$sha'>$repo</a>"
 }
 
 prepare_upload_manifest()
