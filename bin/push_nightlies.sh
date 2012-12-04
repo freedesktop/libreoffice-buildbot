@@ -63,7 +63,7 @@ fi
 CURR_HEAD=$(<".git/HEAD")
 BRANCH="${CURR_HEAD#*/*/}"
 tag="${BRANCH}~${PULL_TIME}"
-ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}\"" || exit 1
+ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoffice.org/daily/${BRANCH}/${BUILDER_NAME}/${PULL_TIME}\"" || exit 1
 
 if [ -f config_host.mk ] ; then
     INPATH=$(grep INPATH= config_host.mk | sed -e "s/.*=//")
@@ -108,16 +108,16 @@ if [ "$ASYNC" = "1" ] ; then
 (
     (
 #        do_flock -x 200
-        rsync --bwlimit=${BANDWIDTH_LIMIT} -avPe ssh ${stage}/${tag}_* "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}/" || exit 1
+        rsync --bwlimit=${BANDWIDTH_LIMIT} -avPe ssh ${stage}/${tag}_* "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BRANCH}/${BUILDER_NAME}/${PULL_TIME}/" || exit 1
         if [ "$?" == "0" ] ; then
-	        ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/\" && { rm current; ln -s \"${PULL_TIME}\" current ; }"
+	        ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BRANCH}/${BUILDER_NAME}/\" && { rm current; ln -s \"${PULL_TIME}\" current ; }"
         fi
         rm -fr ${stage}/${tag}_*
     )# 200>${lock_file?}
 ) &
 else
-    rsync --bwlimit=${BANDWIDTH_LIMIT} -avPe ssh ${stage}/${tag}_* "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/${PULL_TIME}/" || exit 1
+    rsync --bwlimit=${BANDWIDTH_LIMIT} -avPe ssh ${stage}/${tag}_* "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BRANCH}/${BUILDER_NAME}/${PULL_TIME}/" || exit 1
     if [ "$?" == "0" ] ; then
-	    ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BUILDER_NAME}/${BRANCH}/\" && { rm current; ln -s \"${PULL_TIME}\" current ; }"
+	    ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BRANCH}/${BUILDER_NAME}/\" && { rm current; ln -s \"${PULL_TIME}\" current ; }"
     fi
 fi
