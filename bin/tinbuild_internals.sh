@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#
+# -*- mode : Shell ; tab-width : 4; indent-tabs-mode : nil -*-
 #    Copyright (C) 2011-2012 Norbert Thiebaud, Robinson Tryon
 #    License: GPLv3
 #
@@ -16,9 +16,9 @@ fi
 
 if [ -z "$FLOCK" ] ; then
     if [ -x ${BIN_DIR?}/flock ] ; then
-	FLOCK="${BIN_DIR?}/flock"
+        FLOCK="${BIN_DIR?}/flock"
     else
-	FLOCK="$(which flock)"
+        FLOCK="$(which flock)"
     fi
 fi
 
@@ -34,13 +34,13 @@ do_flock()
             exit 1;
         fi
     else
-	true
+	    true
     fi
 }
 
 epoch_from_utc()
 {
-local utc="$@"
+    local utc="$@"
 
     date -u '+%s' -d "$utc UTC"
 }
@@ -112,33 +112,33 @@ get_commits_since_last_good()
     local sha=
 
     if [ -f .gitmodules ] ; then
-	head=$(head -n1 "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt")
-	repo=$(echo ${head} | cut -d : -f 1)
-	sha=$(echo ${head} | cut -d : -f 2)
+        head=$(head -n1 "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt")
+        repo=$(echo ${head} | cut -d : -f 1)
+        sha=$(echo ${head} | cut -d : -f 2)
         if [ "${mode?}" = "people" ] ; then
-	    git log '--pretty=tformat:%ce' ${sha?}..HEAD
+            git log '--pretty=tformat:%ce' ${sha?}..HEAD
         else
-	    echo "==== ${repo} ===="
-	    git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+            echo "==== ${repo} ===="
+            git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
         fi
     else
-	if [ -f "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" ] ; then
-	    for head in $(cat "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt") ; do
-		repo=$(echo ${head} | cut -d : -f 1)
-		sha=$(echo ${head} | cut -d : -f 2)
-		(
-		    if [ "${repo?}" != "bootstrap" -a "${repo}" != "core" ] ; then
-			cd clone/${repo?}
-		    fi
-                    if [ "${mode?}" = "people" ] ; then
-			git log '--pretty=tformat:%ce' ${sha?}..HEAD
-                    else
-			echo "==== ${repo} ===="
-			git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+        if [ -f "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" ] ; then
+            for head in $(cat "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt") ; do
+                repo=$(echo ${head} | cut -d : -f 1)
+                sha=$(echo ${head} | cut -d : -f 2)
+                (
+                    if [ "${repo?}" != "bootstrap" -a "${repo}" != "core" ] ; then
+                        cd clone/${repo?}
                     fi
-		)
-	    done
-	fi
+                    if [ "${mode?}" = "people" ] ; then
+                        git log '--pretty=tformat:%ce' ${sha?}..HEAD
+                    else
+                        echo "==== ${repo} ===="
+                        git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+                    fi
+                )
+            done
+        fi
     fi
 }
 
@@ -150,45 +150,45 @@ get_commits_since_last_bad()
     local sha=
 
     if [ -f .gitmodules ] ; then
-	head=$(head -n1 "${METADATA_DIR?}/tb_${B}_last-failure-git-heads.txt")
-	repo=$(echo ${head} | cut -d : -f 1)
-	sha=$(echo ${head} | cut -d : -f 2)
+        head=$(head -n1 "${METADATA_DIR?}/tb_${B}_last-failure-git-heads.txt")
+        repo=$(echo ${head} | cut -d : -f 1)
+        sha=$(echo ${head} | cut -d : -f 2)
         if [ "${mode?}" = "people" ] ; then
-	    git log '--pretty=tformat:%ce' ${sha?}..HEAD
+            git log '--pretty=tformat:%ce' ${sha?}..HEAD
         else
-	    echo "==== ${repo} ===="
-	    git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+            echo "==== ${repo} ===="
+            git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
         fi
     else
-	if [ -f tb_${B}_last-failure-git-heads.txt ] ; then
-	    for head in $(cat "${METADATA_DIR?}/tb_${B}_last-failure-git-heads.txt") ; do
-		repo=$(echo ${head} | cut -d : -f 1)
-		sha=$(echo ${head} | cut -d : -f 2)
-		(
-		    if [ "${repo?}" != "bootstrap" -a "${repo}" != "core" ] ; then
-			cd clone/${repo?}
-		    fi
-                    if [ "${mode?}" = "people" ] ; then
-			git log '--pretty=tformat:%ce' ${sha?}..HEAD
-                    else
-			echo "==== ${repo} ===="
-			git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+        if [ -f tb_${B}_last-failure-git-heads.txt ] ; then
+            for head in $(cat "${METADATA_DIR?}/tb_${B}_last-failure-git-heads.txt") ; do
+                repo=$(echo ${head} | cut -d : -f 1)
+                sha=$(echo ${head} | cut -d : -f 2)
+                (
+                    if [ "${repo?}" != "bootstrap" -a "${repo}" != "core" ] ; then
+                        cd clone/${repo?}
                     fi
-		)
-	    done
-	fi
+                    if [ "${mode?}" = "people" ] ; then
+                        git log '--pretty=tformat:%ce' ${sha?}..HEAD
+                    else
+                        echo "==== ${repo} ===="
+                        git log '--pretty=tformat:%h  %s' ${sha?}..HEAD | sed 's/^/  /'
+                    fi
+                )
+            done
+        fi
     fi
 }
 
 send_mail_msg()
 {
-local to="$1"
-local subject="$2"
-local headers="$3"
-local bcc="$4"
-local log="$5"
-local quiet="-q"
-local smtp_auth=""
+    local to="$1"
+    local subject="$2"
+    local headers="$3"
+    local bcc="$4"
+    local log="$5"
+    local quiet="-q"
+    local smtp_auth=""
 
     if [ -n "${SMTPUSER}" ] ; then
         smtp_auth="-xu ${SMTPUSER?} -xp ${SMTPPW?}"
@@ -197,11 +197,11 @@ local smtp_auth=""
     log_msgs "send mail to ${to?} with subject \"${subject?}\""
     [ $V ] && quiet=""
     if [ -n "${log}" ] ; then
-	${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
+        ${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
     elif [ -n "${headers?}" ] ; then
-	${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
+        ${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
     else
-	${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
+        ${BIN_DIR?}/sendEmail $quiet -f "$OWNER" -s "${SMTPHOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
     fi
 }
 
@@ -234,15 +234,15 @@ tinderbox: END
 "
 
     if [ "$log" = "yes" ] ; then
-       gzlog="tinder.log.gz"
-       (
-           echo "$message_content"
-           cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"
-           for cm in $(cat ${METADATA_DIR?}/tb_${B}_current-git-heads.log) ; do echo "TinderboxPrint: $(generate_cgit_link ${cm})" ; done
-           cat tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_tests.log 2>/dev/null
-       ) | gzip -c > "${gzlog}"
-       xtinder="X-Tinder: gzookie"
-       subject="tinderbox gzipped logfile"
+        gzlog="tinder.log.gz"
+        (
+            echo "$message_content"
+            cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log"
+            for cm in $(cat ${METADATA_DIR?}/tb_${B}_current-git-heads.log) ; do echo "TinderboxPrint: $(generate_cgit_link ${cm})" ; done
+            cat tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_tests.log 2>/dev/null
+        ) | gzip -c > "${gzlog}"
+        xtinder="X-Tinder: gzookie"
+        subject="tinderbox gzipped logfile"
     fi
 
     if [ "$SEND_MAIL" = "debug" ] ; then
@@ -276,28 +276,28 @@ report_error ()
         to_mail="${OWNER?}"
     else
         if [ "$SEND_MAIL" = "all" ] ; then
-	    case "$error_kind" in
-		owner) to_mail="${OWNER?}"
-		    message="box broken" ;;
-		*)
+            case "$error_kind" in
+                owner) to_mail="${OWNER?}"
+                    message="box broken" ;;
+                *)
                     if [ -z "$last_success" ] ; then
-                      # we need at least one successful build to
-                      # be reliable
-			to_mail="${OWNER?}"
-		    else
-			to_mail="$(get_committers)"
-		    fi
-		    message="last success: ${last_success?}" ;;
-	    esac
+                        # we need at least one successful build to
+                        # be reliable
+                        to_mail="${OWNER?}"
+                    else
+                        to_mail="$(get_committers)"
+                    fi
+                    message="last success: ${last_success?}" ;;
+            esac
         fi
     fi
     if [ -n "$to_mail" ] ; then
-	echo "$*" 1>&2
-	echo "Last success: ${last_success}" 1>&2
-	tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
-	tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
+        echo "$*" 1>&2
+        echo "Last success: ${last_success}" 1>&2
+        tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
+        tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
 
-	cat <<EOF | send_mail_msg "$to_mail" "Tinderbox failure, $TINDER_NAME, $TINDER_BRANCH, $message" "" "${OWNER?}" ""
+        cat <<EOF | send_mail_msg "$to_mail" "Tinderbox failure, $TINDER_NAME, $TINDER_BRANCH, $message" "" "${OWNER?}" ""
 Hi folks,
 
 One of you broke the build of LibreOffice with your commit :-(
@@ -305,24 +305,24 @@ Please commit and push a fix ASAP!
 
 ${tinder1}
 
-Tinderbox info:
+ Tinderbox info:
 
-  ${tinder2}
-  Branch: $TINDER_BRANCH
-  "starttime": $(epoch_from_utc "$rough_time")
-  Machine: `uname -a`
-  Configured with: `cat autogen.lastrun`
+ ${tinder2}
+ Branch: $TINDER_BRANCH
+ "starttime": $(epoch_from_utc "$rough_time")
+ Machine: `uname -a`
+ Configured with: `cat autogen.lastrun`
 
-Commits since the last success:
+ Commits since the last success:
 
-$(get_commits_since_last_good commits)
+ $(get_commits_since_last_good commits)
 
-The error is:
+ The error is:
 
-$(cat "$error_log")
+ $(cat "$error_log")
 EOF
     else
-	cat $error_log
+        cat $error_log
     fi
 }
 
@@ -344,32 +344,32 @@ report_fixed ()
         to_mail="${OWNER?}"
     else
         if [ "$SEND_MAIL" = "all" ] ; then
-	    case "$success_kind" in
-		owner) to_mail="${OWNER?}"
-		    message="box fixed" ;;
-		*)
+            case "$success_kind" in
+                owner) to_mail="${OWNER?}"
+                    message="box fixed" ;;
+                *)
                     if [ -z "$previous_success" ] ; then
                       # we need at least one successful build to
                       # be reliable
-			to_mail="${OWNER?}"
-		    else
-			to_mail="$(get_committers)"
-		    fi
-		    message="previous success: ${previous_success?}" ;;
-	    esac
+                        to_mail="${OWNER?}"
+                    else
+                        to_mail="$(get_committers)"
+                    fi
+                    message="previous success: ${previous_success?}" ;;
+            esac
         fi
     fi
     if [ -n "$to_mail" ] ; then
-	echo "$*" 1>&2
-	echo "Previous success: ${previous_success}" 1>&2
-	echo "Last failure: ${last_failure}" 1>&2
-	tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
-	tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
-	if [ "$*" != "" ]; then
-	    mail_tail = $'\nAdditional information:\n\n'"$*"
-	fi
+        echo "$*" 1>&2
+        echo "Previous success: ${previous_success}" 1>&2
+        echo "Last failure: ${last_failure}" 1>&2
+        tinder1="`echo \"Full log available at http://tinderbox.libreoffice.org/$TINDER_BRANCH/status.html\"`"
+        tinder2="`echo \"Box name: ${TINDER_NAME?}\"`"
+        if [ "$*" != "" ]; then
+            mail_tail = $'\nAdditional information:\n\n'"$*"
+        fi
 
-	cat <<EOF | send_mail_msg "$to_mail" "Tinderbox fixed, $message" "" "${OWNER?}" ""
+        cat <<EOF | send_mail_msg "$to_mail" "Tinderbox fixed, $message" "" "${OWNER?}" ""
 Hi folks,
 
 The previously reported build failure is fixed. Thanks!
@@ -392,7 +392,7 @@ $(get_commits_since_last_good commits)
 ${mail_tail}
 EOF
     else
-	echo "$*" 1>&2
+        echo "$*" 1>&2
     fi
 }
 
@@ -416,18 +416,18 @@ get_committers()
 rotate_logs()
 {
     if [ "$retval" = "0" ] ; then
-	cp -f "${METADATA_DIR?}/tb_${B}_current-git-heads.log" "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" 2>/dev/null
-	cp -f "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log" "${METADATA_DIR?}/tb_${B}_last-success-git-timestamp.txt" 2>/dev/null
+        cp -f "${METADATA_DIR?}/tb_${B}_current-git-heads.log" "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" 2>/dev/null
+        cp -f "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log" "${METADATA_DIR?}/tb_${B}_last-success-git-timestamp.txt" 2>/dev/null
     elif [ "$retval" != "false_negative" ]; then
-	cp -f "${METADATA_DIR?}/tb_${B}_current-git-heads.log" "${METADATA_DIR?}/tb_${B}_last-failure-git-heads.txt" 2>/dev/null
-	cp -f "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log" "${METADATA_DIR?}/tb_${B}_last-failure-git-timestamp.txt" 2>/dev/null
+        cp -f "${METADATA_DIR?}/tb_${B}_current-git-heads.log" "${METADATA_DIR?}/tb_${B}_last-failure-git-heads.txt" 2>/dev/null
+        cp -f "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log" "${METADATA_DIR?}/tb_${B}_last-failure-git-timestamp.txt" 2>/dev/null
     fi
     for f in tb_${B}*.log ; do
-	mv -f ${f} prev-${f} 2>/dev/null
+        mv -f ${f} prev-${f} 2>/dev/null
     done
     pushd "${METADATA_DIR?}" > /dev/null
     for f in tb_${B}*.log ; do
-	mv -f ${f} prev-${f} 2>/dev/null
+        mv -f ${f} prev-${f} 2>/dev/null
     done
     popd > /dev/null
 }
@@ -437,34 +437,34 @@ check_for_commit()
     [ $V ] && echo "pulling from the repos"
     err_msgs="$( $timeout ./g pull -r 2>&1)"
     if [ "$?" -ne "0" ] ; then
-	printf "git repo broken - error is:\n\n$err_msgs" > error_log.log
-	report_error owner "$(print_date)" error_log.log
-	IS_NEW_COMMIT="error"
+        printf "git repo broken - error is:\n\n$err_msgs" > error_log.log
+        report_error owner "$(print_date)" error_log.log
+        IS_NEW_COMMIT="error"
     else
         collect_current_heads
 
         if [ "$(cat "${METADATA_DIR?}/tb_${B}_current-git-heads.log")" != "$(cat "${METADATA_DIR?}/prev-tb_${B}_current-git-heads.log")" ] ; then
-	    IS_NEW_COMMIT="yes"
+            IS_NEW_COMMIT="yes"
         else
-	    IS_NEW_COMMIT="no"
-	fi
+            IS_NEW_COMMIT="no"
+        fi
     fi
     [ $V ] && echo "pulling from the repos -> new commit : ${IS_NEW_COMMIT?}"
 }
 
 check_for_gerrit()
 {
-local result
+    local result
 
     IS_NEW_GERRIT="error"
     result=$(ssh ${GERRIT_HOST?} buildbot get-task -p core -a ${GERRIT_PLATFORM?} --format bash)
     result=$(echo "$result" | grep "^GERRIT_TASK_")
     if [ -n "${result}" ] ; then
-	eval "${result}"
-	IS_NEW_GERRIT="yes"
+        eval "${result}"
+        IS_NEW_GERRIT="yes"
     else
-	#FIXME normal "no task" detection
-	IS_NEW_GERRIT="no"
+        #FIXME normal "no task" detection
+        IS_NEW_GERRIT="no"
     fi
 }
 
@@ -472,11 +472,11 @@ determine_make()
 {
     ## Determine how GNU make is called on the system
     for _g in make gmake gnumake; do
-	$_g --version 2> /dev/null | grep -q GNU
-	if test $? -eq 0;  then
-	    MAKE=$_g
-	    break
-	fi
+        $_g --version 2> /dev/null | grep -q GNU
+        if test $? -eq 0;  then
+            MAKE=$_g
+            break
+        fi
     done
 }
 
@@ -491,8 +491,8 @@ position_bibisect_branch()
     pushd ${ARTIFACTDIR?} > /dev/null
     git checkout -q ${B?}
     if [ "$?" -ne "0" ] ; then
-	echo "Error could not position the bibisect repository to the branch $B" 1>&2
-	exit 1;
+        echo "Error could not position the bibisect repository to the branch $B" 1>&2
+        exit 1;
     fi
     popd > /dev/null
 }
@@ -501,7 +501,7 @@ deliver_lo_to_bibisect()
 {
     # copy the content of lo proper to bibisect
     # this is  separate function so it can easily be overriden
-	cp -fR ${optdir?} ${ARTIFACTDIR?}/
+    cp -fR ${optdir?} ${ARTIFACTDIR?}/
 
 }
 
@@ -519,8 +519,8 @@ bibisect_post()
 
 deliver_to_bibisect()
 {
-local cc=""
-local oc=""
+    local cc=""
+    local oc=""
 
     [ $V ] && echo "deliver_to_bibisect()"
 
@@ -564,36 +564,36 @@ local oc=""
         fi
     fi
     [ $V ] && echo "unlock ${lock_file?}.bibisect"
-	[ $V ] && echo "unlock ${lock_file?}.bibisect"
+    [ $V ] && echo "unlock ${lock_file?}.bibisect"
 }
 
 push_bibisect()
 {
-local curr_day=
-local last_day_upload=
+    local curr_day=
+    local last_day_upload=
 
-	if [ $PUSH_TO_BIBISECT_REPO != "0" -a -n "${optdir}" ] ; then
+    if [ $PUSH_TO_BIBISECT_REPO != "0" -a -n "${optdir}" ] ; then
 
         [ $V ] && echo "Push: bibisec builds enabled"
         curr_day=$(date -u '+%Y%j')
-	    last_day_upload="$(cat "${METADATA_DIR?}/tb_${B}_last-bibisect-day.txt" 2>/dev/null)"
-	    if [ -z "$last_day_upload" ] ; then
+        last_day_upload="$(cat "${METADATA_DIR?}/tb_${B}_last-bibisect-day.txt" 2>/dev/null)"
+        if [ -z "$last_day_upload" ] ; then
             last_day_upload=0
-	    fi
-	    [ $V ] && echo "bibisect curr_day=$curr_day"
-	    [ $V ] && echo "bibisect last_day_upload=$last_day_upload"
+        fi
+        [ $V ] && echo "bibisect curr_day=$curr_day"
+        [ $V ] && echo "bibisect last_day_upload=$last_day_upload"
 
         # If it has been less than a day since we pushed the last build
         # (based on calendar date), skip the rest of the push phase.
-	    if [ $last_day_upload -ge $curr_day ] ; then
+        if [ $last_day_upload -ge $curr_day ] ; then
             return 0;
-	    fi
+        fi
         [ $V ] && echo "Record bibisect"
         deliver_to_bibisect
 
-	    echo "$curr_day" > "${METADATA_DIR?}/tb_${B}_last-bibisect-day.txt"
+        echo "$curr_day" > "${METADATA_DIR?}/tb_${B}_last-bibisect-day.txt"
 
-	fi
+    fi
 }
 
 push_nightly()
@@ -605,18 +605,18 @@ push_nightly()
     if [ "$PUSH_NIGHTLIES" = "1" ] ; then
         [ $V ] && echo "Push: Nightly builds enabled"
         curr_day=$(date -u '+%Y%j')
-	    last_day_upload="$(cat "${METADATA_DIR?}/tb_${B}_last-upload-day.txt" 2>/dev/null)"
-	    if [ -z "$last_day_upload" ] ; then
+        last_day_upload="$(cat "${METADATA_DIR?}/tb_${B}_last-upload-day.txt" 2>/dev/null)"
+        if [ -z "$last_day_upload" ] ; then
             last_day_upload=0
-	    fi
-	    [ $V ] && echo "curr_day=$curr_day"
-	    [ $V ] && echo "last_day_upload=$last_day_upload"
+        fi
+        [ $V ] && echo "curr_day=$curr_day"
+        [ $V ] && echo "last_day_upload=$last_day_upload"
 
         # If it has been less than a day since we pushed the last build
         # (based on calendar date), skip the rest of the push phase.
-	    if [ $last_day_upload -ge $curr_day ] ; then
+        if [ $last_day_upload -ge $curr_day ] ; then
             return 0;
-	    fi
+        fi
         [ $V ] && echo "Push Nightly builds"
         prepare_upload_manifest
         ${BIN_DIR?}/push_nightlies.sh $push_opts -t "$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")" -n "$TINDER_NAME" -l "$BANDWIDTH"
@@ -626,7 +626,7 @@ push_nightly()
         if [ "$?" != "0" ] ; then
             return 0;
         fi
-	    echo "$curr_day" > "${METADATA_DIR?}/tb_${B}_last-upload-day.txt"
+        echo "$curr_day" > "${METADATA_DIR?}/tb_${B}_last-upload-day.txt"
     fi
 
 }
@@ -634,9 +634,9 @@ push_nightly()
 report_gerrit()
 {
     if [ "${retval?}" = "0" ] ; then
-	ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_ID}" --succeed
+        ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_ID}" --succeed
     else
-	ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_ID}" --failed
+        ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_ID}" --failed
     fi
 }
 
@@ -645,9 +645,9 @@ fetch_gerrit()
     GERRIT_PREV_B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
     git fetch ssh://${GERRIT_HOST?}/core ${GERRIT_TASK_REF}
     if [ "$?" != "0" ] ; then
-	retval="3"
+        retval="3"
     else
-	git checkout FETCH_HEAD || die "fatal error checking out gerrit ref"
+        git checkout FETCH_HEAD || die "fatal error checking out gerrit ref"
     fi
 }
 
@@ -666,13 +666,13 @@ run_primer()
     (
         do_flock -x 200
 
-	collect_current_heads
-	retval="0"
-	if [ "$DO_NOT_CLEAN" = "1" ] ; then
-	    PHASE_LIST="autogen make test push"
-	else
-	    PHASE_LIST="autogen clean make test push"
-	fi
+        collect_current_heads
+        retval="0"
+        if [ "$DO_NOT_CLEAN" = "1" ] ; then
+            PHASE_LIST="autogen make test push"
+        else
+            PHASE_LIST="autogen clean make test push"
+        fi
         do_build "tb"
 
         rotate_logs
@@ -684,6 +684,11 @@ run_primer()
     ) 200>${lock_file?}
     retval=$?
     [ $V ] && echo "unlock ${lock_file?}"
+    if [ "${retval?}" = "0" ] ; then
+        log_msgs "Primer for branch '$TINDER_BRANCH' Successful."
+    else
+        log_msgs "Primer for branch '$TINDER_BRANCH' Failed."
+    fi
     return ${retval?}
 }
 
@@ -691,7 +696,7 @@ run_gerrit_patch()
 {
     if [ "$PUSH_NIGHTLIES" = "1" ] ; then
         echo "Warning: pushing build is not supported with gerrit build" 1>&2
-	PUSH_NIGHTLIES=0
+        PUSH_NIGHTLIES=0
     fi
     if [ "$SEND_MAIL" != "owner" ] ; then
         SEND_MAIL=""  # we don't want to notify the tinderbox
@@ -701,15 +706,15 @@ run_gerrit_patch()
     (
         do_flock -x 200
 
-	GERRIT_PREV_B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
-	[ $V ] && echo "git fetch ssh://${GERRIT_HOST?}/core $GERRIT_REF"
-	git fetch ssh://${GERRIT_HOST?}/core $GERRIT_REF && git checkout FETCH_HEAD || die "Error setting up the ref";
+        GERRIT_PREV_B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
+        [ $V ] && echo "git fetch ssh://${GERRIT_HOST?}/core $GERRIT_REF"
+        git fetch ssh://${GERRIT_HOST?}/core $GERRIT_REF && git checkout FETCH_HEAD || die "Error setting up the ref";
 
         echo "ssh ${GERRIT_HOST?} gerrit review --project core --force-message -m \"Starting Build on ${TINDER_NAME}\" $(git rev-parse HEAD)"
         ssh ${GERRIT_HOST?} gerrit review --project core --force-message -m \"Starting Build on ${TINDER_NAME}\" $(git rev-parse HEAD) || die "error reviewing in"
 
-	retval="0"
-	PHASE_LIST="autogen clean make test push"
+        retval="0"
+        PHASE_LIST="autogen clean make test push"
         do_build "gerrit"
 
         if [ "${retval}" = "0" ] ; then
@@ -731,11 +736,6 @@ run_gerrit_patch()
     ) 200>${lock_file?}
     retval=$?
     [ $V ] && echo "unlock ${lock_file?}"
-    if [ "${retval?}" = "0" ] ; then
-        log_msgs "Primer for branch '$TINDER_BRANCH' Successful."
-    else
-        log_msgs "Primer for branch '$TINDER_BRANCH' Failed."
-    fi
     return ${retval?}
 }
 
@@ -743,51 +743,51 @@ run_gerrit_loop()
 {
     # main tinderbox loop
     while true; do
-	if [ -f tb_${B}_stop ] ; then
+        if [ -f tb_${B}_stop ] ; then
             break
-	fi
-	(
+        fi
+        (
             do_flock -x 200
 
             check_for_gerrit
 
-	    if [ "${IS_NEW_GERRIT}" = "yes" ] ; then
+            if [ "${IS_NEW_GERRIT}" = "yes" ] ; then
 
-		fetch_gerrit
+                fetch_gerrit
 
-		if [ "$retval" = "0" ] ; then
+                if [ "$retval" = "0" ] ; then
 
-		    PHASE_LIST="autogen clean make test push"
-		    do_build "gerrit"
+                    PHASE_LIST="autogen clean make test push"
+                    do_build "gerrit"
 
-		    report_gerrit
-		fi
-		if [ -n "$GERRIT_PREV_B" ] ; then
-		    git checkout "$GERRIT_PREV_B"
-		fi
-		if [ "$retval" = "0" ] ; then
-		    exit 0
-		elif [ "$retval" = "3" ] ; then
-		    exit 3
-		elif [ "$retval" = "-1" ] ; then
-		    exit -1
-		else
-		    exit 1
-		fi
-	    else
-		exit 3
-	    fi
-	) 200>${lock_file?}
-	retval=$?
-	[ $V ] && echo "unlock ${lock_file?}"
-	if [ -f tb_${B}_stop -o "${retval?}" = "-1" ] ; then
+                    report_gerrit
+                fi
+                if [ -n "$GERRIT_PREV_B" ] ; then
+                    git checkout "$GERRIT_PREV_B"
+                fi
+                if [ "$retval" = "0" ] ; then
+                    exit 0
+                elif [ "$retval" = "3" ] ; then
+                    exit 3
+                elif [ "$retval" = "-1" ] ; then
+                    exit -1
+                else
+                    exit 1
+                fi
+            else
+                exit 3
+            fi
+        ) 200>${lock_file?}
+        retval=$?
+        [ $V ] && echo "unlock ${lock_file?}"
+        if [ -f tb_${B}_stop -o "${retval?}" = "-1" ] ; then
             break
-	fi
-	if [ "$retval" = "3" ] ; then
-	    [ $V ] && echo "sleep 60"
-	    sleep 60
+        fi
+        if [ "$retval" = "3" ] ; then
+            [ $V ] && echo "sleep 60"
+            sleep 60
             retval="0"
-	fi
+        fi
     done
 }
 
@@ -795,187 +795,185 @@ run_gerrit_loop()
 
 run_tb_gerrit_loop()
 {
-local priority="${1:-fair}"
-local next_priority="$priority"
-local retry_count
+    local priority="${1:-fair}"
+    local next_priority="$priority"
+    local retry_count
 
     if [ "${priority?}" = "fair" ] ; then
-	next_priority="tb"
+        next_priority="tb"
     fi
 
     while true; do
 
-	if [ -f tb_${B?}_stop ] ; then
+        if [ -f tb_${B?}_stop ] ; then
             break
-	fi
-	(
+        fi
+        (
             do_flock -x 200
-	    build_type=""
-	    if [ "${next_priority?}" = "tb" ] ; then
-		check_for_commit
-		if [ "${IS_NEW_COMMIT?}" = "yes" ] ; then
-		    build_type="tb"
-		    if [ "${priority?}" = "fair" ] ; then
-			next_priority="gerrit"
-		    fi
-		else
-		    check_for_gerrit
-		    if [ "${IS_NEW_GERRIT?}" = "yes" ] ; then
-			build_type="tb"
-			if [ "${priority?}" = "fair" ] ; then
-			    last_priority="tb"
-			fi
-		    fi
-		fi
-	    else
-		check_for_gerrit
-		if [ "${IS_NEW_GERRIT?}" = "yes" ] ; then
-		    build_type="tb"
-		    if [ "${priority?}" = "fair" ] ; then
-			last_priority="tb"
-		    fi
-		else
-		    check_for_commit
-		    if [ "${IS_NEW_COMMIT?}" = "yes" ] ; then
-			build_type="tb"
-			if [ "${priority?}" = "fair" ] ; then
-			    next_priority="gerrit"
-			fi
-		    fi
-		fi
-	    fi
-	    if [ "${build_type}" = "tb" ] ; then
+            build_type=""
+            if [ "${next_priority?}" = "tb" ] ; then
+                check_for_commit
+                if [ "${IS_NEW_COMMIT?}" = "yes" ] ; then
+                    build_type="tb"
+                    if [ "${priority?}" = "fair" ] ; then
+                        next_priority="gerrit"
+                    fi
+                else
+                    check_for_gerrit
+                    if [ "${IS_NEW_GERRIT?}" = "yes" ] ; then
+                        build_type="tb"
+                        if [ "${priority?}" = "fair" ] ; then
+                            last_priority="tb"
+                        fi
+                    fi
+                fi
+            else
+                check_for_gerrit
+                if [ "${IS_NEW_GERRIT?}" = "yes" ] ; then
+                    build_type="tb"
+                    if [ "${priority?}" = "fair" ] ; then
+                        last_priority="tb"
+                    fi
+                else
+                    check_for_commit
+                    if [ "${IS_NEW_COMMIT?}" = "yes" ] ; then
+                        build_type="tb"
+                        if [ "${priority?}" = "fair" ] ; then
+                            next_priority="gerrit"
+                        fi
+                    fi
+                fi
+            fi
+            if [ "${build_type}" = "tb" ] ; then
 
-		last_checkout_date="$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")"
+                last_checkout_date="$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")"
 
-		report_to_tinderbox "${last_checkout_date?}" "building" "no"
+                report_to_tinderbox "${last_checkout_date?}" "building" "no"
 
-		previous_build_status="${build_status}"
-		build_status="build_failed"
-		retval=0
-		retry_count=3
+                previous_build_status="${build_status}"
+                build_status="build_failed"
+                retval=0
+                retry_count=3
 
-		if [ "$DO_NOT_CLEAN" = "1" ] ; then
-		    PHASE_LIST="autogen make test push"
-		else
-		    PHASE_LIST="autogen clean make test push"
-		fi
+                if [ "$DO_NOT_CLEAN" = "1" ] ; then
+                    PHASE_LIST="autogen make test push"
+                else
+                    PHASE_LIST="autogen clean make test push"
+                fi
 
-		while [ "${PHASE_LIST}" != "" ] ; do
+                while [ "${PHASE_LIST}" != "" ] ; do
 
-		    do_build "tb"
+                    do_build "tb"
 
-		    if [ "$retval" = "0" ] ; then
-			build_status="success"
-			report_to_tinderbox "$last_checkout_date" "success" "yes"
-			if [ "${previous_build_status}" = "build_failed" ]; then
-			    report_fixed committer "$last_checkout_date"
-			fi
-		    elif [ "$retval" = "false_negative" ] ; then
-			report_to_tinderbox "${last_checkout_date?}" "fold" "no"
-			log_msgs "False negative build, skip reporting"
+                    if [ "$retval" = "0" ] ; then
+                        build_status="success"
+                        report_to_tinderbox "$last_checkout_date" "success" "yes"
+                        if [ "${previous_build_status}" = "build_failed" ]; then
+                            report_fixed committer "$last_checkout_date"
+                        fi
+                    elif [ "$retval" = "false_negative" ] ; then
+                        report_to_tinderbox "${last_checkout_date?}" "fold" "no"
+                        log_msgs "False negative build, skip reporting"
                     # false negative does not need a full clean build, let's just redo make and after
-			retry_count=$((retry_count - 1))
-			if [ "$retry_count" = "0" ] ; then
-			    PHASE_LIST=
-			else
-			    PHASE_LIST="make test push"
-			fi
-		    else
-			printf "${report_msgs?}:\n\n" > report_error.log
-			echo "======" >> report_error.log
-			if [ "${report_log?}" == "tb_${B}_build.log" ] ; then
-			    if [ -f build_error.log ]; then
-			        cat build_error.log | grep -C10 "^[^[]" >> report_error.log
-			        tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' >> report_error.log
-			    else
-			        tail -n1000 ${report_log?} >> report_error.log
-			    fi
-			else
-			    cat ${report_log?} >> report_error.log
-			fi
-			report_error committer "$last_checkout_date" report_error.log
-			report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
-		    fi
-		done
+                        retry_count=$((retry_count - 1))
+                        if [ "$retry_count" = "0" ] ; then
+                            PHASE_LIST=
+                        else
+                            PHASE_LIST="make test push"
+                        fi
+                    else
+                        printf "${report_msgs?}:\n\n" > report_error.log
+                        echo "======" >> report_error.log
+                        if [ "${report_log?}" == "tb_${B}_build.log" ] ; then
+                            if [ -f build_error.log ]; then
+                                cat build_error.log | grep -C10 "^[^[]" >> report_error.log
+                                tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' >> report_error.log
+                            else
+                                tail -n1000 ${report_log?} >> report_error.log
+                            fi
+                        else
+                            cat ${report_log?} >> report_error.log
+                        fi
+                        report_error committer "$last_checkout_date" report_error.log
+                        report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
+                    fi
+                done
 
-		rotate_logs
+                rotate_logs
 
-		if [ "$retval" = "0" ] ; then
-		    exit 0
-		elif [ "$retval" = "false_negative" ] ; then
-		    exit 2
-		else
-		    exit 1
-		fi
-	    elif [ "${build_type?}" = "gerrit" ] ; then
+                if [ "$retval" = "0" ] ; then
+                    exit 0
+                elif [ "$retval" = "false_negative" ] ; then
+                    exit 2
+                else
+                    exit 1
+                fi
+            elif [ "${build_type?}" = "gerrit" ] ; then
 
-		fetch_gerrit
+                fetch_gerrit
 
-		if [ "${retval?}" = "0" ] ; then
+                if [ "${retval?}" = "0" ] ; then
 
-		    PHASE_LIST="autogen clean make test push"
-		    retry_count=3
-		    while [ "${PHASE_LIST}" != "" ] ; do
-			do_build "gerrit"
-			if [ "${retval?}" = "false_negative" ] ; then
-			    report_to_tinderbox "${last_checkout_date?}" "fold" "no"
-			    log_msgs "False negative build, skip reporting"
+                    PHASE_LIST="autogen clean make test push"
+                    retry_count=3
+                    while [ "${PHASE_LIST}" != "" ] ; do
+                        do_build "gerrit"
+                        if [ "${retval?}" = "false_negative" ] ; then
+                            report_to_tinderbox "${last_checkout_date?}" "fold" "no"
+                            log_msgs "False negative build, skip reporting"
                     # false negative does not need a full clean build, let's just redo make and after
-			    retry_count=$((retry_count - 1))
-			    if [ "${retry_count?}" = "0" ] ; then
-				PHASE_LIST=
-			    else
-				PHASE_LIST="make test push"
-			    fi
-			else
-			    report_gerrit
-			fi
-		    done
-		fi
-		if [ -n "$GERRIT_PREV_B" ] ; then
-		    git checkout "$GERRIT_PREV_B"
-		fi
-		if [ "${retval?}" = "0" ] ; then
-		    exit 0
-		elif [ "${retval?}" = "3" ] ; then
-		    exit 3
-		elif [ "$retval" = "-1" ] ; then
-		    exit -1
-		else
-		    exit 1
-		fi
-	    else
-		exit 3
-	    fi
-	) 200>${lock_file?}
+                            retry_count=$((retry_count - 1))
+                            if [ "${retry_count?}" = "0" ] ; then
+                                PHASE_LIST=
+                            else
+                                PHASE_LIST="make test push"
+                            fi
+                        else
+                            report_gerrit
+                        fi
+                    done
+                fi
+                if [ -n "$GERRIT_PREV_B" ] ; then
+                    git checkout "$GERRIT_PREV_B"
+                fi
+                if [ "${retval?}" = "0" ] ; then
+                    exit 0
+                elif [ "${retval?}" = "3" ] ; then
+                    exit 3
+                elif [ "$retval" = "-1" ] ; then
+                    exit -1
+                else
+                    exit 1
+                fi
+            else
+                exit 3
+            fi
+        ) 200>${lock_file?}
 
-	ret="$?"
-	if [ -f tb_${B}_stop -o "${retval?}" = "-1" ] ; then
+        ret="$?"
+        if [ -f tb_${B}_stop -o "${retval?}" = "-1" ] ; then
             break
-	fi
-	if [ "${ret?}" == "2" ] ; then
+        fi
+        if [ "${ret?}" == "2" ] ; then
             retval="false_negative"
-	elif [ "$ret" == "3" ] ; then
-	    [ $V ] && echo "sleep 60"
-	    sleep 60
+        elif [ "$ret" == "3" ] ; then
+            [ $V ] && echo "sleep 60"
+            sleep 60
             retval="0"
-	else
+        else
             log_msgs "Waiting ${PAUSE_SECONDS?} seconds."
-	    sleep ${PAUSE_SECONDS?}
+            sleep ${PAUSE_SECONDS?}
             retval="0"
-	fi
+        fi
     done
 
     if [ -f tb_${B}_stop ] ; then
-	log_msgs "Stoped by request"
-	rm tb_${B}_stop
+        log_msgs "Stoped by request"
+        rm tb_${B}_stop
     fi
 
-
-
-
 }
+
 run_tb_loop()
 {
     if [ ! -f "${METADATA_DIR?}/tb_${B}_last-success-git-heads.txt" ] ; then
@@ -995,112 +993,112 @@ run_tb_loop()
     # main tinderbox loop
     while true; do
 
-	if [ -f tb_${B}_stop ] ; then
+        if [ -f tb_${B}_stop ] ; then
             break
-	fi
-	(
+        fi
+        (
             do_flock -x 200
 
-	    if [ "$retval" != "false_negative" ] ; then
-		check_for_commit
-	    else
-		collect_current_heads
-		IS_NEW_COMMIT="yes"
-	    fi
-	    if [ "${IS_NEW_COMMIT?}" = "yes" ] ; then
+            if [ "$retval" != "false_negative" ] ; then
+                check_for_commit
+            else
+                collect_current_heads
+                IS_NEW_COMMIT="yes"
+            fi
+            if [ "${IS_NEW_COMMIT?}" = "yes" ] ; then
 
-		last_checkout_date="$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")"
+                last_checkout_date="$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")"
 
-		report_to_tinderbox "${last_checkout_date?}" "building" "no"
+                report_to_tinderbox "${last_checkout_date?}" "building" "no"
 
-		previous_build_status="${build_status}"
-		build_status="build_failed"
-		retval=0
-		retry_count=3
+                previous_build_status="${build_status}"
+                build_status="build_failed"
+                retval=0
+                retry_count=3
 
-		if [ "$DO_NOT_CLEAN" = "1" ] ; then
-		    PHASE_LIST="autogen make test push"
-		else
-		    PHASE_LIST="autogen clean make test push"
-		fi
+                if [ "$DO_NOT_CLEAN" = "1" ] ; then
+                    PHASE_LIST="autogen make test push"
+                else
+                    PHASE_LIST="autogen clean make test push"
+                fi
 
-		while [ "${PHASE_LIST}" != "" ] ; do
+                while [ "${PHASE_LIST}" != "" ] ; do
 
-		    do_build "tb"
+                    do_build "tb"
 
-		    if [ "$retval" = "0" ] ; then
-			build_status="success"
-			report_to_tinderbox "$last_checkout_date" "success" "yes"
-			if [ "${previous_build_status}" = "build_failed" ]; then
-			    report_fixed committer "$last_checkout_date"
-			fi
-		    elif [ "$retval" = "false_negative" ] ; then
-			report_to_tinderbox "${last_checkout_date?}" "fold" "no"
-			log_msgs "False negative build, skip reporting"
+                    if [ "$retval" = "0" ] ; then
+                        build_status="success"
+                        report_to_tinderbox "$last_checkout_date" "success" "yes"
+                        if [ "${previous_build_status}" = "build_failed" ]; then
+                            report_fixed committer "$last_checkout_date"
+                        fi
+                    elif [ "$retval" = "false_negative" ] ; then
+                        report_to_tinderbox "${last_checkout_date?}" "fold" "no"
+                        log_msgs "False negative build, skip reporting"
                     # false negative does not need a full clean build, let's just redo make and after
-			retry_count=$((retry_count - 1))
-			if [ "$retry_count" = "0" ] ; then
-			    PHASE_LIST=
-			else
-			    PHASE_LIST="make test push"
-			fi
-		    else
-			printf "${report_msgs?}:\n\n" > report_error.log
-			echo "======" >> report_error.log
-			if [ "${report_log?}" == "tb_${B}_build.log" ] ; then
-			    if [ -f build_error.log ]; then
-			        cat build_error.log | grep -C10 "^[^[]" >> report_error.log
-			        tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' >> report_error.log
-			    else
-			        tail -n1000 ${report_log?} >> report_error.log
-			    fi
+                        retry_count=$((retry_count - 1))
+                        if [ "$retry_count" = "0" ] ; then
+                            PHASE_LIST=
+                        else
+                            PHASE_LIST="make test push"
+                        fi
+                    else
+                        printf "${report_msgs?}:\n\n" > report_error.log
+                        echo "======" >> report_error.log
+                        if [ "${report_log?}" == "tb_${B}_build.log" ] ; then
+                            if [ -f build_error.log ]; then
+                                cat build_error.log | grep -C10 "^[^[]" >> report_error.log
+                                tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' >> report_error.log
+                            else
+                                tail -n1000 ${report_log?} >> report_error.log
+                            fi
 
-			else
-			    cat ${report_log?} >> report_error.log
-			fi
-			report_error committer "$last_checkout_date" report_error.log
-			report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
-		    fi
-		done
+                        else
+                            cat ${report_log?} >> report_error.log
+                        fi
+                        report_error committer "$last_checkout_date" report_error.log
+                        report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
+                    fi
+                done
 
-		rotate_logs
+                rotate_logs
 
-		if [ "$retval" = "0" ] ; then
-		    exit 0
-		elif [ "$retval" = "false_negative" ] ; then
-		    exit 2
-		else
-		    exit 1
-		fi
-	    elif [ "${IS_NEW_COMMIT?}" = "error" ] ; then
-	        exit 1
-	    else
-		exit 3
-	    fi
+                if [ "$retval" = "0" ] ; then
+                    exit 0
+                elif [ "$retval" = "false_negative" ] ; then
+                    exit 2
+                else
+                    exit 1
+                fi
+            elif [ "${IS_NEW_COMMIT?}" = "error" ] ; then
+                exit 1
+            else
+                exit 3
+            fi
 
-	) 200>${lock_file?}
-	ret="$?"
-	[ $V ] && echo "unlock ${lock_file?}"
+        ) 200>${lock_file?}
+        ret="$?"
+        [ $V ] && echo "unlock ${lock_file?}"
 
-	if [ -f tb_${B}_stop ] ; then
+        if [ -f tb_${B}_stop ] ; then
             break
-	fi
-	if [ "$ret" == "2" ] ; then
+        fi
+        if [ "$ret" == "2" ] ; then
             retval="false_negative"
-	elif [ "$ret" == "3" ] ; then
-	    [ $V ] && echo "sleep 60"
-	    sleep 60
+        elif [ "$ret" == "3" ] ; then
+            [ $V ] && echo "sleep 60"
+            sleep 60
             retval="0"
-	else
+        else
             log_msgs "Waiting ${PAUSE_SECONDS?} seconds."
-	    sleep ${PAUSE_SECONDS?}
+            sleep ${PAUSE_SECONDS?}
             retval="0"
-	fi
+        fi
     done
 
     if [ -f tb_${B}_stop ] ; then
-	log_msgs "Stoped by request"
-	rm tb_${B}_stop
+        log_msgs "Stoped by request"
+        rm tb_${B}_stop
     fi
 
 }
@@ -1119,7 +1117,7 @@ if [ -n "${mo}" -a -f "${BIN_DIR?}/tinbuild_internals_${mo}.sh" ] ; then
     source "${BIN_DIR?}/tinbuild_internals_${mo}.sh"
 else
     if [ -n "${ms}" -a -f "${BIN_DIR?}/tinbuild_internals_${ms}.sh" ] ; then
-	source "${BIN_DIR?}/tinbuild_internals_${ms}.sh"
+        source "${BIN_DIR?}/tinbuild_internals_${ms}.sh"
     fi
 fi
 unset mo
