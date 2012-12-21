@@ -94,7 +94,7 @@ a test email is send to the owner declared in the config file.
 Due to the existance of build-time heisenbug, that seems related to
 bugs in the underlying OS/file-system/... I've added a mechanism to intercept
 these and prevent sending false negative reports. this is done by grepping
-the build_error.log produced by the build against a file containing a
+the log produced by the build against a file containing a
 list of known heisenbug signature. if there is a match no email is sent
 and the build is retried immediatly on the same tree.
 The list of signature being highly machine dependant (and hopefully empty for

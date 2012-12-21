@@ -29,7 +29,7 @@ do_autogen()
 pre_clean()
 {
     if [ "${retval}" = "0" ] ; then
-        rm -f build_error.log
+        true # log files to clean, if any
     fi
 }
 
@@ -86,9 +86,9 @@ do_test()
 post_make()
 {
     if [ "${retval}" != "0" ] ; then
-        if [ -f build_error.log ] ; then
+        if [ -f "${report_log?}" ] ; then
             if [ -f $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives ] ; then
-                grep -F "$(cat $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives)" build_error.log && retval="false_negative"
+                grep -F "$(cat $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives)" "${report_log?}" && retval="false_negative"
                 if [ "${retval?}" == "false_negative" ] ; then
                     log_msgs "False negative detected"
                 fi

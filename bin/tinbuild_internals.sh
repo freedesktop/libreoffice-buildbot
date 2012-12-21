@@ -885,12 +885,7 @@ run_tb_gerrit_loop()
                         printf "${report_msgs?}:\n\n" > report_error.log
                         echo "======" >> report_error.log
                         if [ "${report_log?}" == "tb_${B}_build.log" ] ; then
-                            if [ -f build_error.log ]; then
-                                cat build_error.log | grep -C10 "^[^[]" >> report_error.log
-                                tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' >> report_error.log
-                            else
-                                tail -n1000 ${report_log?} >> report_error.log
-                            fi
+                            tail -n1000 ${report_log?} >> report_error.log
                         else
                             cat ${report_log?} >> report_error.log
                         fi
@@ -1046,13 +1041,7 @@ run_tb_loop()
                         printf "${report_msgs?}:\n\n" > report_error.log
                         echo "======" >> report_error.log
                         if [ "${report_log?}" == "tb_${B}_build.log" ] ; then
-                            if [ -f build_error.log ]; then
-                                cat build_error.log | grep -C10 "^[^[]" >> report_error.log
-                                tail -n50 ${report_log?} | grep -A25 'internal build errors' | grep 'ERROR:' >> report_error.log
-                            else
-                                tail -n1000 ${report_log?} >> report_error.log
-                            fi
-
+                            tail -n1000 ${report_log?} >> report_error.log
                         else
                             cat ${report_log?} >> report_error.log
                         fi
