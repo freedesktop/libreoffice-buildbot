@@ -880,6 +880,7 @@ run_tb_gerrit_loop()
                             PHASE_LIST=
                         else
                             PHASE_LIST="make test push"
+                            retval=0
                         fi
                     else
                         printf "${report_msgs?}:\n\n" > report_error.log
@@ -922,6 +923,7 @@ run_tb_gerrit_loop()
                                 PHASE_LIST=
                             else
                                 PHASE_LIST="make test push"
+                                retval=0
                             fi
                         else
                             report_gerrit
@@ -950,6 +952,8 @@ run_tb_gerrit_loop()
             break
         fi
         if [ "${ret?}" == "2" ] ; then
+            [ $V ] && echo "sleep 60"
+            sleep 60
             retval="false_negative"
         elif [ "$ret" == "3" ] ; then
             [ $V ] && echo "sleep 60"
@@ -1036,6 +1040,7 @@ run_tb_loop()
                             PHASE_LIST=
                         else
                             PHASE_LIST="make test push"
+                            retval=0
                         fi
                     else
                         printf "${report_msgs?}:\n\n" > report_error.log
@@ -1073,6 +1078,8 @@ run_tb_loop()
             break
         fi
         if [ "$ret" == "2" ] ; then
+            [ $V ] && echo "sleep 60"
+            sleep 60
             retval="false_negative"
         elif [ "$ret" == "3" ] ; then
             [ $V ] && echo "sleep 60"
