@@ -1,0 +1,51 @@
+Preparation
+===========
+  * Install valgrind
+  * Put the testing documents under ./docs directory
+
+Run test
+========
+
+  ./loperf.sh $SOFFICEBIN
+
+##Example
+
+  ./loperf.sh /usr/lib/libreoffice/program/soffice.bin
+  ./loperf.sh /usr/lib64/libreoffice/program/soffice.bin
+  ./loperf.sh ~/core/install/program/soffice.bin
+
+Performance Log
+===============
+
+## Log Location
+
+  logs/loperf/*.log
+
+## Log data explanation
+
+  (Load status - empty load)                                     Offload:
+  (Callgrind statistics)                                         1091953813 383412847 239113653 3636634 2414302 504373 46742 804560 384145
+
+  (Load status - loaded docs/test.xlsx)                          Load: docs/test.xlsx
+  (Callgrind statistics - raw)                                   7325944375 2619631835 1614972117 13285498 21686381 5134302 467098 2922981 2662910
+  (Callgrind statistics - take out offload numbers)              6233990562  2236218988  1375858464  9648864  19272079  4629929  420356  2118421  2278765
+
+## Regression report explanation
+
+Regression status report appends to performance log only once when a testing
+is done. It compares the current log with any other existing logs in the
+logs/loperf directory and report the difference. A typical example:
+
+  (Seperator)                                                    Regression Status:
+  (Seperator)                                                    -----------------
+  (Warning message)                                              Regression found!
+  (Related document being tested)                                Document : docs/test.wps
+  (Reference log where the regression happens against)           Reference: /home/bench/project/loperf/logs/loperf/pf-lo4.0-2012_11_27_14_40_52_08_00.log
+  (Current callgrind stats minus Reference callgrind stats)      Diffstats: 10 0 2 1 0 0 99 0 0
+
+Callgrind Raw Log
+=================
+
+## Log Location
+
+  logs/callgrind/*.log
