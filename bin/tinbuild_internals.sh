@@ -455,17 +455,33 @@ check_for_commit()
 check_for_gerrit()
 {
     local result
+    local has_task
+
+    [ $V ] && echo "try to get a task for gerrit buildbot"
 
     IS_NEW_GERRIT="error"
-    result=$(ssh ${GERRIT_HOST?} buildbot get-task -p core -a ${GERRIT_PLATFORM?} --format bash)
-    result=$(echo "$result" | grep "^GERRIT_TASK_")
-    if [ -n "${result}" ] ; then
+    GERRIT_TASK_TICKET=""
+    GERRIT_TASK_BRANCH=""
+    GERRIT_TASK_REF=""
+    result=$(ssh ${GERRIT_HOST?} buildbot get-task -p core -a ${GERRIT_PLATFORM?} --format BASH)
+    [ $V ] && echo "get task result:${result}"
+
+    has_task=$(echo "$result" | grep "^GERRIT_TASK_")
+    if [ -n "${has_task}" ] ; then
         eval "${result}"
-        IS_NEW_GERRIT="yes"
+        if [ -z "$GERRIT_TASK_TICKET" -o -z "$GERRIT_TASK_REF" ] ; then
+            IS_NEW_GERRIT="no"
+            [ $V ] && echo "no task from gerrit buildbot"
+        else
+            IS_NEW_GERRIT="yes"
+            [ $V ] && echo "got task TASK_TICKET=$GERRIT_TASK_TICKET TASK_REF=$GERRIT_TASK_REF"
+        fi
     else
         #FIXME normal "no task" detection
         IS_NEW_GERRIT="no"
+        [ $V ] && echo "no task from gerrit buildbot"
     fi
+
 }
 
 determine_make()
@@ -633,21 +649,56 @@ push_nightly()
 
 report_gerrit()
 {
-    if [ "${retval?}" = "0" ] ; then
-        ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_ID}" --succeed
+local log_type="$1"
+
+    [ $V ] && echo "report to gerrit retval=${retval} log_type=${log_type}"
+    if [ "$log_type" = "short"  -a "${retval?}" = "0" ] ; then
+        gzlog="tinder.log.gz"
+        (
+            echo "gerrit_task_ticket:$GERRIT_TASK_TICKET"
+            echo "gerrit_task_branch:$GERRIT_TASK_BRANCH"
+            echo "gerrit task_ref:$GERRIT_TASK_REF"
+            echo ""
+            echo "Build: OK"
+            echo ""
+            cat tb_${B}_autogen.log 2>/dev/null
+        ) | gzip -c > "${gzlog}"
     else
-        ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_ID}" --failed
+        gzlog="tinder.log.gz"
+        (
+            echo "gerrit_task_ticket:$GERRIT_TASK_TICKET"
+            echo "gerrit_task_branch:$GERRIT_TASK_BRANCH"
+            echo "gerrit task_ref:$GERRIT_TASK_REF"
+            echo ""
+            if [ "${retval?}" = "0" ] ; then
+                echo "Build: OK"
+            else
+                echo "Build: FAIL"
+            fi
+            echo ""
+            cat tb_${B}_autogen.log tb_${B}_clean.log tb_${B}_build.log tb_${B}_tests.log 2>/dev/null
+        ) | gzip -c > "${gzlog}"
+    fi
+
+    if [ "${retval?}" = "0" ] ; then
+        cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_TICKET}" --succeed --log -
+    else
+        cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_TICKET}" --failed --log -
     fi
 }
 
 fetch_gerrit()
 {
     GERRIT_PREV_B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
+    [ $V ] && echo "fetching gerrit path from ssh://${GERRIT_HOST?}/core ${GERRIT_TASK_REF}"
     git fetch ssh://${GERRIT_HOST?}/core ${GERRIT_TASK_REF}
     if [ "$?" != "0" ] ; then
         retval="3"
     else
-        git checkout FETCH_HEAD || die "fatal error checking out gerrit ref"
+        git checkout -q FETCH_HEAD || die "fatal error checking out gerrit ref"
+        git submodule update
+        [ $V ] && echo "fetched gerrit path from ssh://${GERRIT_HOST?}/core ${GERRIT_TASK_REF}"
+        retval="0"
     fi
 }
 
@@ -727,6 +778,7 @@ run_gerrit_patch()
         fi
         if [ -n "$GERRIT_PREV_B" ] ; then
             git checkout "$GERRIT_PREV_B"
+            git submodule update
         fi
         if [ "$retval" = "0" ] ; then
             exit 0
@@ -764,6 +816,7 @@ run_gerrit_loop()
                 fi
                 if [ -n "$GERRIT_PREV_B" ] ; then
                     git checkout "$GERRIT_PREV_B"
+                    git submodule update
                 fi
                 if [ "$retval" = "0" ] ; then
                     exit 0
@@ -821,18 +874,18 @@ run_tb_gerrit_loop()
                 else
                     check_for_gerrit
                     if [ "${IS_NEW_GERRIT?}" = "yes" ] ; then
-                        build_type="tb"
+                        build_type="gerrit"
                         if [ "${priority?}" = "fair" ] ; then
-                            last_priority="tb"
+                            next_priority="tb"
                         fi
                     fi
                 fi
             else
                 check_for_gerrit
                 if [ "${IS_NEW_GERRIT?}" = "yes" ] ; then
-                    build_type="tb"
+                    build_type="gerrit"
                     if [ "${priority?}" = "fair" ] ; then
-                        last_priority="tb"
+                        next_priority="tb"
                     fi
                 else
                     check_for_commit
@@ -932,6 +985,7 @@ run_tb_gerrit_loop()
                 fi
                 if [ -n "$GERRIT_PREV_B" ] ; then
                     git checkout "$GERRIT_PREV_B"
+                    git submodule update
                 fi
                 if [ "${retval?}" = "0" ] ; then
                     exit 0
@@ -948,7 +1002,7 @@ run_tb_gerrit_loop()
         ) 200>${lock_file?}
 
         ret="$?"
-        if [ -f tb_${B}_stop -o "${retval?}" = "-1" ] ; then
+        if [ -f tb_${B}_stop -o "${ret?}" = "-1" ] ; then
             break
         fi
         if [ "${ret?}" == "2" ] ; then

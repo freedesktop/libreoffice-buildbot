@@ -47,8 +47,10 @@ do_clean()
 do_make()
 {
     optdir=""
-    current_timestamp=$(sed -e "s/ /_/" "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")
-    EXTRA_BUILDID="TinderBox: $TINDER_NAME, Branch:${B}, Time: $current_timestamp"
+    if [ "${build_type}" = "tb" ] ; then
+        current_timestamp=$(sed -e "s/ /_/" "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")
+        EXTRA_BUILDID="TinderBox: $TINDER_NAME, Branch:${B}, Time: $current_timestamp"
+    fi
     if [ "${retval}" = "0" ] ; then
         if ! $NICE $WATCHDOG ${MAKE?} EXTRA_BUILDID="$EXTRA_BUILDID" -s $target >tb_${B}_build.log 2>&1 ; then
             report_log=tb_${B}_build.log
