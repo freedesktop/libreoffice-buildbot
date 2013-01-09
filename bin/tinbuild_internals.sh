@@ -681,8 +681,10 @@ local log_type="$1"
     fi
 
     if [ "${retval?}" = "0" ] ; then
+        log_msgs "Repport Success for gerrit ref '$GERRIT_REF'."
         cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_TICKET}" --succeed --log -
     else
+        log_msgs "Repport Failure for gerrit ref '$GERRIT_REF'."
         cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_TICKET}" --failed --log -
     fi
 }
@@ -691,12 +693,12 @@ fetch_gerrit()
 {
     GERRIT_PREV_B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
     [ $V ] && echo "fetching gerrit path from ssh://${GERRIT_HOST?}/core ${GERRIT_TASK_REF}"
-    git fetch ssh://${GERRIT_HOST?}/core ${GERRIT_TASK_REF}
+    git fetch -q ssh://${GERRIT_HOST?}/core ${GERRIT_TASK_REF}
     if [ "$?" != "0" ] ; then
         retval="3"
     else
         git checkout -q FETCH_HEAD || die "fatal error checking out gerrit ref"
-        git submodule update
+        git submodule -q update
         [ $V ] && echo "fetched gerrit path from ssh://${GERRIT_HOST?}/core ${GERRIT_TASK_REF}"
         retval="0"
     fi
@@ -805,6 +807,7 @@ run_gerrit_loop()
 
             if [ "${IS_NEW_GERRIT}" = "yes" ] ; then
 
+                log_msgs "Starting build for gerrit ref '$GERRIT_TASK_REF'."
                 fetch_gerrit
 
                 if [ "$retval" = "0" ] ; then
@@ -959,6 +962,7 @@ run_tb_gerrit_loop()
                 fi
             elif [ "${build_type?}" = "gerrit" ] ; then
 
+                log_msgs "Starting build for gerrit ref '$GERRIT_TASK_REF'."
                 fetch_gerrit
 
                 if [ "${retval?}" = "0" ] ; then
@@ -984,8 +988,8 @@ run_tb_gerrit_loop()
                     done
                 fi
                 if [ -n "$GERRIT_PREV_B" ] ; then
-                    git checkout "$GERRIT_PREV_B"
-                    git submodule update
+                    git checkout -q "$GERRIT_PREV_B"
+                    git submodule -q update
                 fi
                 if [ "${retval?}" = "0" ] ; then
                     exit 0
