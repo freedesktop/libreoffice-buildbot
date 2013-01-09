@@ -57,17 +57,17 @@ do_make()
             report_msgs="build failed - error is:"
             retval=1
         else
-	    # if we want to populate bibisect we need to 'install'
-	    if [ "${build_type}" = "tb" -a $PUSH_TO_BIBISECT_REPO != "0" ] ; then
-		if ! $NICE $WATCHDOG ${MAKE?} EXTRA_BUILDID="$EXTRA_BUILDID" -s install-tb >>tb_${B}_build.log 2>&1 ; then
-		    report_log=tb_${B}_build.log
-		    report_msgs="build failed - error is:"
-		    retval=1
-		else
-		    optdir="$(find_dev_install_location)"
-		fi
-	    fi
-	fi
+            # if we want to populate bibisect we need to 'install'
+            if [ "${build_type}" = "tb" -a $PUSH_TO_BIBISECT_REPO != "0" ] ; then
+                if ! $NICE $WATCHDOG ${MAKE?} EXTRA_BUILDID="$EXTRA_BUILDID" -s install-tb >>tb_${B}_build.log 2>&1 ; then
+                    report_log=tb_${B}_build.log
+                    report_msgs="build failed - error is:"
+                    retval=1
+                else
+                    optdir="$(find_dev_install_location)"
+                fi
+            fi
+        fi
     fi
 }
 
@@ -87,12 +87,14 @@ do_test()
 
 post_make()
 {
-    if [ "${retval}" != "0" ] ; then
-        if [ -f "${report_log?}" ] ; then
-            if [ -f $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives ] ; then
-                grep -F "$(cat $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives)" "${report_log?}" && retval="false_negative"
-                if [ "${retval?}" == "false_negative" ] ; then
-                    log_msgs "False negative detected"
+    if [ "${build_type}" = "tb" ] ; then
+        if [ "${retval}" != "0" ] ; then
+            if [ -f "${report_log?}" ] ; then
+                if [ -f $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives ] ; then
+                    grep -F "$(cat $HOME/.tinbuild/config/${PROFILE_NAME?}.false_negatives)" "${report_log?}" && retval="false_negative"
+                    if [ "${retval?}" == "false_negative" ] ; then
+                        log_msgs "False negative detected"
+                    fi
                 fi
             fi
         fi
@@ -107,12 +109,13 @@ do_push()
         return 0;
     fi
 
-    # Push nightly build if needed
-    push_nightly
+    if [ "${build_type}" = "tb" ] ; then
+        # Push nightly build if needed
+        push_nightly
 
-    # Push bibisect to remote bibisect if needed
-    push_bibisect
-
+        # Push bibisect to remote bibisect if needed
+        push_bibisect
+    fi
     return 0;
 }
 
