@@ -681,10 +681,10 @@ local log_type="$1"
     fi
 
     if [ "${retval?}" = "0" ] ; then
-        log_msgs "Repport Success for gerrit ref '$GERRIT_REF'."
+        log_msgs "Report Success for gerrit ref '$GERRIT_TASK_TICKET'."
         cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot put --id ${TINDER_ID?} --ticket "${GERRIT_TASK_TICKET}" --succeed --log -
     else
-        log_msgs "Repport Failure for gerrit ref '$GERRIT_REF'."
+        log_msgs "Report Failure for gerrit ref '$GERRIT_TASK_TICKET."
         cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot report --id ${TINDER_ID?} --ticket "${GERRIT_TASK_TICKET}" --failed --log -
     fi
 }
@@ -857,8 +857,12 @@ run_tb_gerrit_loop()
 
     if [ "${priority?}" = "fair" ] ; then
         next_priority="tb"
+        if [ ! -f "${METADATA_DIR?}/tb_${B}_next_priority" ] ; then
+            echo -n "{next_priority}" > "${METADATA_DIR?}/tb_${B}_next_priority"
+        fi
+    else
+        echo -n "{next_priority}" > "${METADATA_DIR?}/tb_${B}_next_priority"
     fi
-
     while true; do
 
         if [ -f tb_${B?}_stop ] ; then
@@ -867,6 +871,7 @@ run_tb_gerrit_loop()
         (
             do_flock -x 200
             build_type=""
+            next_priority=$(cat "${METADATA_DIR?}/tb_${B}_next_priority")
             if [ "${next_priority?}" = "tb" ] ; then
                 check_for_commit
                 if [ "${IS_NEW_COMMIT?}" = "yes" ] ; then
@@ -900,6 +905,7 @@ run_tb_gerrit_loop()
                     fi
                 fi
             fi
+            echo -n "${next_priority}" > "${METADATA_DIR?}/tb_${B}_next_priority"
             if [ "${build_type}" = "tb" ] ; then
 
                 last_checkout_date="$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")"
