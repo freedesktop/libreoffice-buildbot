@@ -440,6 +440,32 @@ if [ "${PUSH_TO_BIBISECT_REPO}" != "0" ] ; then
         fi
     fi
 fi
+
+if [ "$MODE" = "gerrit-tb" -o "$MODE" = "tb-gerrit" -o "$MODE" = "gerrit" -o "$MODE" = "fair" ] ; then
+    if [ -z "$GERRIT_PLATFORM" ] ; then
+	os=$(uname)
+	case "$os" in
+	    *Linux*)
+		GERRIT_PLATFORM="LINUX"
+		;;
+	    Darwin)
+		GERRIT_PLATFORM="MAC"
+		;;
+	    CYGWIN*)
+		GERRIT_PLATFORM="WINDOWS"
+		;;
+	esac
+    fi
+    if [ -z "$GERRIT_PLATFORM" ] ; then
+        echo "Error: GERRIT_PLATFORM is required for mode involving gerrit"
+        exit 1
+    fi
+    if [ -z "$TINDER_ID" ] ; then
+        echo "Error: TINDER_ID is required for mode involving gerrit"
+        exit 1
+    fi
+fi
+
 # if we want email to be sent, we must make sure that the required parameters are set in the profile (or in the environment)
 case "$SEND_MAIL" in
     all|tb|owner|debug|author)
