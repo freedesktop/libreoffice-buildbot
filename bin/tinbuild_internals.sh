@@ -463,7 +463,7 @@ check_for_gerrit()
     GERRIT_TASK_TICKET=""
     GERRIT_TASK_BRANCH=""
     GERRIT_TASK_REF=""
-    result=$(ssh ${GERRIT_HOST?} buildbot get-task -p core -a ${GERRIT_PLATFORM?} --format BASH)
+    result=$(ssh ${GERRIT_HOST?} buildbot get -p core --id ${TINDER_ID?} -a ${GERRIT_PLATFORM?} --format BASH)
     [ $V ] && echo "get task result:${result}"
 
     has_task=$(echo "$result" | grep "^GERRIT_TASK_")
@@ -682,10 +682,10 @@ local log_type="$1"
 
     if [ "${retval?}" = "0" ] ; then
         log_msgs "Repport Success for gerrit ref '$GERRIT_REF'."
-        cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_TICKET}" --succeed --log -
+        cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot put --id ${TINDER_ID?} --ticket "${GERRIT_TASK_TICKET}" --succeed --log -
     else
         log_msgs "Repport Failure for gerrit ref '$GERRIT_REF'."
-        cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot report --ticket "${GERRIT_TASK_TICKET}" --failed --log -
+        cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot report --id ${TINDER_ID?} --ticket "${GERRIT_TASK_TICKET}" --failed --log -
     fi
 }
 
