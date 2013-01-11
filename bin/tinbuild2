@@ -157,7 +157,7 @@ sanity_check()
         exit 1
     fi
 
-    if [ ! -f configure.in ] ; then
+    if [ ! -f configure.in -a ! -f configure.ac ] ; then
         echo "Error: The current working directory must be the root git repo"
         exit 1
     fi
