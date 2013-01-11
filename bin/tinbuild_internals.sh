@@ -650,6 +650,7 @@ push_nightly()
 report_gerrit()
 {
 local log_type="$1"
+local status="failed"
 
     [ $V ] && echo "report to gerrit retval=${retval} log_type=${log_type}"
     if [ "$log_type" = "short"  -a "${retval?}" = "0" ] ; then
@@ -681,12 +682,11 @@ local log_type="$1"
     fi
 
     if [ "${retval?}" = "0" ] ; then
-        log_msgs "Report Success for gerrit ref '$GERRIT_TASK_TICKET'."
-        cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot put --id ${TINDER_ID?} --ticket "${GERRIT_TASK_TICKET}" --succeed --log -
-    else
-        log_msgs "Report Failure for gerrit ref '$GERRIT_TASK_TICKET."
-        cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot report --id ${TINDER_ID?} --ticket "${GERRIT_TASK_TICKET}" --failed --log -
+	status="success"
     fi
+    log_msgs "Report Success for gerrit ref '$GERRIT_TASK_TICKET'."
+    cat "${gzlog}" | ssh ${GERRIT_HOST?} buildbot put --id ${TINDER_ID?} --ticket "${GERRIT_TASK_TICKET}" --status $status --log -
+
 }
 
 fetch_gerrit()
