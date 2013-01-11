@@ -8,105 +8,199 @@ build, or uploads the build results to http://dev-builds.libreoffice.org/daily/
 Short version
 -------------
 
+<profile_name> is a name you chose for you profile... usually use 'master' for a tinderbox
+that run the master branch. but you can call it anything you want.
+You can create different profile that do different kind of build, following the same procedure.
 Read http://wiki.documentfoundation.org/Development/Tinderbox .
 
 # clone tinbuild
-git clone git://anongit.freedesktop.org/libreoffice/contrib/buildbot ~/buildbot
+git clone git://gerrit.libreoffice.org/buildbot /lo/buildbot
 
 # clone LibreOffice
-git clone git://anongit.freedesktop.org/libreoffice/core ~/master
+git clone git://gerrit.libreoffice.org/core /lo/core
 
 # make the LibreOffice build
-cd ~/master
-./autogen.sh
+cd /lo/core
+./autogen.sh [ which ever argument are needed ]
 make
 make dev-install
 
 # after the above succeeded, configure buildbot
 mkdir -p ~/.tinbuild/config
-cat > ~/.tinbuild/config/your_name.cfg <<EOF
+mkdir -p ~/.tinbuild/metadata/<profile_name>
+cat > ~/.tinbuild/config/<profile_name>.cfg <<EOF
 SMTPHOST=<your value>
 SMTPUSER=<your value>
 SMTPPW=<your value>
-TINDER_NAME=<your value>
-OWNER=<your value>
+TINDER_NAME=<your value> # [ see https://wiki.documentfoundation.org/Development/Tinderbox for naming conventions ]
+TINDER_ID=<id> # [ see https://wiki.documentfoundation.org/Development/Tinderbox for how to get an ID ]
+OWNER=<email address of the owner of this TB>
+METADATA_DIR=~/.tinbuild/meta/<profile_name> # this can be any existing directory you want
+                                         # if METADATA_DIR is not specified the tinderbox metadata are stored in the core repo itself
+GERRIT_PLATFORM=(MAC|LINUX|WINDOWS) # platform this TB is building when doing gerrit path verification
 EOF
 
 # save you autogen configuration.
 mkdir -p ~/.tinbuild/autogen
-cp ~/master/autogen.lastrun ~/.tinbuild/autogen/your_name.autogen
+cp /lo/core/autogen.lastrun ~/.tinbuild/autogen/<prodile_name>.autogen
 
 # check the configuration
-cd ~/master
-~/buildbot/bin/tinbuild2 -p your_name -c
+cd /lo/core
+/lo/buildbot/bin/tinbuild2 -p <profile_name> -c
 
 # prime the tinderbox
-cd ~/master
-~/buildbot/bin/tinbuild2 -p your_name -z
+cd /lo/core
+/lo/buildbot/bin/tinbuild2 -p <profile_name> -z
 
 # and if that succeeds, start the periodical building
-cd ~/master
-~/buildbot/bin/tinbuild2 -m all -p your_name
+cd /lo/core
+/lo/buildbot/bin/tinbuild2 -m all -p <profile_name>
 
-That's it; for more possibilities, like uploading the builds, or what to do
-when it complains that your architecture does not have flock, see the help,
-the below explanation, or the sources :-)
-
-Longer explanation
-------------------
-
-Why:
-
-The main motivation was the need to have a more flexible customisation for the
-different build step. For performance reason, I needed to be able to set-up a
-ram_disk after the make clean, create a bunch of directory and link them in
-the tree to preempt solver and all the *.pro build directory
-
-I also needed a pre-clean step to be able to destroy that ram_disk (hence
-speeding up the make clean a lot)
+# to also build gerrit patches
+/lo/buildbot/bin/tinbuild2 -m all -p <prodile_name> --mode=fair
 
 
-so rather than hacking the existing tinbuild in a way I could never upstream
-I started tinbuild2.
+Configuration
+-------------
 
-while at it, I set-up a few more goals:
+The configuration of tinbuild2 is stored in ~/.tinbuild/*
+tinbuild2 is 'profile' based.
+each profile comport a config file in
+~/.tinbuild/config/<profile_name>.cfg
+and an assocaited  autogen configuration for the build
+located at
+~/.tinbuild/autogen/<profile_name>.autogen
 
-Have the list of commits and committers - in case of failure - be generated
-based on the heads of the last sucessfull build, rather than based on a
-timestamp. this is needed because the timestamp associated to the commits
-have little correlation to the time when they have become available in the
-public tree.
+optionnaly each profile can source an 'extension/override' script
+located at
+~/.tinbuild/phases/<profile_name>.sh
+that file, if it exsist will be sourced in tinbuild2 script.
 
-Working based on a set of heads, meant I also wanted to tinbuild to be
-'restartable'. in other words, if the tinbuild stop of any reason
-(Ctrl-C for instance). when it restart it will behave as if it was stopped
-just after the last sucessful build it did.
-This require to prime/bootstrap the tinbuild, that is to sucessfully complete a
-build sequence. this is achieved with runnning it once with -z.
-It will then attempt a build iteration (without pulling) and stop immediatly
-after that.
+tinbuild2 maintain some metadata information in order to keep track ot the state
+of affair for a given profile.
+by default these files are sotre in the directory of the core repo, but
+if you specify a METADATA_DIR in the configuration of the profile then
+that directory will be used to store these files.
+Note: the METADATA_DIR, if specified, must exist.
+Using a METADATA_DIR allow to keep the repo clean, allow to use r/o repo,
+all to use git clean on the repo without risk of destroying the state of the tinderbox.
 
-There is a 'sanity-check' option which is intended to do reasonable attempt to
-verify that your configuration is workable. this check mostly for the existance
-of the config file and make sure that it result in the ability to send emails
-a test email is send to the owner declared in the config file.
+config file
+-----------
 
-Due to the existance of build-time heisenbug, that seems related to
-bugs in the underlying OS/file-system/... I've added a mechanism to intercept
-these and prevent sending false negative reports. this is done by grepping
-the log produced by the build against a file containing a
-list of known heisenbug signature. if there is a match no email is sent
-and the build is retried immediatly on the same tree.
-The list of signature being highly machine dependant (and hopefully empty for
-most people), it is not checked in.
-That list live at ~/.tinderbuild/config/<project>.false_negatives
-This file is optional.
+the config file for a profile is located at
+~/.tindbuild/config/<profile_name>.cfg
 
-The Uploading of dailies, using the -r <nnn> option can now be run
-asynchronously. That is the rsync job run in the background while
-tinderbox continue it's 'normal' operation.
+The following parameter can od must be specified.
 
-How:
+Mandatory parameters:
+
+SMTPHOST : hostname of the smtp service to send email.
+SMTPUSER : user to pass to the smtp server to send email.
+SMTPPW : password for the smp service
+SMTPUSER and SMTPPW may be ommited if your smtp service connection without login. That is usually not the case.
+TINDER_NAME : name of yur tinderbox, please refer to
+              https://wiki.documentfoundation.org/Development/Tinderbox
+              for tinderbox naming conventions
+TINDER_ID : numerical id of your tinderbox. Please refer to
+            https://wiki.documentfoundation.org/Development/Tinderbox
+            for how to assign an id to your tinderbox
+OWNER : email address of the owner of this tinderbox.
+
+Optional parameters
+
+METADATA_DIR : directory where tinbuild2 will store the metadata information about the state of the tinderbox
+               if specified, the directory must exist (it is _not_ created by tinbuild2)
+               if this variable is not specified, then the metadata fiels are store in the root of
+               the core repository.
+ARTIFACTDIR : git repo where to deliver binary build.
+               tinbuild2 can collect binary build to form a bibisect git repo
+               this parameter is mandatody if you specifyc the '-x' command line argument
+               when running tinbuild2
+BIBISECT_GC : Y/N. In case of collection of binary artifact, make tinbuild2 to run a git gc command after
+	           the collection of each new binary version
+BIBSECT_PUSH : Y/N. In case of collection of binary artifact, make tinbuild2 push the bibisect repo to
+                    its remote 'origin' after the collection of each new binary version
+GERRIT_PLATFORM : MAC/LINUX/WINDOWS. when using tinbuild2 to do gerrit patch verification,
+                                     indicate which class of build that tinderbox build.
+                                     This parameter may be needed if the auto-termination that tinbuild2 do
+                                     using 'uname' is uncorrect, or possibly in the future to support cross-compile
+                                     tinderbox.
+PAUSE_SECONDS : <integer>. Duration, in seconds, to pause after each build, before trying to do another one.
+                           The default value is 900 seconds (15 minutes).
+                           For a dedicated tindebox machine, this should probably be 60 or less.
+
+command-line syntax:
+
+tinbuild2 -p <profile_name> [options]
+
+-0              Do incremental build; that is do not invoke the clean phase
+                between build. Not recommended for any mode of operation that involve
+                gerrit. In general that should be reserved to pure tinderbox mode
+                and that tinderbox need to be monitored closely to detect repeated failure
+                due to problem with incremental build.
+-a <email>      for a run that do not report to the tinderbox server, but
+                is used to to a 'private' test of a particular branch -- like
+                a feature branch for instance -- this specify the email of
+                the 'author' to notify of the tinderbox activity.
+                this allow you to run a tinderbox to test a feature branch
+                and automatically send the result to a given person.
+                This work in conjonction with '-m author'. See below.
+-h              print help.
+-c              Execute a 'sanity check'. Verify that the configuration is sane
+                and send a test email to the owner, to verify that the smtp mechanism
+                works.
+-g <gerrit_ref> To a test build using the given gerrit ref to checkout a specific commit
+                A gerrit ref is in the form of : refs/changes/<n>/<m>/<p>
+                Message are sent in the Review section of the assocaited gerrit patch
+                to indicate that a build as started and to indicate the result of the build.
+                This option imply a one shot build. The tinbuild2 terminate after that one build.
+-i              run with ionice -c3
+-k              To not overrite autogen.lastrun if present. This allow to use -z
+                to do a quick test of the current config
+-m all|tb|owner|author|none Set the email level in regular tindeebox run
+                This does not apply to gerrit run or priming run.
+                all : send email to the tinderbox server, to the owner and to all the committer
+                      involved in a failed build.
+                tb : send email to the tinderbox server and the owner
+                owner : send only tinderbox to the owner.
+                author : send email to the specified author (see -a above)
+                none : do not send email at all.
+--mode tb|gerrit|tb-gerrit|gerrit-tb|fair Mode of operation
+                tb : normal tinderbox mode. Wait on new commit to show on core
+                     and build as new commits are found...
+                gerrit : gerrit patch verification mode. Query gerrit for patch to test-build
+                         build them and report back, and repeat.
+                tb-gerrit: a mix of tb and gerrit, where if there is no new commit to be
+                           build in tb mode, we attempt to get a task from gerrit
+                           This mode favor the tb mode, in the sens that gerrit task
+                           are only attempted if there is nothing left to do in tb mode
+                gerrit-tb : like tb-gerrit, except the the scheduling favor gerrit
+                            in priority.
+                fair : dual mode tb and gerrit like tb-gerrit, except that the scheduling
+                       priority is given alternatively to tb and gerrit.
+                The default mode is tb. --mode is not to be used conjunction with -z or -g
+                which are meant to trigger one-shot build.
+-n              Run with 'nice'
+-r <bandwidth>  Indicate that we want to push daily upload with a maximum upload
+                bandwidth as indicated in KB/s
+                This will attempt to upload a build at most once a day.
+                This require that you have obtained ssh keys to be able
+                to upload to dev-build.libreoffice.org
+-t              Run the full suite of test after a sucessfull build
+-v              Print more message while tinbuild2 is running
+-x              Push sucessfull binary build, at most once a day to a bibisect repo
+                This require that ARTIFACTDIR be specified in the configuration of the
+                profile and point to a bibisect git repo.
+-z              Run a 'Priming' build. In order for tinbuild2 to be able to notify
+                the appropriate subset of committers in case of failure, we need
+                a sucessfull 'reference' build.
+                You are required to run a sucessfull primer build before you can
+                run tinbuild2 in a loop.
+                This is required even if you do not actually email committers with failures.
+
+phases customization
+--------------------
 
 The design is loosely inspired from Gentoo's portage. the idea is to use
 the ability of bash to redefine function.
@@ -121,7 +215,7 @@ tb_call()
 phase()
 {
 	local f=${1}
-	for x in {pre_,do_,_post}${f} ; do
+	for x in {pre_,do_,post_}${f} ; do
 		tb_call ${x}
 	done
 }
@@ -148,50 +242,12 @@ reciprocally, every function should put a non-zero value in retval in case of
 failure.
 
 Now, the base function are implemented in tinbuild_phases.sh
-but these function can be overrided by a user-implementation.
+but these function can be overrided by a user-implementation,
+typically store in ~/.tinbphuid/phases/<profile_name>.sh
+which is sourced by tinbuild2 if it exists.
 
 In the same spirit, platform dependent hack can be done in tinbuild_internals_<uname>.sh
 The core default is meant to run on Linux, using bash and all the GNU tools that
 are expected to normally be there on a Linux box.
-Other platform will re-implementent incompatible stuff in theyre own .sh
+Other platform will re-implementent incompatible stuff in their own .sh
 
-And yes. bash is required. There maybe a way to avoid it, but:
-1/ Bash is required to build the product anyway
-2/ VHS won over BetaMax, get over it :-)
-
-
-Where:
-
-tinbuild2 rely on a profile name, passed with a mandatory -p <name> on the
-command line.
-That name is used to locate a file in ~/.tinbuild/config/<name>.cfg
-(you have to create it)
-
-That config file should contain all the needed SMTP information,
-the name of you build (TINDER_NAME)  and
-can override factory default (like PAUSE_SECOND, which by default
-is set at 15 minutes (900 seconds))
-
-also, if present, the file ~/.tinbuild/phases/<name>.sh will be sourced
-after tinbuild_phases.sh.
-This allow to override and/or expand the default build behavior.
-
-Note that there is no 'inheritance'. if you override and existing function
-you cannot invoque it anymore. so you cannot 'expand' a function, just
-re-write you own implementation of it.
-
-Note that the file generated by tinderbuil2, typycally the capture of the output
-of the differents phase, is stored in file prefixed by tb_<project>_
-Some of them are 'rotated' to prev-* before starting a new cycle.
-
-This naming convention allow for the possibility to stop a run, checkout a different branch
-and run again using a different profile.
-In the future that will also allow for these step to be integrated in tinbuild2 to schedule
-and monitor multiple branch sequentially within one tinderbuild.
-
-Future:
-
-* make one tinbuild able to handle more than one branch based on the same repo
-* make tinbuild respond to a pipe or a socket to be able to dynamically feed him
-  one-time request to do a build on a feature-branch (in that case there won't
-  be a baseline and the result, what-ever it is will be send to the 'requestor'
