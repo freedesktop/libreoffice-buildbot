@@ -164,6 +164,8 @@ TB_NAME=<name> Name of the tinderbox. see http://wiki/documentfoundation.org/Dev
                for naming conventions.
                This is G or P-level parameter only
                This paramter is mandatory.
+TB_NICE=<prefix> Value to prepend to expensive command like MAKE to nice it
+                 for eacmpel TB_NICE="nice ionice -c3"
 TB_OWNER=<email> Email of the owner/operator of the tinderbox
                  This is G or P-level parameter only
                  This paramter is mandatory.
@@ -271,9 +273,6 @@ while [ "${1}" != "" ]; do
             do_help
             exit
             ;;
-        -i)  # be gentle on i/o
-            TB_NICE_IO="ionice -c3"
-            ;;
         -k)  # do not override the local autogen.lastrun if present
             tb_KEEP_AUTOGEN="1"
             ;;
@@ -325,9 +324,6 @@ while [ "${1}" != "" ]; do
                     die "Unsupported mode of operation : $arg"
                     ;;
             esac
-            ;;
-        -n)  # build 'nicely' :-)
-            TB_NICE_CPU="nice"
             ;;
         -p)  # profile to use to deterine extra parameter (email mostly) and autogen arguments
             if [ -z "${has_arg}" ] ; then
