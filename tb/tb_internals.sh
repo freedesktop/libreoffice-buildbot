@@ -1212,7 +1212,7 @@ select_next_gerrit_task()
     GERRIT_TASK_BRANCH=""
     GERRIT_TASK_REF=""
     GERRIT_TASK_FEATURE=""
-    result=$(ssh ${TB_GERRIT_HOST?} buildbot get -p core --id ${TB_ID?} -a ${tb_GERRIT_PLATFORM?} --format BASH)
+    result=$(ssh ${TB_GERRIT_HOST?} buildbot get -p core --id ${TB_ID?} -a ${tb_GERRIT_PLATFORM?} --format BASH ${tb_GERRIT_BRANCHES?})
     [ $V ] && echo "Get task result:${result}"
 
     has_task=$(echo "$result" | grep "^GERRIT_TASK_")
