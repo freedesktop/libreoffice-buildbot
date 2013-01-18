@@ -195,7 +195,20 @@ check_branch_profile_gerrit()
 {
     local b="$1"
 
+    # unset higher level CCACHE_DIR setting
+    unset CCACHE_DIR
+
     source_branch_level_config "${b?}" "gerrit"
+
+    # if CCACHE_DIR is set it has been set by the branch's profile
+    # if TB_CCACHE_SIZE is set make sure the cache is as big as specified
+    # note: no need to restore the old CCACHE value
+    # since check_branches is run in a sub-shell
+    if [ -n "${CCACHE_DIR}" ] ; then
+        if [ -n "${TB_CCACHE_SIZE}" ] ; then
+            ccache -M "${TB_CCACHE_SIZE?}" > /dev/null
+        fi
+    fi
 
     # if we did not die yet... we are good for this branch: print it
     echo "${b?}"
@@ -210,6 +223,9 @@ check_branch_profile_tb()
 {
     local b="$1"
     local sha=
+
+    # unset higher level CCACHE_DIR setting
+    unset CCACHE_DIR
 
     source_branch_level_config "${b?}" "tb"
 
@@ -230,6 +246,16 @@ check_branch_profile_tb()
         sha=$(git rev-parse "${b?}")
         if [ "$?" != "0" ] ; then
             die "Branch ${b?} does not exist in the bibisect repo, Cannot collect the requested bibisect"
+        fi
+    fi
+
+    # if CCACHE_DIR is set it has been set by the branch's profile
+    # if TB_CCACHE_SIZE is set make sure the cache is as big as specified
+    # note: no need to restore the old CCACHE value
+    # since check_branches is run in a sub-shell
+    if [ -n "${CCACHE_DIR}" ] ; then
+        if [ -n "${TB_CCACHE_SIZE}" ] ; then
+            ccache -M "${TB_CCACHE_SIZE?}" > /dev/null
         fi
     fi
 
@@ -544,7 +570,7 @@ load_profile()
     local p=$1
     local rc=0
     local config_file=
-
+    local old_ccache_dir=
 
     if [ -z "$p" ] ; then
         die "A profile is needed to run: use -p or configure one"
@@ -552,6 +578,12 @@ load_profile()
         tb_PROFILE_DIR="${tb_CONFIG_DIR?}/profiles/${p}"
         if [ ! -d "${tb_PROFILE_DIR}" ] ; then
             die "You need to configure the profile ${p} to use it"
+        fi
+
+        #save the current CCACHE_DIR setting
+        if [ -n "${CCACHE_DIR}" ] ; then
+            old_ccache_dir="${CCACHE_DIR?}"
+            unset CCACHE_DIR
         fi
         config_file="${tb_PROFILE_DIR?}/config"
         if [ -f "${config_file?}" ] ; then
@@ -564,6 +596,21 @@ load_profile()
         # project level phase override
         if [ -f "${tb_PROFILE_DIR?}/phases.sh" ] ; then
             source "${tb_PROFILE_DIR?}/phases.sh"
+        fi
+
+        # if we have a CCACHE_DIR here, it has been set by
+        # the profile. if we also haev a TB_CCACHE_SIZE
+        # make sure the cache is as big as indicated
+        # if CCACHE_DIR is not set, restaure the potential
+        # previous value
+        if [ -n "${CCACHE_DIR}" ] ; then
+            if [ -n "${TB_CCACHE_SIZE}" ] ; then
+                ccache -M "${TB_CCACHE_SIZE?}" > /dev/null
+            fi
+        else
+            if [ -n "${old_ccache_dir}" ] ; then
+                CCACHE="${old_ccache_dir?}"
+            fi
         fi
     fi
 }
