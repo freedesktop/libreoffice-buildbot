@@ -1,0 +1,390 @@
+#!/usr/bin/env bash
+# -*- tab-width : 4; indent-tabs-mode : nil -*-
+#
+#    Copyright (C) 2011-2013 Norbert Thiebaud
+#    License: GPLv3
+#
+
+if [ -n "$debug" ] ; then
+    set -x
+fi
+
+tb_BIN_DIR=$(dirname "$0")
+
+source "${tb_BIN_DIR?}/tb_internals.sh"
+
+do_help()
+{
+
+cat <<EOF
+
+tb : tinderbox script for libreoffice
+=====================================
+
+tb is a script to run un-attended build on multiple repos, for multiple branches
+and for gerrit patch review system.
+
+tb has two main mode of operation. a tinderbox (tb) mode and a gerrit mode.
+It can also operate in 'dual' mode, doing both tb and gerrit mode.
+
+In 'tb' mode, tb monitor a certain number of defined 'branches' for new commits.
+When one or more new commits are detected on a monitored branches
+tb initiate a build on that branch and typically inform a tinderbox-server
+of the result of that build.
+
+In 'gerrit' mode, tb poll a buildbot gerrit plugin for new patch to test build.
+when such a task is found, tb checkout the patch concerned, test build it and
+report the result to gerrit.
+
+In 'dual' mode, tb alternate between the tb and gerrit mode. In dual mode
+there is 3 diffrent scheduling mode:
+The 'fair' mode, which try  tb and gerrit
+build alternatively.
+The tb-gerrit mode, in which tb does primarily tb build unless there is no such
+build to do, in which case it does gerrit build until a new tb build is needed
+The gerrit-tb mode, in which tb does primarily gerrit build unless there is no
+ssuch build to do, in which case it does tb build until a new gerrit build is
+needed.
+
+tb configuration is organized in 'profile' which contains configuration for
+one or more 'branches' to monitor.
+tb can only run one profile at the time, but monitor and can therefore build
+any of the branches configured under that profile.
+
+The configuration is organized as:
+
+  ~/.tb/config
+       /meta/
+       /phases.sh
+       /profiles/<profile_name>/autogen.lastrun
+       /profiles/<profile_name>/autogen.lastrun_gerrit
+       /profiles/<profile_name>/autogen.lastrun_tb
+       /profiles/<profile_name>/branches/<branch_name>/autogen.lastrun
+       /profiles/<profile_name>/branches/<branch_name>/autogen.lastrun_gerrit
+       /profiles/<profile_name>/branches/<branch_name>/autogen.lastrun_tb
+       /profiles/<profile_name>/branches/<branch_name>/config
+       /profiles/<profile_name>/branches/<branch_name>/config_gerrit
+       /profiles/<profile_name>/branches/<branch_name>/config_tb
+       /profiles/<profile_name>/branches/<branch_name>/false_negatives
+       /profiles/<profile_name>/config
+       /profiles/<profile_name>/false_negatives
+       /profiles/<profile_name>/phases.sh
+
+The configuration is obtained for a given branche by sourcing, in this order,
+
+~/tb/config
+    /profiles/<profile_name>/config
+    /profiles/<profile_name>/branches/<branch_name>/config
+and
+    /profiles/<profile_name>/branches/<branch_name>/config_tb
+for tb-build, or
+    /profiles/<profile_name>/branches/<branch_name>/config_gerrit
+for gerrit-build.
+
+Each build need a autogen configuration for the building of libreoffice.
+for a branch the autogen configuration to is is the _first_ found of
+
+for tb-build :
+    /profiles/<profile_name>/branches/<branch_name>/autogen.lastrun_tb
+    /profiles/<profile_name>/branches/<branch_name>/autogen.lastrun
+    /profiles/<profile_name>/autogen.lastrun_tb
+    /profiles/<profile_name>/autogen.lastrun
+
+for gerrit-build:
+    /profiles/<profile_name>/branches/<branch_name>/autogen.lastrun_gerrit
+    /profiles/<profile_name>/branches/<branch_name>/autogen.lastrun
+    /profiles/<profile_name>/autogen.lastrun_gerrit
+    /profiles/<profile_name>/autogen.lastrun
+
+Note: Contrary to config for tb itself, autogen config do not aggregate.
+The first file found according to the rules above is then the entire
+configuration that will be use as autogen.lastrun for the build.
+
+Some tb configuration parameters can be specified at the global level 'G',
+some at the profile level 'P' and some at the branch level 'B'.
+Unless otherwise specified a parameter can be specificed at any level.
+If a parameter is specified at multiple level then the lowest level prevail.
+In other words: B prevail over P, which prevail over G.
+
+The following variables can be specified in tb's configuration files.
+
+TB_BIBISECT_DIR=<path> Location of a git bibisect repository
+                       This is a tb-mode only paramter. This is ingored in gerrit mode
+                       This is a tb-mode only paramter. This is ingored in gerrit mode
+TB_BIBISECT_GC=[0|1] Indicate if a git gc should be run after each bibisect version
+                     is stored
+                     Default is 0.
+                     This is a tb-mode only paramter. This is ingored in gerrit mode
+TB_BIBISECT_PUSH=[0|1] Indicate if a git push should be issued after each bibisect
+                       version is stored.
+                       Default is 0.
+                       This is a tb-mode only paramter. This is ingored in gerrit mode
+TB_BIBISECT=[0|1] Indicate if a bibisect version should be saved.
+                  Default is 0.
+                  This is a tb-mode only paramter. This is ingored in gerrit mode
+TB_BRANCHES=<nane> [<name>...] Space separated list of branch names configured, to monitor.
+                               This is G or P-level parameter only
+                               Default:"master"
+TB_BRANCH_LOCAL_REFSPEC=<ref> Name of the branche in the local repo
+                              Default to the name of the branch in the configuration
+                              This is a B-level only paramter
+                              This is a tb-mode only paramter. This is ingored in gerrit mode
+TB_BRANCH_REMOTE_REFSPEC=<ref> Name of the branch on the remote repo.
+                               Default to the name of the branch in the configuration
+                               This is a B-level only paramter
+                               This is a tb-mode only paramter. This is ingored in gerrit mode
+TB_BUILD_DIR=<path> Directory to use a a build directory. If specified, it must exist.
+                    Default to TB_GIT_DIR.
+TB_DEFAULT_MODE=[gerrit|gerrit-tb|tb-gerrit|tb] Default mode of operation.
+                                                This is a G or P level parameter
+                                                The command line --mode= override both level.
+                                                Default is "tb".
+TB_GERRIT_HOST<host> Gerrit host to contact in gerrit mode.
+                     This parameter is mandatory to use a gerrit mode.
+                     This is G or P-level parameter only
+TB_GIT_DIR=<path> Location of the libreoffice core git repo to use for a build.
+                  This parameter is mandatory.
+TB_ID=<integer> Id of the tinderbox. see http://wiki/documentfoundation.org/Development/Tinderbox
+                for information on how to acquire such an ID.
+TB_LOGFILE=<path> File where tb will log message about it's operation.
+                  The file does not have to exist, but the path containing the file must.
+                  This is only for message issued by tb itself.. this does no relate to build
+                  logs.
+TB_MATADATA_DIR<path> directory where tb will store state information regarding the defferent
+                      branches it monitor. In tb mode, tb is keeping track of the last
+                      sucessfull build point, in order to be able to notify the committers
+                      involved in patches since that point in case of build failure.
+                      tb also keep track of the last time it uploaded a version
+                      when such upload options is specified.
+                      All the files used to keep track of theses are store in this directory,
+                      tb will attempt to create the directory if it does not exist
+                      This is G or P-level parameter only
+                      This paramter is mandatory.
+TB_NAME=<name> Name of the tinderbox. see http://wiki/documentfoundation.org/Development/Tinderbox
+               for naming conventions.
+               This is G or P-level parameter only
+               This paramter is mandatory.
+TB_OWNER=<email> Email of the owner/operator of the tinderbox
+                 This is G or P-level parameter only
+                 This paramter is mandatory.
+TB_POLL_DELAY=<num_of_seconds> Delay in second between two attempt to pool the states of branches.
+TB_POST_BUILD_DELAY=<num_of_seconds> Pause in second after a build.
+TB_SMTP_HOST=<smtp_hostname> Hostname of the smtp server to use to send email.
+                             This paramter is mandatory in tb mode
+
+TB_SMTP_PASSWORD=<password> Password associated with TB_SMTP_USER.
+                            This paramter is mandatory if TB_SMTP_USER is specified
+TB_SMTP_USER=<username> Username to login to the smtp server.
+                        If your smtp server does not require authotification, you can omit this.
+TB_TINDERBOX_BRANCH=<name> Name assocaited witha  branch on the tibderbox server.
+                           The tinderbox server need to have a branch name assocaited with any
+                           build repport. the server only recognize a preset list of such name
+                           and they do not necessarely match you local branch name.
+                           This is a tb-mode only paramter. This is ignored in gerrit mode
+
+In general, when a command line argument influence on of the paramter listed
+above, it can only override a G-level specification. P-level take, for the most
+part precedence of the command-line, and B-level always take precedence.
+
+The rational is that tb is meant to be a un-attended long running job, Ideally
+taking no argument what-so-ever except -p <profile_name> and possibly --mode=
+
+
+Note for tinbuild2 user: tb does _not_ require a primer build. but it will not
+send email to committers in case a failure until it has had a prior sucessful
+build for a given branch.
+
+EOF
+}
+
+
+
+#
+# Main
+#
+
+case "$1" in
+    ""|help)
+        do_help "$@"
+        exit $?
+        ;;
+    stop)
+        touch ~/.tb/meta/stop
+        exit $?
+        ;;
+esac
+
+set_factory_default
+
+load_config
+
+while [ "${1}" != "" ]; do
+    parm=${1%%=*}
+    arg=${1#*=}
+    has_arg=
+    if [ "${1}" != "${parm?}" ] ; then
+        has_arg=1
+    else
+        arg=""
+    fi
+
+    case "${parm}" in
+        -0)  # avoid calling *_clean functions (incremental build)
+            DO_NOT_CLEAN=1
+            ;;
+        -a)  # email to the branch's author for out-of-tinderbox branch buildbot
+            if [ -z "${has_arg}" ] ; then
+                shift;
+                arg="$1"
+            fi
+            if [ -z "${arg}" ] ; then
+                die "Missing argument for option $parm"
+            else
+                tb_BRANCH_AUTHOR="$arg"
+            fi
+            ;;
+        -b|--branch|--brandhes)  # to list the branches to build
+            if [ -z "${has_arg}" ] ; then
+                shift;
+                arg="$1"
+            fi
+            if [ -z "${arg}" ] ; then
+                echo "Missing argument for option $parm" 1>&2
+                exit -1
+            else
+                tb_BRANCHES="$arg"
+            fi
+            ;;
+        -d)  # wrap make in a watchdog
+            if [ -z "${has_arg}" ] ; then
+                shift;
+                arg="$1"
+            fi
+            if [ -z "${arg}" ] ; then
+                echo "Missing argument for option $parm" 1>&2
+                exit -1
+            else
+                TB_WATCHDOG="makewatchdog $arg -- "
+            fi
+            ;;
+        -h|--help)  # display help
+            do_help
+            exit
+            ;;
+        -i)  # be gentle on i/o
+            TB_NICE_IO="ionice -c3"
+            ;;
+        -k)  # do not override the local autogen.lastrun if present
+            tb_KEEP_AUTOGEN="1"
+            ;;
+        -m)  # which email to wend and to whom
+            if [ -z "${has_arg}" ] ; then
+                shift;
+                arg="$1"
+            fi
+            if [ -z "${arg}" ] ; then
+                echo "Missing argument for option $parm" 1>&2
+                exit -1
+            else
+                tb_SEND_MAIL="${arg}"
+            fi
+            ;;
+        --mode)
+            # operating mode of the tinbuild
+            if [ -z "${has_arg}" ] ; then
+                shift;
+                arg="$1"
+            fi
+            if [ -z "${arg}" ] ; then
+                die "Missing argument for option $parm"
+            fi
+            case "$arg" in
+                fair)
+                    tb_MODE="dual"
+                    TB_DUAL_PRIORITY="fair"
+                    ;;
+                gerrit)
+                    tb_MODE="gerrit"
+                    ;;
+                gerrit-tb)
+                    tb_MODE="dual"
+                    TB_DUAL_PRIORITY="gerrit"
+                    ;;
+                prime)
+                    tb_MODE="tb"
+                    tb_ONE_SHOT="1"
+                    ;;
+                tb)
+                    tb_MODE="tb"
+                    ;;
+                tb-gerrit)
+                    tb_MODE="dual"
+                    TB_DUAL_PRIORITY="tb"
+                    ;;
+                *)
+                    die "Unsupported mode of operation : $arg"
+                    ;;
+            esac
+            ;;
+        -n)  # build 'nicely' :-)
+            TB_NICE_CPU="nice"
+            ;;
+        -p)  # profile to use to deterine extra parameter (email mostly) and autogen arguments
+            if [ -z "${has_arg}" ] ; then
+                shift;
+                arg="$1"
+            fi
+            if [ -z "${arg}" ] ; then
+                die "Missing argument for option $parm"
+            else
+                P="${arg}"
+            fi
+            ;;
+        -v)  # print more messages
+            V=1
+            ;;
+        -x|--bibisect)  # Push builds to bibisect repo (per buildbot and major version)
+            TB_BIBISECT=1
+            ;;
+        -z)
+            # to run an initial build (without sending any email) to establish a 'baseline'
+            # synonym of --mode=prime
+            tb_MODE="tb"
+            tb_ONE_SHOT="1"
+            ;;
+        -*)
+            die "Invalid option $1"
+            ;;
+        *)
+            die "Invalid argument $1"
+            ;;
+    esac
+    shift
+done
+
+
+load_profile "${P}"
+
+setup_profile_defaults
+
+verify_command
+
+# remove lingering stop semaphore file
+rm -f ~/.tb/meta/stop
+
+case "${tb_MODE?}" in
+    dual)
+        run_loop
+        ;;
+    gerrit)
+        run_loop
+        ;;
+    tb)
+        if [ "${tb_ONE_SHOT}" = "1" ] ; then
+            run_primer
+        else
+            run_loop
+        fi
+        ;;
+esac
+
