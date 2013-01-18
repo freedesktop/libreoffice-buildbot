@@ -314,7 +314,7 @@ check_for_commit()
 
     pushd "${TB_GIT_DIR?}" > /dev/null || die "Cannot cd to git repo ${TB_GIT_DIR?} for tb-branche ${b?}"
 
-    err_msgs="$( $timeout git fetch 2>&1)"
+    err_msgs="$( $tb_TIMEOUT git fetch 2>&1)"
     if [ "$?" -ne "0" ] ; then
         printf "Git repo broken - error is:\n\n$err_msgs" > error_log.log
         report_error owner "$(print_date)" error_log.log
