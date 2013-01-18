@@ -1,4 +1,4 @@
-#!/usr/bin/sh
+#!/bin/sh
 # Version: MPL 1.1 / GPLv3+ / LGPLv3+
 #
 # The contents of this file are subject to the Mozilla Public License Version
@@ -10,11 +10,11 @@
 # WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
 # for the specific language governing rights and limitations under the
 # License.
-# 
+#
 # Major Contributor(s):
-# 
+#
 #   Yifan Jiang <yifanj2007@gmail.com>
-#   Stephan van den Akker 
+#   Stephan van den Akker <stephanv778@gmail.com>
 #
 # For minor contributions see the git repository.
 #
@@ -24,17 +24,23 @@
 # in which case the provisions of the GPLv3+ or the LGPLv3+ are applicable
 # instead of those above.
 
-function get_lo_build {
+function get_lo_version {
 
-     #TODO: get the build for binary build
-     echo -n "4.0"
+     echo -n $(echo $("$1" --version) | sed s/"LibreOffice "//)
 }
 
 function get_lo_commit_hash {
 
     LOGITDIR=$(echo -n $(echo -n "$1" | sed 's/core.*//')core/.git)
-    
-    echo -n $(git --git-dir="$LOGITDIR" log -1 --date=iso --pretty=format:"%H")
+
+    echo -n $(git --git-dir="$LOGITDIR" log -1 --pretty=format:"%H")
+}
+
+function get_lo_build_id {
+
+    VERSIONRC_FN=$(echo -n $(echo -n "$1" | sed 's/soffice.*//')versionrc)
+
+    echo -n $(cat "$VERSIONRC_FN" | grep ^buildid | sed s/buildid\=//)
 }
 
 function is_delta_regress {
@@ -98,12 +104,11 @@ function check_regression {
             echo "Document : ${arr_onload_files[$j]#Load: }"
             echo "Reference: $2"
             echo "Diffstats: $r"
-            echo "--------------------------------------"            
+            echo "--------------------------------------"
             return 0
-        fi 
+        fi
 
     done
 
     return 1
-
 }
