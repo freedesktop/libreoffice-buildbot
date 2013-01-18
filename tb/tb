@@ -5,6 +5,12 @@
 #    License: GPLv3
 #
 
+#
+# ATTENTION Developers: see tb_internal.sh for information
+# about design, naming conventions etc...
+#
+
+# run debug=1 tb ... to debug
 if [ -n "$debug" ] ; then
     set -x
 fi
@@ -108,6 +114,9 @@ In other words: B prevail over P, which prevail over G.
 
 The following variables can be specified in tb's configuration files.
 
+CCACHE_DIR=<path> This is to override the normal ccache environment variable.
+                  This allow to have a per profile, or even better, a per branche
+                  cache.
 TB_BIBISECT_DIR=<path> Location of a git bibisect repository
                        This is a tb-mode only paramter. This is ingored in gerrit mode
                        This is a tb-mode only paramter. This is ingored in gerrit mode
@@ -135,6 +144,9 @@ TB_BRANCH_REMOTE_REFSPEC=<ref> Name of the branch on the remote repo.
                                This is a tb-mode only paramter. This is ingored in gerrit mode
 TB_BUILD_DIR=<path> Directory to use a a build directory. If specified, it must exist.
                     Default to TB_GIT_DIR.
+TB_CCACHE_SIZE=<size> When CCACHE is specified at a profile or branche level
+                      if TB_CCACHE_SIZE as a value it is used to run
+                      ccache -M <size> to insure that the cache has the appropriate size
 TB_DEFAULT_MODE=[gerrit|gerrit-tb|tb-gerrit|tb] Default mode of operation.
                                                 This is a G or P level parameter
                                                 The command line --mode= override both level.
@@ -146,6 +158,13 @@ TB_GIT_DIR=<path> Location of the libreoffice core git repo to use for a build.
                   This parameter is mandatory.
 TB_ID=<integer> Id of the tinderbox. see http://wiki/documentfoundation.org/Development/Tinderbox
                 for information on how to acquire such an ID.
+TB_INCREMENTAL=[0|1] Indicate that one want to do incremental build, iow skip the clean phase
+                     This apply only to tb build, as tb build are normally progressive
+                     in time, whereas gerrit build can be all over the place...
+                     This only make sens if each branch that is meant to be built incrementally
+                     has it's own build directory (which for now also mean its own git repo
+                     at least until gbuildification is complete and the source tree is finaly
+                     treated as a read-only zone.
 TB_LOGFILE=<path> File where tb will log message about it's operation.
                   The file does not have to exist, but the path containing the file must.
                   This is only for message issued by tb itself.. this does no relate to build

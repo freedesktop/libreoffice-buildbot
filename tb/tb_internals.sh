@@ -4,8 +4,8 @@
 #    Copyright (C) 2011-2013 Norbert Thiebaud
 #    License: GPLv3
 #
-
-# Naming convention
+#
+# Naming convention/Namespace
 #
 # lowercase variable: local variable. must be declared as 'local'
 #
@@ -17,10 +17,46 @@
 #
 # Exception: P : project name
 #            B : current branch name. gerrit_* are reserved branch names for gerrit works
-#            R : build result indicator
-#            V : verbose messages
+#            R : build result indicator ( 0=OK 1=KO 2=False positive )
+#            V : verbose messages (V=1 => verbose message V= => no verbose message, iow: [ $V ] && msgs_log ....
 #         MAKE : environement variable is use if set to point to a gnu-make
 #                otherwise overriden to a gne-make found in the PATH
+#
+# profile_* reserved for functions specific to .../<profile_name>/phases.sh
+# branches_* reserved for functions specific to .../<branch_name>/phases.sh
+# canonical_* reserverved for phase implementation in tb_phases.sh
+# canonical_[pre|do|post]_<phase> is garanteed to exist, even if it is a no-op function.
+#
+# The rational for these namespace is to allow lower-level overload to still call
+# the implementation at higher level.
+#
+# for instance if a branche phase.sh want derefine the TMPDIR and clean it up
+# in the pre-clean phase, but still want to do what-ever the tb_phase.sh normally do
+# it can implement
+# pre_clean()
+# {
+#    do what I need to do
+#    canonical_pre_clean() to invoke the defautl impelmentation
+# }
+#
+# similarely at the profile level one can override pre-clean in this fashion:
+#
+# profile_pre_clean()
+# {
+#     profile override implementation fo pre-clean()
+# }
+#
+# pre_clean()
+# {
+#     profile_pre_clean()
+# }
+#
+# that way a branch's phase.sh can invoke profile_pre_clean in it's own implemenation of pre_clean()
+#
+# ATTENTION: do not abuse this scheme by having defferent level invoking different phase
+# at higher level... so a branch's pre_clean() for instance shall not invoke canonical_do_clean()
+# or any other phase than *_pre_clean()
+# Obviously profile level phase.sh shall not invoke any branche_* functions.
 #
 # Configuration files layout
 #
@@ -44,40 +80,8 @@
 # Note: config are accumulated from high to low.
 #       autogen are 'lowest level prime'.
 
-
 # XRef :
 #
-# TB_BIBISECT_DIR :
-# TB_BIBISECT_GC :
-# TB_BIBISECT_PUSH :
-# TB_BIBISECT :
-# TB_BRANCHES :
-# TB_BRANCH_LOCAL_REFSPEC :
-# TB_BRANCH_REMOTE_REFSPEC :
-# TB_BUILD_DIR :
-# TB_CONFIG_DIR :
-# TB_DEFAULT_MODE:-tb :
-# TB_DO_TESTS :
-# TB_GERRIT_BRANCH :
-# TB_GERRIT_HOST :
-# TB_GIT_DIR :
-# TB_ID :
-# TB_LOGFILE :
-# TB_MATADATA_DIR :
-# TB_METADATA_DIR :
-# TB_NAME :
-# TB_NICE_CPU :
-# TB_NICE_IO :
-# TB_OWNER :
-# TB_POLL_DELAY :
-# TB_PROFILE_DIR :
-# TB_PROFILE :
-# TB_SMTP_HOST :
-# TB_SMTP_PASSWORD :
-# TB_SMTP_USER :
-# TB_TINDERBOX_BRANCH :
-# TB_WATCHDOG :
-
 # tb_BIN_DIR :
 # tb_BRANCHES :
 # tb_BRANCH_AUTHOR :
@@ -1489,6 +1493,13 @@ local rc
     esac
 
 }
+
+# Do we have timeout? If yes, guard git pull with that - which has a
+# tendency to hang forever, when connection is flaky
+if which timeout > /dev/null 2>&1 ; then
+	# std coreutils - timeout is two hours
+	tb_TIMEOUT="$(which timeout) 2h"
+fi
 
 ################
 # ATTENTION:
