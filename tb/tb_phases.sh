@@ -5,7 +5,7 @@
 #    License: GPLv3
 #
 
-pre_autogen()
+canonical_pre_autogen()
 {
     if [ "${R}" = "0" ] ; then
         if [ ! -f autogen.lastrun -o "${tb_KEEP_AUTOGEN}" != "YES" ] ; then
@@ -14,7 +14,12 @@ pre_autogen()
     fi
 }
 
-do_autogen()
+pre_autogen()
+{
+    canonical_pre_autogen
+}
+
+canonical_do_autogen()
 {
     if [ "${R}" = "0" ] ; then
         if ! ${TB_NICE} ./autogen.sh >tb_${B}_autogen.log 2>&1 ; then
@@ -25,14 +30,28 @@ do_autogen()
     fi
 }
 
-pre_clean()
+do_autogen()
+{
+    canonical_autogen
+}
+
+canoncial_post_autogen()
+{
+}
+
+canonical_pre_clean()
 {
     if [ "${R}" = "0" ] ; then
         true # log files to clean, if any
     fi
 }
 
-do_clean()
+pre_clean()
+{
+    canonical_pre_clean
+}
+
+canonical_do_clean()
 {
     if [ "${R}" = "0" ] ; then
         if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr clean > "tb_${B?}_clean.log" 2>&1 ; then
@@ -43,7 +62,16 @@ do_clean()
     fi
 }
 
-do_make()
+do_clean()
+{
+    canonical_do_clean
+}
+
+canonical_post_clean()
+{
+}
+
+canonical_do_make()
 {
 local current_timestamp=
 local optdir=""
@@ -74,21 +102,12 @@ local extra_buildid=""
     fi
 }
 
-
-do_test()
+do_make()
 {
-    if [ "${R}" = "0" ] ; then
-        if [ "${TB_DO_TESTS}" = "1" ] ; then
-            if ! ${TB_NICE_CPU} ${TB_NICE_IO} ${TB_WATCHDOG} ${MAKE?} -sr check > "tb_${B?}_tests.log" 2>&1 ; then
-                tb_REPORT_LOG="tb_${B?}_tests.log"
-                tb_REPORT_MSGS="check failed - error is:"
-                R=1
-            fi
-        fi
-    fi
+    canonical_do_make
 }
 
-post_make()
+canonical_post_make()
 {
     if [ "${tb_BUILD_TYPE?}" = "tb" ] ; then
         if [ "${R}" != "0" ] ; then
@@ -109,7 +128,42 @@ post_make()
     fi
 }
 
-do_push()
+post_make()
+{
+    canonical_post_make
+}
+
+canonical_pre_test()
+{
+}
+
+canonical_do_test()
+{
+    if [ "${R}" = "0" ] ; then
+        if [ "${TB_DO_TESTS}" = "1" ] ; then
+            if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr check > "tb_${B?}_tests.log" 2>&1 ; then
+                tb_REPORT_LOG="tb_${B?}_tests.log"
+                tb_REPORT_MSGS="check failed - error is:"
+                R=1
+            fi
+        fi
+    fi
+}
+
+do_test()
+{
+    canonical_do_test
+}
+
+canonical_post_test()
+{
+}
+
+canonical_pre_push()
+{
+}
+
+canonical_do_push()
 {
     [ $V ] && echo "Push: phase starting"
 
@@ -128,6 +182,15 @@ do_push()
         fi
     fi
     return 0;
+}
+
+do_push()
+{
+    canonical_do_push
+}
+
+canonical_post_push()
+{
 }
 
 tb_call()
