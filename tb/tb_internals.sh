@@ -233,10 +233,13 @@ check_branch_profile_tb()
 
     source_branch_level_config "${b?}" "tb"
 
-    if [ -z "${TB_TINDERBOX_BRANCH}" ; then
+    if [ -z "${TB_TINDERBOX_BRANCH}" ] ; then
+        TB_TINDERBOX_BRANCH=$(determine_default_tinderbox_branch "${b?}")
         # FIXME: determine if we can derive that value
         # from ${b}
-        die "Missing TB_TINDERBOX_BRANCH to associate a BRANCH name on the tiderbox server to the branch ${b?}"
+        if [ -z "${TB_TINDERBOX_BRANCH}" ] ; then
+            die "Missing TB_TINDERBOX_BRANCH to associate a BRANCH name on the tiderbox server to the branch ${b?}"
+        fi
     fi
 
     if [ "${TB_BIBISECT}" == "1" ] ; then
@@ -444,6 +447,29 @@ deliver_to_bibisect()
     [ $V ] && echo "unlock ${lock_file?}.bibisect"
 }
 
+
+determine_default_tinderbox_branch()
+{
+    local b="$1"
+
+    case "$b" in
+        master)
+            echo 'MASTER'
+            ;;
+        libreoffice-3-4)
+            echo "${b?}"
+            ;;
+        libreoffice-3-5)
+            echo "${b?}"
+            ;;
+        libreoffice-3-6)
+            echo "${b?}"
+            ;;
+        libreoffice-4-0)
+            echo "${b?}"
+            ;;
+    esac
+}
 #
 # Find a gnu make
 #
@@ -1424,6 +1450,10 @@ source_branch_level_config()
     fi
     if [ -f "${tb_PROFILE_DIR?}/branches/${b?}/config_${t?}" ] ; then
         source "${tb_PROFILE_DIR?}/branches/${b?}/config_${t?}"
+    fi
+    # we have verified the branch before so that should work
+    if [ -z "${TB_TINDERBOX_BRANCH}" ] ; then
+        TB_TINDERBOX_BRANCH=$(determine_default_tinderbox_branch "${b?}")
     fi
 }
 
