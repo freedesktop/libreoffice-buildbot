@@ -22,7 +22,7 @@ pre_autogen()
 canonical_do_autogen()
 {
     if [ "${R}" = "0" ] ; then
-        if ! ${TB_NICE} ./autogen.sh >tb_${B}_autogen.log 2>&1 ; then
+        if ! ${TB_NICE} ./autogen.sh > "tb_${B}_autogen.log" 2>&1 ; then
             tb_REPORT_LOG=tb_${B}_autogen.log
             tb_REPORT_MSGS="autogen/configure failed - error is:"
             R=1
@@ -32,11 +32,12 @@ canonical_do_autogen()
 
 do_autogen()
 {
-    canonical_autogen
+    canonical_do_autogen
 }
 
 canoncial_post_autogen()
 {
+    return
 }
 
 canonical_pre_clean()
@@ -56,7 +57,7 @@ canonical_do_clean()
     if [ "${R}" = "0" ] ; then
         if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr clean > "tb_${B?}_clean.log" 2>&1 ; then
             tb_REPORT_LOG="tb_${B?}_clean.log"
-            tb_REPORT_MSGS"cleaning up failed - error is:"
+            tb_REPORT_MSGS="cleaning up failed - error is:"
             R=1
         fi
     fi
@@ -69,6 +70,7 @@ do_clean()
 
 canonical_post_clean()
 {
+    return
 }
 
 canonical_do_make()
@@ -79,7 +81,7 @@ local extra_buildid=""
 
     tb_OPT_DIR=""
     if [ "${tb_BUILD_TYPE?}" = "tb" ] ; then
-        current_timestamp=$(sed -e "s/ /_/" "${TB_METADATA_DIR?}/tb_${B}_current-git-timestamp.log")
+        current_timestamp=$(sed -e "s/ /_/" "${TB_METADATA_DIR?}/${P?}_${B}_current-git-timestamp.log")
         extra_buildid="TinderBox: ${TB_NAME?}, Branch:${B}, Time: $current_timestamp"
     fi
     if [ "${R}" = "0" ] ; then
@@ -135,6 +137,7 @@ post_make()
 
 canonical_pre_test()
 {
+    return
 }
 
 canonical_do_test()
@@ -157,10 +160,12 @@ do_test()
 
 canonical_post_test()
 {
+    return
 }
 
 canonical_pre_push()
 {
+    return
 }
 
 canonical_do_push()
@@ -191,6 +196,7 @@ do_push()
 
 canonical_post_push()
 {
+    return
 }
 
 tb_call()

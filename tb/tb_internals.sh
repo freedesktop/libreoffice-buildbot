@@ -18,7 +18,7 @@
 # Exception: P : project name
 #            B : current branch name. gerrit_* are reserved branch names for gerrit works
 #            R : build result indicator ( 0=OK 1=KO 2=False positive )
-#            V : verbose messages (V=1 => verbose message V= => no verbose message, iow: [ $V ] && msgs_log ....
+#            V : verbose messages (V=1 => verbose message V= => no verbose message, iow: [ $V ] && log_msgs ....
 #         MAKE : environement variable is use if set to point to a gnu-make
 #                otherwise overriden to a gne-make found in the PATH
 #
@@ -140,7 +140,7 @@ check_branch_profile()
     local rb=
 
     if [ ! -d "${tb_PROFILE_DIR?}/${b?}" ] ; then
-        msgs_log "No branch specific config for branch '${b?}', using default from profile"
+        log_msgs "No branch specific config for branch '${b?}', using default from profile"
     fi
     if [ "${tb_MODE?}" = "dual" -o "${tb_MODE?}" = "tb" ] ; then
         rb=$(check_branch_profile_tb "$b")
@@ -157,7 +157,7 @@ check_branch_profile()
         rb=$(check_branch_profile_gerrit "${b?}")
         ret=$?
         if [ "${ret?}" = "0" ] ; then
-            if [ -z "${tb_GERRIT_BRANCHES}" ; then
+            if [ -z "${tb_GERRIT_BRANCHES}" ] ; then
                 tb_GERRIT_BRANCHES="${rb?}"
             else
                 tb_GERRIT_BRANCHES="${tb_GERRIT_BRANCHES?} ${rb?}"
@@ -348,7 +348,7 @@ check_for_commit()
                 r=1
             fi
         else
-            msgs_log "Git error while checking for commit on ${TB_GIT_REPO?} for branch ${b?}"
+            log_msgs "Git error while checking for commit on ${TB_GIT_REPO?} for branch ${b?}"
             printf "Git repo broken - error is:\n\n$err_msgs" > error_log.log
             report_error owner "$(print_date)" error_log.log
             exit -1
@@ -503,7 +503,7 @@ determine_make()
 #
 die()
 {
-    echo "[$(print_date) ${P?}] Error:" "$@" | tee -a ${tb_LOGFILE?}
+    echo "[$(print_date) ${P}:${B}] Error:" "$@" | tee -a ${tb_LOGFILE?}
     exit -1;
 }
 
@@ -647,7 +647,7 @@ load_profile()
 
 log_msgs()
 {
-    echo "[$(print_date) ${P?}]" "$@" | tee -a ${tb_LOGFILE?}
+    echo "[$(print_date) ${P?}:${B}]" "$@" | tee -a ${tb_LOGFILE?}
 }
 
 prepare_git_repo_for_gerrit()
@@ -922,13 +922,13 @@ local log_type="$1"
 local status="failed"
 local gzlog=
 
-    [ $V ] && echo "report to gerrit retval=${retval} log_type=${log_type}"
+    [ $V ] && echo "report to gerrit retval=${R} log_type=${log_type}"
     if [ "$log_type" = "short"  -a "${R?}" = "0" ] ; then
         gzlog="tinder.log.gz"
         (
-            echo "gerrit_task_ticket:$GERRIT_TASK_TICKET"
-            echo "gerrit_task_branch:$GERRIT_TASK_BRANCH"
-            echo "gerrit task_ref:$GERRIT_TASK_REF"
+            echo "gerrit_task_ticket:${GERRIT_TASK_TICKET?}"
+            echo "gerrit_task_branch:${GERRIT_TASK_BRANCH?}"
+            echo "gerrit task_ref:${GERRIT_TASK_REF?}"
             echo ""
             echo "Build: OK"
             echo ""
@@ -937,11 +937,11 @@ local gzlog=
     else
         gzlog="tinder.log.gz"
         (
-            echo "gerrit_task_ticket:$GERRIT_TASK_TICKET"
-            echo "gerrit_task_branch:$GERRIT_TASK_BRANCH"
-            echo "gerrit task_ref:$GERRIT_TASK_REF"
+            echo "gerrit_task_ticket:${GERRIT_TASK_TICKET?}"
+            echo "gerrit_task_branch:${GERRIT_TASK_BRANCH?}"
+            echo "gerrit task_ref:${GERRIT_TASK_REF?}"
             echo ""
-            if [ "${retval?}" = "0" ] ; then
+            if [ "${R?}" = "0" ] ; then
                 echo "Build: OK"
             else
                 echo "Build: FAIL"
@@ -952,12 +952,15 @@ local gzlog=
     fi
 
     if [ "${R?}" = "0" ] ; then
+        log_msgs "Report Success for gerrit ref ${GERRIT_TASK_TICKET?}"
         status="success"
     elif [ "${R?}" = "2" ] ; then
+        log_msgs "Report Cancellation for gerrit ref ${GERRIT_TASK_TICKET?}"
         status="canceled"
+    else
+        log_msgs "Report Failure for gerrit ref ${GERRIT_TASK_TICKET?}"
     fi
-    log_msgs "Report Success for gerrit ref '$GERRIT_TASK_TICKET'."
-    cat "${gzlog}" | ssh ${TB_GERRIT_HOST?} buildbot put --id ${TB_ID?} --ticket "${GERRIT_TASK_TICKET}" --status $status --log -
+    cat "${gzlog}" | ssh ${TB_GERRIT_HOST?} buildbot put --id ${TB_ID?} --ticket "${GERRIT_TASK_TICKET?}" --status $status --log -
 
 }
 
@@ -995,7 +998,7 @@ tinderbox: END
         (
             echo "$message_content"
             cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-timestamp.log"
-            for cm in $(cat ${TB_METADATA_DIR?}/${P?}_${B?}_current-git-head.log) ; do echo "TinderboxPrint: $(generate_cgit_link ${cm})" ; done
+            for cm in $(cat ${TB_METADATA_DIR?}/${P?}_${B?}_current-git-head.log) ; do echo "TinderboxPrint: $(generate_cgit_link "core:${cm}")" ; done
             cat tb_${B?}_autogen.log tb_${B?}_clean.log tb_${B?}_build.log tb_${B?}_tests.log 2>/dev/null
         ) | gzip -c > "${gzlog}"
         xtinder="X-Tinder: gzookie"
@@ -1023,6 +1026,15 @@ rotate_logs()
         cp -f "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log" "${TB_METADATA_DIR?}/${P}_${B?}_last-failure-git-head.txt" 2>/dev/null
         cp -f "${TB_METADATA_DIR?}/${P}_${B?}_current-git-timestamp.log" "${TB_METADATA_DIR?}/${P}_${B?}_last-failure-git-timestamp.txt" 2>/dev/null
     fi
+    for f in tb_${B}*.log ; do
+        mv -f ${f} prev-${f} 2>/dev/null
+    done
+    pushd "${TB_METADATA_DIR?}" > /dev/null
+    for f in ${P?}_${B}*.log ; do
+        mv -f ${f} prev-${f} 2>/dev/null
+    done
+    popd > /dev/null
+
 }
 
 rotate_branches()
@@ -1070,7 +1082,9 @@ local s=0
                 s=${TB_POST_BUILD_DELAY?}
                 ;;
             wait)
-                log_msgs "Nothing to do. waiting ${TB_POLL_DELAY?} seconds."
+                if [ "${s?}" != "${TB_POLL_DELAY?}" ] ; then
+                    log_msgs "Nothing to do. waiting ${TB_POLL_DELAY?} seconds."
+                fi
                 s=${TB_POLL_DELAY?}
                 ;;
             *)
@@ -1098,6 +1112,7 @@ run_one_gerrit()
 {
     R=0
     (
+        log_msgs "Starting tb build gerrit ref:${GERRIT_TASK_TICKET?}"
         # source branch-level configuration
         source_branch_level_config "${B?}" "gerrit"
 
@@ -1137,6 +1152,7 @@ run_one_tb()
 {
     R=0
     (
+        log_msgs "Starting tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
         source_branch_level_config "${B?}" "${tb_BUILD_TYPE?}"
         if [ -z "$TB_BUILD_DIR" ] ; then
             TB_BUILD_DIR="${TB_GIT_DIR?}"
@@ -1170,6 +1186,7 @@ run_one_tb()
             if [ "$R" = "0" ] ; then
                 report_to_tinderbox "$last_checkout_date" "success" "yes"
                 phase_list=
+                log_msgs "Successful tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
             elif [ "$R" = "2" ] ; then
                 if [ "${tb_ONE_SHOT?}" != "1" ] ; then
                     report_to_tinderbox "${last_checkout_date?}" "fold" "no"
@@ -1178,9 +1195,11 @@ run_one_tb()
                     # false negative does not need a full clean build, let's just redo make and after
                 retry_count=$((retry_count - 1))
                 if [ "$retry_count" = "0" ] ; then
+                    log_msgs "False Negative Failed tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
                     phase_list=""
                     R=2
                 else
+                    log_msgs "False Negative Retry tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
                     phase_list="make test push"
                     R=0
                 fi
@@ -1195,13 +1214,15 @@ run_one_tb()
                 report_error committer "$last_checkout_date" report_error.log
                 report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
                 phase_list=""
+                log_msgs "Failed tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
             fi
         done
+        rotate_logs
         popd > /dev/null
         exit $R
     )
     R="$?"
-    rotate_logs
+
 }
 
 #
@@ -1319,7 +1340,7 @@ select_next_tb_task()
             r="$?"
             if [ ${r?} = 0 ] ; then
                 B="${b?}"
-                rotate_branches ${tb_TB_BRANCHES?}
+                tb_TB_BRANCHES=$(rotate_branches ${tb_TB_BRANCHES?})
                 tb_BUILD_TYPE="tb"
                 break
             fi
@@ -1341,7 +1362,7 @@ send_mail_msg()
         smtp_auth="-xu ${TB_SMTP_USER?} -xp ${TB_SMTP_PASSWORD?}"
     fi
 
-    log_msgs "send mail to ${to?} with subject \"${subject?}\""
+    [ $V ] && log_msgs "send mail to ${to?} with subject \"${subject?}\""
     [ $V ] && quiet=""
     if [ -n "${log}" ] ; then
         ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
@@ -1390,7 +1411,7 @@ setup_profile_defaults()
         if [ ! -f "${TB_LOGFILE?}" ] ; then
             touch "${TB_LOGFILE?}" || die "Creating ${TB_LOGFILE?}"
         fi
-        tb_LOGFILE="$TB_LOGFILES"
+        tb_LOGFILE="${TB_LOGFILE?}"
     fi
 
     if [ -z "{TB_METADATA_DIR}" ] ; then
@@ -1509,10 +1530,7 @@ local rc
                 echo "Warning: missing SMTPUSER (can work, depends on your smtp server)" 1>&2
             fi
             if [ -n "${TB_SMTP_USER}" -a -z "${TB_SMTP_PASSWORD}" ] ; then
-                die "TB_SMTP_PASSWRD is required with TB_SMTP_USER set"
-            fi
-            if [ "$rc" != "0" ] ; then
-                exit 1
+                die "TB_SMTP_PASSWORD is required with TB_SMTP_USER set"
             fi
             ;;
         none)
