@@ -15,7 +15,11 @@ if [ -n "$debug" ] ; then
     set -x
 fi
 
+# get the abolute path to the directory containing the main script
 tb_BIN_DIR=$(dirname "$0")
+pushd ${tb_BIN_DIR} > /dev/null
+tb_BIN_DIR=$(pwd)
+popd > /dev/nukk
 
 source "${tb_BIN_DIR?}/tb_internals.sh"
 
