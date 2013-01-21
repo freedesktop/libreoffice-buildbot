@@ -26,35 +26,46 @@
 
 source utls.sh
 
+# Requirement check
+# Vagrind >= 3.7
+
+REQUIRED_VALGRIND_VERSION="valgrind-3.7.0"
+
+hash valgrind > /dev/null 2>&1 || echo "valgrind >= $REQUIRED_VALGRIND_VERSION is required for this test."
+
+if test $(compareversion "$(valgrind --version)" "$REQUIRED_VALGRIND_VERSION") -eq -1; then
+    echo "valgrind >= $REQUIRED_VALGRIND_VERSION is required for this test."
+    exit 1
+fi
+
+# Post dependency check
 export OOO_EXIT_POST_STARTUP=1
 export OOO_DISABLE_RECOVERY=1
 OFFICEBIN="$1"
 
 TESTDATE=$(date --rfc-3339=second)
 
-BUILD_ID=$(get_lo_build_id "$OFFICEBIN")
-BUILD_ID=${BUILD_ID:-"BUILD_ID_NOT_FOUND"}
-
-LOVERSION=$(get_lo_version "$OFFICEBIN")
+LOVERSION="$(get_lo_version "$OFFICEBIN")"
 DT=$(echo "$TESTDATE" | tr -s '\ \+\-\:' "_")
 
-CG_LOG="logs/callgrind/cg-lo$LOVERSION-$DT"
-PF_LOG="logs/loperf/pf-lo$LOVERSION-$DT.log"
-CSV_LOG="logs/callgrind/cg-lo$LOVERSION"
+CG_LOG="logs/callgrind/cg-lo-$LOVERSION-$DT"
+PF_LOG="logs/loperf/pf-lo-$LOVERSION-$DT.log"
 ERR_LOG="logs/error.log"
+CSV_LOG_DIR="logs/csv/"
 
-mkdir -p logs/callgrind 2>&1 > /dev/null
-mkdir -p logs/loperf    2>&1 > /dev/null
+mkdir -p logs/callgrind > /dev/null 2>&1
+mkdir -p logs/loperf > /dev/null 2>&1
+mkdir -p "$CSV_LOG_DIR" > /dev/null 2>&1
 
 function launch {
 
     if test "$1" = ""; then
-        valgrind --tool=callgrind --callgrind-out-file="$CG_LOG"_offload.log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless > /dev/null 2>&1
-        echo -n "$CG_LOG"_offload.log
+        valgrind --tool=callgrind --callgrind-out-file="$CG_LOG"-offload.log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless > /dev/null 2>&1
+        echo -n "$CG_LOG"-offload.log
     else
         fn=${1#docs\/}
-        valgrind --tool=callgrind --callgrind-out-file="$CG_LOG"_onload_"$fn".log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" "$1" --splash-pipe=0 --headless > /dev/null 2>&1
-        echo -n "$CG_LOG"_onload_"$fn".log
+        valgrind --tool=callgrind --callgrind-out-file="$CG_LOG"-onload-"$fn".log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" "$1" --splash-pipe=0 --headless > /dev/null 2>&1
+        echo -n "$CG_LOG"-onload-"$fn".log
     fi
 }
 
@@ -119,9 +130,9 @@ find docs -type f |  grep -Ev "\/\." | while read f; do
     echo "$onload_str" | tee -a "$PF_LOG"
 
     #Construct the csv file name
-    CSV_FN="$CSV_LOG"_onload_"${f#docs\/}".csv
+    CSV_FN="$CSV_LOG_DIR"/"onload-${f#docs\/}".csv
 
-    echo -n "$TESTDATE"$'\t'"$BUILD_ID" >> "$CSV_FN"
+    echo -n "$TESTDATE"$'\t'"$LOVERSION" >> "$CSV_FN"
 
     # Populate onload delta to PF_LOG and CSV_FN
     for i in $(seq 0 13); do
@@ -140,13 +151,9 @@ find docs -type f |  grep -Ev "\/\." | while read f; do
 done
 
 # Regression check
-echo "Regression Status:" | tee -a "$PF_LOG"
-echo "-----------------" | tee -a "$PF_LOG"
-
-find $(dirname $(readlink -f "$PF_LOG")) -type f | grep -v "$PF_LOG" | grep log$ | while read rf; do
-
-    check_regression "$PF_LOG" "$rf" | tee -a "$PF_LOG"
-
-done
-
-grep '^Regression found!$' "$PF_LOG" > /dev/null || echo "Congratulations, no regression found!" | tee -a "$PF_LOG"
+# echo "Regression Status:" | tee -a "$PF_LOG"
+# echo "-----------------" | tee -a "$PF_LOG"
+# find $(dirname $(readlink -f "$PF_LOG")) -type f | grep -v "$PF_LOG" | grep log$ | while read rf; do
+#     check_regression "$PF_LOG" "$rf" | tee -a "$PF_LOG"
+# done
+# grep '^Regression found!$' "$PF_LOG" > /dev/null || echo "Congratulations, no regression found!" | tee -a "$PF_LOG"

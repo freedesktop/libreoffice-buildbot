@@ -26,21 +26,23 @@
 
 function get_lo_version {
 
-     echo -n $(echo $("$1" --version) | sed s/"LibreOffice "//)
-}
-
-function get_lo_commit_hash {
-
+    VERSIONRC_FN=$(echo -n $(echo -n "$1" | sed 's/soffice.*//')versionrc)
     LOGITDIR=$(echo -n $(echo -n "$1" | sed 's/core.*//')core/.git)
 
-    echo -n $(git --git-dir="$LOGITDIR" log -1 --pretty=format:"%H")
-}
+    version=$(git --git-dir="$LOGITDIR" rev-parse HEAD 2> /dev/null)
 
-function get_lo_build_id {
+    if test "$version" = ""; then
+        version=$(sed -nr 's/buildid=(.+)/\1/p' "$VERSIONRC_FN" 2> /dev/null)
+        if test "$version" = ""; then
+            version=$(echo -n $(echo $("$1" --version) | sed s/"LibreOffice "//))
+            if test "$version" = ""; then
+                version="unknown_version"
+            fi
+        fi
+    fi
 
-    VERSIONRC_FN=$(echo -n $(echo -n "$1" | sed 's/soffice.*//')versionrc)
+    echo -n "$version"
 
-    echo -n $(cat "$VERSIONRC_FN" | grep ^buildid | sed s/buildid\=//)
 }
 
 function is_delta_regress {
@@ -80,7 +82,6 @@ function check_regression {
 
     # find offload regression
 
-
     # find onload regression
 
     i=0
@@ -111,4 +112,25 @@ function check_regression {
     done
 
     return 1
+}
+
+
+# A lovely script to compare versions from fgm/stackoverflow:)
+# http://stackoverflow.com/questions/3511006/how-to-compare-versions-of-some-products-in-unix-shell
+function compareversion () {
+
+  typeset    IFS='.'
+  typeset -a v1=( $1 )
+  typeset -a v2=( $2 )
+  typeset    n diff
+
+  for (( n=0; n<4; n+=1 )); do
+    diff=$((v1[n]-v2[n]))
+    if [ $diff -ne 0 ] ; then
+      [ $diff -le 0 ] && echo '-1' || echo '1'
+      return
+    fi
+  done
+  echo  '0'
+
 }
