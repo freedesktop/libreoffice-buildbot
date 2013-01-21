@@ -139,7 +139,7 @@ check_branch_profile()
     local ret=
     local rb=
 
-    if [ ! -d "${tb_PROFILE_DIR?}/${b?}" ] ; then
+    if [ ! -d "${tb_PROFILE_DIR?}/branches/${b?}" ] ; then
         log_msgs "No branch specific config for branch '${b?}', using default from profile"
     fi
     if [ "${tb_MODE?}" = "dual" -o "${tb_MODE?}" = "tb" ] ; then
