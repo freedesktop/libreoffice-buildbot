@@ -19,7 +19,7 @@ fi
 tb_BIN_DIR=$(dirname "$0")
 pushd ${tb_BIN_DIR} > /dev/null
 tb_BIN_DIR=$(pwd)
-popd > /dev/nukk
+popd > /dev/null
 
 source "${tb_BIN_DIR?}/tb_internals.sh"
 
