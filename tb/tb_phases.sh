@@ -114,13 +114,13 @@ canonical_post_make()
     if [ "${tb_BUILD_TYPE?}" = "tb" ] ; then
         if [ "${R}" != "0" ] ; then
             if [ -f "${tb_REPORT_LOG?}" ] ; then
-                if [ -f "${TB_PROFILE_DIR?}/${B?}/false_negatives" ] ; then
-                    grep -F "$(cat "${TB_PROFILE_DIR?}/${B?}/false_negatives")" "${tb_REPORT_LOG?}" && R="2"
+                if [ -f "${tb_PROFILE_DIR?}/branches/${B?}/false_negatives" ] ; then
+                    grep -F "$(cat "${tb_PROFILE_DIR?}/branhces/${B?}/false_negatives")" "${tb_REPORT_LOG?}" && R="2"
                     if [ "${R?}" == "2" ] ; then
                         log_msgs "False negative detected"
                     fi
-                elif [ -f "${TB_PROFILE_DIR?}/false_negatives" ] ; then
-                    grep -F "$(cat "${TB_PROFILE_DIR?}/false_negatives")" "${tb_REPORT_LOG?}" && R="2"
+                elif [ -f "${tb_PROFILE_DIR?}/false_negatives" ] ; then
+                    grep -F "$(cat "${tb_PROFILE_DIR?}/false_negatives")" "${tb_REPORT_LOG?}" && R="2"
                     if [ "${R?}" == "2" ] ; then
                         log_msgs "False negative detected"
                     fi
