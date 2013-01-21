@@ -291,12 +291,12 @@ local b
 
     # Accumulate valid branches for tb and gerrit
     # depending of the mode
-    if [ "$tb_MODE" = "dual" -o "$tb_MODE" = "gerrit" ] ; then
+    if [ "${tb_MODE?}" = "dual" -o "${tb_MODE?}" = "gerrit" ] ; then
         if [ -z "$tb_GERRIT_BRANCHES" ] ; then
             die "No branches are configured properly for gerrit"
         fi
     fi
-    if [ "$tb_MODE" = "dual" -o "$tb_MODE" = "tb" ] ; then
+    if [ "${tb_MODE?}" = "dual" -o "${tb_MODE?}" = "tb" ] ; then
         if [ -z "$tb_TB_BRANCHES" ] ; then
             die "No branches are configured properly for tb"
         fi
@@ -1290,9 +1290,9 @@ select_next_gerrit_task()
 select_next_task()
 {
 
-    if [ tb_MODE="tb" ] ; then
+    if [ "${tb_MODE?}" = "tb" ] ; then
         select_next_tb_task
-    elif [ tb_MODE="gerrit" ] ; then
+    elif [ "${tb_MODE?}" = "gerrit" ] ; then
         select_next_gerrit_task
     else
         if [ "${tb_NEXT_PRIORITY}" = "tb" ] ; then
@@ -1485,7 +1485,7 @@ verify_command()
 {
 local rc
 
-    case "$tb_MODE" in
+    case "${tb_MODE?}" in
         dual)
             if [ -z "$tb_GERRIT_PLATFORM" ] ; then
                 die "tb_GERRIT_PLATFORM is required for mode involving gerrit"
@@ -1517,11 +1517,11 @@ local rc
             ;;
     esac
 
-    if [ -z "$tb_SEND_MAIL" ] ; then
+    if [ -z "${tb_SEND_MAIL}" ] ; then
         tb_SEND_MAIL="${TB_SEND_MAIL}"
     fi
     # if we want email to be sent, we must make sure that the required parameters are set in the profile (or in the environment)
-    case "$tb_SEND_MAIL" in
+    case "${tb_SEND_MAIL?}" in
         all|tb|owner|debug|author)
             if [ -z "${TB_SMTP_HOST}" ] ; then
                 die "TB_SMTP_HOST is required in the config to send email"
