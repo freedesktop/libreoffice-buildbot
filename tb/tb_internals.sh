@@ -504,6 +504,7 @@ determine_make()
 die()
 {
     echo "[$(print_date) ${P}:${B}] Error:" "$@" | tee -a ${tb_LOGFILE?}
+    R=-1
     exit -1;
 }
 
@@ -582,6 +583,24 @@ get_committers()
 {
     echo "get_committers: $(get_commits_since_last_good people)" 1>&2
     get_commits_since_last_good people | sort | uniq | tr '\n' ','
+}
+
+interupted_build()
+{
+    mgs_log "Interrupted by Signal"
+    if [ "$tb_BUILD_TYPE" = "gerrit" ] ; then
+        if [ -n "${GERRIT_TASK_TICKET}" ] ;then
+            # repport a cancellation if we already acquired the ticket
+            R=2
+            report_gerrit
+        fi
+    elif [ "$tb_BUILD_TYPE" = "tb" ] ; then
+        if [ -n "${tb_LAST_CHECKOUT_DATE?}" ] ; then
+            # repport a cancellation if we already notified a start
+            report_to_tinderbox "${tb_LAST_CHECKOUT_DATE?}" "fold" "no"
+        fi
+    fi
+    exit 4
 }
 
 load_config()
@@ -921,7 +940,7 @@ EOF
 report_gerrit()
 {
 local log_type="$1"
-local status="failed"
+local status=
 local gzlog=
 
     [ $V ] && echo "report to gerrit retval=${R} log_type=${log_type}"
@@ -956,14 +975,14 @@ local gzlog=
     if [ "${R?}" = "0" ] ; then
         log_msgs "Report Success for gerrit ref ${GERRIT_TASK_TICKET?}"
         status="success"
-    elif [ "${R?}" = "2" ] ; then
+    elif [ "${R?}" = "1" ] ; then
+        log_msgs "Report Failure for gerrit ref ${GERRIT_TASK_TICKET?}"
+        status="failed"
+    else
         log_msgs "Report Cancellation for gerrit ref ${GERRIT_TASK_TICKET?}"
         status="canceled"
-    else
-        log_msgs "Report Failure for gerrit ref ${GERRIT_TASK_TICKET?}"
     fi
     cat "${gzlog}" | ssh ${TB_GERRIT_HOST?} buildbot put --id ${TB_ID?} --ticket "${GERRIT_TASK_TICKET?}" --status $status --log -
-
 }
 
 
@@ -1114,6 +1133,8 @@ run_one_gerrit()
 {
     R=0
     (
+        trap 'interupted_build' SIGINT SIGQUIT
+
         log_msgs "Starting tb build gerrit ref:${GERRIT_TASK_TICKET?}"
         # source branch-level configuration
         source_branch_level_config "${B?}" "gerrit"
@@ -1140,9 +1161,14 @@ run_one_gerrit()
         report_gerrit
 
         popd > /dev/null
-        exit $R
+        exit ${R?}
     )
     R="$?"
+
+    # check we we intercepted a signal, if so bail
+    if [ "${R?}" = "4" ] ; then
+        exit -1
+    fi
 }
 
 #
@@ -1154,6 +1180,8 @@ run_one_tb()
 {
     R=0
     (
+        trap 'interupted_build' SIGINT SIGQUIT
+
         log_msgs "Starting tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
         source_branch_level_config "${B?}" "${tb_BUILD_TYPE?}"
         if [ -z "$TB_BUILD_DIR" ] ; then
@@ -1166,12 +1194,12 @@ run_one_tb()
             prepare_git_repo_for_tb
         fi
 
-        local last_checkout_date="$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-timestamp.log")"
+        tb_LAST_CHECKOUT_DATE="$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-timestamp.log")"
         local phase_list
         local retry_count=3
 
-        report_to_tinderbox "${last_checkout_date?}" "building" "no"
-
+        report_to_tinderbox "${tb_LAST_CHECKOUT_DATE?}" "building" "no"
+        tb_TB_BUILD_REPORTED=1
 
         if [ "$TB_INCREMENTAL" = "1" ] ; then
             phase_list="autogen make test push"
@@ -1186,13 +1214,10 @@ run_one_tb()
             do_build ${phase_list?}
 
             if [ "$R" = "0" ] ; then
-                report_to_tinderbox "$last_checkout_date" "success" "yes"
+                report_to_tinderbox "${tb_LAST_CHECKOUT_DATE?}" "success" "yes"
                 phase_list=
                 log_msgs "Successful tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
             elif [ "$R" = "2" ] ; then
-                if [ "${tb_ONE_SHOT?}" != "1" ] ; then
-                    report_to_tinderbox "${last_checkout_date?}" "fold" "no"
-                fi
                 log_msgs "False negative build, skip reporting"
                     # false negative does not need a full clean build, let's just redo make and after
                 retry_count=$((retry_count - 1))
@@ -1200,6 +1225,9 @@ run_one_tb()
                     log_msgs "False Negative Failed tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
                     phase_list=""
                     R=2
+                    if [ "${tb_ONE_SHOT?}" != "1" ] ; then
+                        report_to_tinderbox "${tb_LAST_CHECKOUT_DATE?}" "fold" "no"
+                    fi
                 else
                     log_msgs "False Negative Retry tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
                     phase_list="make test push"
@@ -1213,18 +1241,23 @@ run_one_tb()
                 else
                     cat ${tb_REPORT_LOG?} >> report_error.log
                 fi
-                report_error committer "$last_checkout_date" report_error.log
-                report_to_tinderbox "${last_checkout_date?}" "build_failed" "yes"
+                report_error committer "${tb_LAST_CHECKOUT_DATE?}" report_error.log
+                report_to_tinderbox "${tb_LAST_CHECKOUT_DATE?}" "build_failed" "yes"
                 phase_list=""
                 log_msgs "Failed tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
             fi
         done
+        tb_LAST_CHECKOUT_DATE=
         rotate_logs
         popd > /dev/null
         exit $R
     )
     R="$?"
 
+    # check we we intercepted a signal, if so bail
+    if [ "${R?}" = "4" ] ; then
+        exit -1
+    fi
 }
 
 #
