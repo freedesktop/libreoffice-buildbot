@@ -323,14 +323,14 @@ while [ "${1}" != "" ]; do
             case "$arg" in
                 fair)
                     tb_MODE="dual"
-                    TB_DUAL_PRIORITY="fair"
+                    tb_DUAL_PRIORITY="fair"
                     ;;
                 gerrit)
                     tb_MODE="gerrit"
                     ;;
                 gerrit-tb)
                     tb_MODE="dual"
-                    TB_DUAL_PRIORITY="gerrit"
+                    tb_DUAL_PRIORITY="gerrit"
                     ;;
                 prime)
                     tb_MODE="tb"
@@ -341,7 +341,7 @@ while [ "${1}" != "" ]; do
                     ;;
                 tb-gerrit)
                     tb_MODE="dual"
-                    TB_DUAL_PRIORITY="tb"
+                    tb_DUAL_PRIORITY="tb"
                     ;;
                 *)
                     die "Unsupported mode of operation : $arg"

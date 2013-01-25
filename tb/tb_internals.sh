@@ -659,7 +659,7 @@ prepare_git_repo_for_gerrit()
     [ $V ] && echo "fetching gerrit path from ssh://${TB_GERRIT_HOST?}/core ${GERRIT_TASK_REF}"
 
     (
-        git clean -fd && git fetch -q ssh://${GERRIT_HOST?}/core ${GERRIT_TASK_REF}
+        git clean -fd && git fetch -q ssh://${TB_GERRIT_HOST?}/core ${GERRIT_TASK_REF}
         if [ "$?" = "0" ] ; then
             git checkout -q FETCH_HEAD
             git submodule -q update
@@ -667,12 +667,13 @@ prepare_git_repo_for_gerrit()
             exit -1
         fi
     ) 2>&1 > ${TB_BUILD_DIR}/error_log.log
-    popd > /dev/null
 
     if [ "$?" != "0" ] ; then
+        popd > /dev/null
         report_error owner "$(print_date)" error_log.log
         die "Cannot reposition repo ${TB_GIT_DIR} to the proper branch"
     fi
+    popd > /dev/null
 
 }
 
@@ -713,6 +714,7 @@ prepare_git_repo_for_tb()
     ) 2>&1 > ${TB_BUILD_DIR}/error_log.log
 
     if [ "$?" != "0" ] ; then
+        popd > /dev/null
         report_error owner "$(print_date)" error_log.log
         die "Cannot reposition repo ${TB_GIT_DIR} to the proper branch"
     fi
@@ -1309,7 +1311,7 @@ select_next_task()
 
         # if we use a 'fair' priority
         # switch the order in which we try to get stuff
-        if [ "${tb_PRIORITY?}" = "fair" ] ; then
+        if [ "${tb_MODE?}" = "fair" ] ; then
             if [ "${tb_BUILD_TYPE?}" = "tb" ] ; then
                 tb_NEXT_PRIORITY="gerrit"
             elif [ "${tb_BUILD_TYPE?}" = "gerrit" ] ; then
@@ -1452,6 +1454,10 @@ setup_profile_defaults()
         tb_MODE="${TB_DEFAULT_MODE:-tb}"
     fi
 
+    if [ -z "${tb_DUAL_PRIORITY}" ] ; then
+        tb_DUAL_PRIORITY="${TB_DUAL_PRIORITY:-fair}"
+    fi
+
     if [ -z "${tb_BRANCHES}" ] ; then
         tb_BRANCHES="${TB_BRANCHES}"
         if [ -z "${tb_BRANCHES}" ] ; then
@@ -1490,9 +1496,14 @@ local rc
             if [ -z "$tb_GERRIT_PLATFORM" ] ; then
                 die "tb_GERRIT_PLATFORM is required for mode involving gerrit"
             fi
-            if [ -z "TB_DUAL_PRIORITY" ] ; then
-                TB_DUAL_PRIORITY="fair"
-            fi
+            case "${tb_DUAL_PRIORITY?}" in
+                fair|gerrit|tb)
+                    ;;
+                *)
+                    log_msgs "TB_DUAL_PRIORITY:${tb_DUAL_PRIORITY?} is not a valid value, defaulting to 'fair'"
+                    tb_DUAL_PRIORITY="fair"
+                    ;;
+            esac
             ;;
         gerrit)
             if [ -z "$tb_GERRIT_PLATFORM" ] ; then
@@ -1514,8 +1525,10 @@ local rc
             fi
             ;;
         *)
+            die "Invalid mode $tb_MODE"
             ;;
     esac
+
 
     if [ -z "${tb_SEND_MAIL}" ] ; then
         tb_SEND_MAIL="${TB_SEND_MAIL}"
@@ -1536,7 +1549,7 @@ local rc
         none)
             ;;
         *)
-            die "Invalid -m argument:${tb_SEND_MAIL}"
+            die "Invalid -m/TB_SEND_MAIL argument:${tb_SEND_MAIL}"
             ;;
     esac
 
