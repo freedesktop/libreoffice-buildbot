@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+# get the abolute path to the directory containing the main script
+BIN_DIR=$(dirname "$0")
+pushd ${BIN_DIR?} > /dev/null
+BIN_DIR=$(pwd)
+popd > /dev/null
+
+dest_path=/opt/lo
+
+usage()
+{
+    cat <<EOF
+Usage: $0 [ --prefix=<path> ]
+
+--prefix is used here in the sens of autoconf.
+By default the prefix is /opt/lo, which means that tb and necesasry
+shell files are installed in /opt/lo/bin
+
+EOF
+
+}
+
+while [ "${1}" != "" ]; do
+    parm=${1%%=*}
+    arg=${1#*=}
+    has_arg=
+    if [ "${1}" != "${parm?}" ] ; then
+        has_arg=1
+    else
+        arg=""
+    fi
+
+    case "${parm}" in
+        --prefix)  # avoid calling *_clean functions (incremental build)
+            if [ -z "${has_arg}" ] ; then
+                shift;
+                arg="$1"
+            fi
+            if [ -z "${arg}" ] ; then
+                die "Missing argument for option $parm"
+            else
+                dest_path="$arg"
+            fi
+            ;;
+        --help)
+            usage
+            exit 0;
+            ;;
+        -*)
+            die "Invalid option $1"
+            ;;
+        *)
+            die "Invalid argument $1"
+            ;;
+    esac
+    shift
+done
+
+if [ ! -d "${dest_path?}" ] ; then
+    mkdir -p "${dest_path?}/bin"
+fi
+
+if [ ! -d "${dest_path?}/bin" ] ; then
+    mkdir "${dest_path?}/bin"
+fi
+
+echo "Installing in ${dest_path?}/bin"
+cp -v ${BIN_DIR}/tb* ${dest_path?}/bin/.
+chmod +x ${dest_path?}/bin/tb
+echo "Done."
