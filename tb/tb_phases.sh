@@ -85,14 +85,15 @@ local extra_buildid=""
         extra_buildid="TinderBox: ${TB_NAME?}, Branch:${B}, Time: $current_timestamp"
     fi
     if [ "${R}" = "0" ] ; then
-        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} EXTRA_BUILDID="$extra_buildid" -sr > "tb_${B?}_build.log" 2>&1 ; then
+        export EXTRA_BUILDID="$extra_buildid"
+        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr > "tb_${B?}_build.log" 2>&1 ; then
             tb_REPORT_LOG="tb_${B?}_build.log"
             tb_REPORT_MSGS="build failed - error is:"
             R=1
         else
             # if we want to populate bibisect we need to 'install'
             if [ "${tb_BUILD_TYPE?}" = "tb" -a ${TB_BIBISECT} != "0" ] ; then
-                if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} EXTRA_BUILDID="${extra_buildid}" -sr install-tb >>"tb_${B?}_build.log" 2>&1 ; then
+                if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr install-tb >>"tb_${B?}_build.log" 2>&1 ; then
                     tb_REPORT_LOG="tb_${B}_build.log"
                     tb_REPORT_MSGS="build failed - error is:"
                     R=1
