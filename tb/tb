@@ -155,6 +155,10 @@ TB_DEFAULT_MODE=[gerrit|gerrit-tb|tb-gerrit|tb] Default mode of operation.
                                                 This is a G or P level parameter
                                                 The command line --mode= override both level.
                                                 Default is "tb".
+TB_DEFAULT_PROFILE=<profile_name> Default profile name.
+                                  This is a G level only parameter
+                                  This provide a default value in case -p <prifle> is not
+                                  present on the command line, but is required.
 TB_GERRIT_HOST<host> Gerrit host to contact in gerrit mode.
                      This parameter is mandatory to use a gerrit mode.
                      This is G or P-level parameter only
@@ -242,6 +246,10 @@ esac
 set_factory_default
 
 load_config
+
+if [ "${TB_DEFAULT_PROFILE}" ] ; then
+    P="${TB_DEFAULT_PROFILE}"
+fi
 
 while [ "${1}" != "" ]; do
     parm=${1%%=*}
