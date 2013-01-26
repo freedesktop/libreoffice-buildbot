@@ -585,9 +585,17 @@ get_committers()
     get_commits_since_last_good people | sort | uniq | tr '\n' ','
 }
 
+get_first_branche()
+{
+    local top="$1"
+
+    echo "$top"
+
+}
+
 interupted_build()
 {
-    mgs_log "Interrupted by Signal"
+    log_msgs "Interrupted by Signal"
     if [ "$tb_BUILD_TYPE" = "gerrit" ] ; then
         if [ -n "${GERRIT_TASK_TICKET}" ] ;then
             # repport a cancellation if we already acquired the ticket
@@ -600,6 +608,9 @@ interupted_build()
             report_to_tinderbox "${tb_LAST_CHECKOUT_DATE?}" "fold" "no"
         fi
     fi
+    # propagate the stop request to the main loop
+    touch ${TB_METADATA_DIR?}/stop
+
     exit 4
 }
 
@@ -989,7 +1000,7 @@ local gzlog=
 report_to_tinderbox()
 {
     [ $V ] && echo "report_to_tinderbox status=$2"
-    if [ -z "${tb_SEND_MAIL}" -o "${tb_SEND_MAIL}" = "none" -o -z "${TB_NAME}" ] ; then
+    if [ -z "${tb_SEND_MAIL}" -o "${tb_SEND_MAIL}" = "none" ] ; then
         return 0
     fi
 
@@ -1192,12 +1203,14 @@ run_one_tb()
         # condition already
         if [ "${tb_ONE_SHOT?}" != "1" ] ; then
             prepare_git_repo_for_tb
+        else
+            collect_current_head
         fi
 
-        tb_LAST_CHECKOUT_DATE="$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-timestamp.log")"
         local phase_list
         local retry_count=3
 
+        tb_LAST_CHECKOUT_DATE="$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-timestamp.log")"
         report_to_tinderbox "${tb_LAST_CHECKOUT_DATE?}" "building" "no"
         tb_TB_BUILD_REPORTED=1
 
@@ -1214,7 +1227,7 @@ run_one_tb()
             do_build ${phase_list?}
 
             if [ "$R" = "0" ] ; then
-                report_to_tinderbox "${tb_LAST_CHECKOUT_DATE?}" "success" "yes"
+                report_to_tinderbox "${tb_LAST_CHECKOUT_DATE}" "success" "yes"
                 phase_list=
                 log_msgs "Successful tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
             elif [ "$R" = "2" ] ; then
@@ -1265,7 +1278,7 @@ run_one_tb()
 #
 run_primer()
 {
-    check_branch_profile
+    check_branch_profiles
 
     # as a special case the select_next_task
     # if tb_ONE_SHOT=1 return the first branch
@@ -1550,8 +1563,8 @@ local rc
         tb)
             if [ "${tb_ONE_SHOT?}" = "1" ] ; then
                 tb_SEND_MAIL="none"
-                tb_BRANCHES=$(determine_current_branch ${tb_BRANCHES?})
-                B=${tb_BRANCHES}
+                tb_TB_BRANCHES="${tb_BRANCHES?}"
+                B=$(get_first_branche ${tb_BRANCHES?})
                 if [ "${tb_PUSH_NIGHTLIES}" = "1" ] ; then
                     rm -f "${METADATA_DIR?}/${P?}_${B?}_last-upload-day.txt"
                 fi
