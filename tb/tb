@@ -233,7 +233,7 @@ EOF
 #
 
 case "$1" in
-    ""|help)
+    ""|help|--help)
         do_help "$@"
         exit $?
         ;;
