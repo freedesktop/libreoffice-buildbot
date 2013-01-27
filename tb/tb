@@ -238,7 +238,7 @@ case "$1" in
         exit $?
         ;;
     stop)
-        touch ~/.tb/meta/stop
+        touch ~/.tb/stop
         exit $?
         ;;
 esac
@@ -397,7 +397,7 @@ setup_profile_defaults
 verify_command
 
 # remove lingering stop semaphore file
-rm -f ~/.tb/meta/stop
+rm -f ~/.tb/stop
 
 case "${tb_MODE?}" in
     dual)

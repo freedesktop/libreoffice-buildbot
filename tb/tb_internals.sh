@@ -609,7 +609,7 @@ interupted_build()
         fi
     fi
     # propagate the stop request to the main loop
-    touch ${TB_METADATA_DIR?}/stop
+    touch ${tb_CONFIG_DIR?}/stop
 
     exit 4
 }
@@ -669,7 +669,7 @@ load_profile()
             fi
         else
             if [ -n "${old_ccache_dir}" ] ; then
-                CCACHE="${old_ccache_dir?}"
+                CCACHE_DIR="${old_ccache_dir?}"
             fi
         fi
     fi
@@ -1093,7 +1093,7 @@ local s=0
     while true; do
 
         # Check for stop request
-        if [ -f ${TB_METADATA_DIR?}/stop ] ; then
+        if [ -f ${tb_CONFIG_DIR?}/stop ] ; then
             break;
         else
             sleep ${s?}
@@ -1128,9 +1128,9 @@ local s=0
 
     # if we were stopped by request, let's log that
     # clean the semaphore file
-    if [ -f ${TB_METADATA_DIR?}/stop ] ; then
+    if [ -f ${tb_CONFIG_DIR?}/stop ] ; then
         log_msgs "Stoped by request"
-        rm ${TB_METADATA_DIR?}/stop
+        rm ${tb_CONFIG_DIR?}/stop
     fi
 
 }
@@ -1278,7 +1278,7 @@ run_one_tb()
 #
 run_primer()
 {
-    check_branch_profiles
+    check_branches_profile
 
     # as a special case the select_next_task
     # if tb_ONE_SHOT=1 return the first branch
