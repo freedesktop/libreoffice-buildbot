@@ -993,7 +993,7 @@ local gzlog=
         log_msgs "Report Cancellation for gerrit ref ${GERRIT_TASK_TICKET?}"
         status="canceled"
     fi
-    cat "${gzlog}" | ssh ${TB_GERRIT_HOST?} buildbot put --id ${TB_ID?} --ticket "${GERRIT_TASK_TICKET?}" --status $status --log -
+    cat "${gzlog}" | ssh ${TB_GERRIT_HOST?} buildbot put --ticket "${GERRIT_TASK_TICKET?}" --status $status --log -
 }
 
 
@@ -1311,7 +1311,7 @@ select_next_gerrit_task()
     GERRIT_TASK_BRANCH=""
     GERRIT_TASK_REF=""
     GERRIT_TASK_FEATURE=""
-    result=$(ssh ${TB_GERRIT_HOST?} buildbot get -p core --id ${TB_ID?} -a ${tb_GERRIT_PLATFORM?} --format BASH ${tb_GERRIT_BRANCHES?})
+    result=$(ssh ${TB_GERRIT_HOST?} buildbot get -p core -a ${tb_GERRIT_PLATFORM?} --format BASH ${tb_GERRIT_BRANCHES?})
     [ $V ] && echo "Get task result:${result}"
 
     has_task=$(echo "$result" | grep "^GERRIT_TASK_")
