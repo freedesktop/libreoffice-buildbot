@@ -1485,13 +1485,13 @@ setup_profile_defaults()
         os=$(uname)
         case "$os" in
             *Linux*)
-                tb_GERRIT_PLATFORM="LINUX"
+                tb_GERRIT_PLATFORM="Linux"
                 ;;
             Darwin)
-                tb_GERRIT_PLATFORM="MAC"
+                tb_GERRIT_PLATFORM="MacOSX"
                 ;;
             CYGWIN*)
-                tb_GERRIT_PLATFORM="WINDOWS"
+                tb_GERRIT_PLATFORM="Windows"
                 ;;
         esac
     fi
