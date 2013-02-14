@@ -49,8 +49,8 @@ TESTDATE=$(date --rfc-3339=second)
 LOVERSION="$(get_lo_version "$OFFICEBIN")"
 DT=$(echo "$TESTDATE" | tr -s '\ \+\-\:' "_")
 
-CG_LOG="logs/callgrind/cg-lo-$LOVERSION-$DT"
-PF_LOG="logs/loperf/pf-lo-$LOVERSION-$DT.log"
+CG_LOG="logs/callgrind/cg-lo-$DT-$LOVERSION"
+PF_LOG="logs/loperf/pf-lo-$DT-$LOVERSION.log"
 ERR_LOG="logs/error.log"
 CSV_LOG_DIR="logs/csv/"
 
