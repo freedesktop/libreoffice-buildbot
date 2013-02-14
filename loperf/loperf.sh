@@ -94,6 +94,16 @@ cur_log=$(launch)
 offload_str=$(grep '^summary:' "$cur_log" | sed s/"summary: "//)
 offload=($offload_str)
 
+#Collect data to csv file
+CSV_FN="$CSV_LOG_DIR"/"offload.csv"
+echo -n "$TESTDATE"$'\t'"$LOVERSION" >> "$CSV_FN"
+for i in $(seq 0 13); do
+    echo -n $'\t'${offload[$i]} >> "$CSV_FN"
+done
+# CEst = Ir + 10 Bm + 10 L1m + 20 Ge + 100 L2m + 100 LLm
+CEst=$(expr ${offload[0]} + 10 \* $(expr ${offload[12]} + ${offload[10]}) + 10 \* $(expr ${offload[3]} + ${offload[4]} + ${offload[5]}) + 20 \* ${offload[13]} + 100 \* $(expr ${offload[6]} + ${offload[7]} + ${offload[8]}))
+echo $'\t'$CEst >> "$CSV_FN"
+
 # Populate offload to PF_LOG
 echo " Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw Bc Bcm Bi Bim Ge" | tee -a "$PF_LOG"
 echo "########################################################" | tee -a "$PF_LOG"
