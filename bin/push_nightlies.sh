@@ -72,8 +72,7 @@ fi
 cd instsetoo_native/${INPATH}
 
 if [ $? != 0 ]; then
-    echo "cd instsetoo_native/${INPATH} failed" 1>&2
-    exit 1
+    cd workdir
 fi
 
 if [ "$ASYNC" = "1" ] ; then
