@@ -73,6 +73,9 @@
 #       /profiles/<profile_name>/branches/<branch_name>/config_gerrit
 #       /profiles/<profile_name>/branches/<branch_name>/config_tb
 #       /profiles/<profile_name>/branches/<branch_name>/false_negatives
+#       /profiles/<profile_name>/branches/<branch_name>/phase.sh
+#       /profiles/<profile_name>/branches/<branch_name>/phase_gerrit.sh
+#       /profiles/<profile_name>/branches/<branch_name>/phase_tb.sh
 #       /profiles/<profile_name>/config
 #       /profiles/<profile_name>/false_negatives
 #       /profiles/<profile_name>/phases.sh
@@ -1539,6 +1542,12 @@ source_branch_level_config()
     # we have verified the branch before so that should work
     if [ -z "${TB_TINDERBOX_BRANCH}" ] ; then
         TB_TINDERBOX_BRANCH=$(determine_default_tinderbox_branch "${b?}")
+    fi
+    if [ -f "${tb_PROFILE_DIR?}/branches/${b?}/phase.sh" ] ; then
+        source "${tb_PROFILE_DIR?}/branches/${B?}/phase.sh"
+    fi
+    if [ -f "${tb_PROFILE_DIR?}/branches/${b?}/phase_${t?}.sh" ] ; then
+        source "${tb_PROFILE_DIR?}/branches/${b?}/phase_${t?}.sh"
     fi
 }
 

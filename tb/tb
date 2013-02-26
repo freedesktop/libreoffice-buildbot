@@ -159,7 +159,7 @@ TB_DEFAULT_PROFILE=<profile_name> Default profile name.
                                   This is a G level only parameter
                                   This provide a default value in case -p <prifle> is not
                                   present on the command line, but is required.
-TB_GERRIT_HOST<host> Gerrit host to contact in gerrit mode.
+TB_GERRIT_HOST=<host> Gerrit host to contact in gerrit mode.
                      This parameter is mandatory to use a gerrit mode.
                      This is G or P-level parameter only
 TB_GIT_DIR=<path> Location of the libreoffice core git repo to use for a build.
@@ -205,7 +205,7 @@ TB_SMTP_PASSWORD=<password> Password associated with TB_SMTP_USER.
                             This paramter is mandatory if TB_SMTP_USER is specified
 TB_SMTP_USER=<username> Username to login to the smtp server.
                         If your smtp server does not require authotification, you can omit this.
-TB_TINDERBOX_BRANCH=<name> Name associated witha  branch on the tibderbox server.
+TB_TINDERBOX_BRANCH=<name> Name associated with a  branch on the tinderbox server.
                            The tinderbox server need to have a branch name assocaited with any
                            build repport. the server only recognize a preset list of such name
                            and they do not necessarely match you local branch name.
