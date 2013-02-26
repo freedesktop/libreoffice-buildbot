@@ -1485,10 +1485,6 @@ setup_profile_defaults()
         mkdir -p "${TB_METADATA_DIR?}" || die "Creating ${TB_METADATA_DIR?}"
     fi
 
-    if [ -z "$TB_ID" ] ; then
-        die "Error: TB_ID is required to be configured"
-    fi
-
     if [ -z "${TB_OWNER}" ] ; then
         die "Error: TB_OWNER is required to be configured"
     fi
