@@ -859,6 +859,7 @@ push_nightly()
     local file=
     local target=
     local tag=
+    local pack_loc=
 
     # Push build up to the project server (if enabled).
     [ $V ] && echo "Push: Nightly builds enabled"
@@ -883,13 +884,13 @@ push_nightly()
 
     if [ -f config_host.mk ] ; then
         inpath=$(grep INPATH= config_host.mk | sed -e "s/.*=//")
-    else
-        return 1
     fi
     if [ -z "${inpath?}" -o ! -d "instsetoo_native/${inpath?}" ] ; then
-        return 1
+        pack_loc="instsetoo_native/${inpath?}"
+    else
+        pack_loc="workdir"
     fi
-    pushd instsetoo_native/${inpath?} > /dev/null
+    pushd "${pack_loc?}" > /dev/null
     mkdir push 2>/dev/null || return 1
     stage="./push"
     tag="${B?}~${upload_time?}"
