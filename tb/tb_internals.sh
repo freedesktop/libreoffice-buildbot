@@ -208,6 +208,13 @@ check_branch_profile_gerrit()
 
     source_branch_level_config "${b?}" "gerrit"
 
+    # if we intented that branch to be tb only let's bail-out early
+    if [ "$TB_BRANCH_MODE" = "tb" ] ; then
+        exit -1;
+    fi
+
+    check_branch_profile_common
+
     # if CCACHE_DIR is set it has been set by the branch's profile
     # if TB_CCACHE_SIZE is set make sure the cache is as big as specified
     # note: no need to restore the old CCACHE value
@@ -236,6 +243,13 @@ check_branch_profile_tb()
     unset CCACHE_DIR
 
     source_branch_level_config "${b?}" "tb"
+
+    # if we intented that branch to be gerrit only let's bail-out early
+    if [ "$TB_BRANCH_MODE" = "gerrit" ] ; then
+        exit -1;
+    fi
+
+    check_branch_profile_common
 
     if [ -z "${TB_TINDERBOX_BRANCH}" ] ; then
         TB_TINDERBOX_BRANCH=$(determine_default_tinderbox_branch "${b?}")

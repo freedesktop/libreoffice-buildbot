@@ -142,6 +142,8 @@ TB_BRANCH_LOCAL_REFSPEC=<ref> Name of the branche in the local repo
                               Default to the name of the branch in the configuration
                               This is a B-level only paramter
                               This is a tb-mode only paramter. This is ingored in gerrit mode
+TB_BRANCH_MODE=(gerrit|tb|both) Restrict the branch to gerrit build or tb build or both (default)
+                                This is a B-level only parameter
 TB_BRANCH_REMOTE_REFSPEC=<ref> Name of the branch on the remote repo.
                                Default to the name of the branch in the configuration
                                This is a B-level only paramter
