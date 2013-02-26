@@ -205,11 +205,21 @@ TB_SMTP_PASSWORD=<password> Password associated with TB_SMTP_USER.
                             This paramter is mandatory if TB_SMTP_USER is specified
 TB_SMTP_USER=<username> Username to login to the smtp server.
                         If your smtp server does not require authotification, you can omit this.
-TB_TINDERBOX_BRANCH=<name> Name assocaited witha  branch on the tibderbox server.
+TB_TINDERBOX_BRANCH=<name> Name associated witha  branch on the tibderbox server.
                            The tinderbox server need to have a branch name assocaited with any
                            build repport. the server only recognize a preset list of such name
                            and they do not necessarely match you local branch name.
                            This is a tb-mode only paramter. This is ignored in gerrit mode
+TB_TRIGGER_FILE=<absolute_filename> This is the location of a 'trigger' file.
+                                    If specified the existance of that file will be
+                                    tested, and a build for the assocaited branch
+                                    will not be run unless the file exist
+                                    at the end of a successfull build, the trigger
+                                    file is removed by tb.
+                                    This allow to trigger some build at periodic time with a cron
+                                    For instance you could have a cron that touch a trigger file
+                                    weekly to trigger a full localized build.
+                                    This is a tb-mode only parameter. This is ignored in gerrit mode
 
 In general, when a command line argument influence on of the paramter listed
 above, it can only override a G-level specification. P-level take, for the most

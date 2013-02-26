@@ -86,6 +86,7 @@
 # tb_BRANCHES :
 # tb_BRANCH_AUTHOR :
 # tb_BUILD_COMMIT :
+# tb_BUILD_TRIGGERED : "1" if the build was controlled by a trigger file
 # tb_BUILD_TYPE :
 # tb_CONFIG_DIR :
 # tb_GERRIT_BRANCHES :
@@ -345,7 +346,7 @@ check_for_commit()
                 r=0
             else
                 [ $V ] && echo "No New commit for tb-branch ${b?}"
-                r=1
+                r=2
             fi
         else
             log_msgs "Git error while checking for commit on ${TB_GIT_REPO?} for branch ${b?}"
@@ -355,6 +356,15 @@ check_for_commit()
         fi
     fi
     [ $V ] && echo "pulling from the repo ${TB_GIT_REPO?} for branch ${b?} -> r=${r?}"
+    if [ "${r?}" = "0" ] ; then
+        if [ -n "${TB_TRIGGER_FILE}" -a -f "${TB_TRIGGER_FILE}" ] ; then
+            r=1
+            [ $V ] && echo "Trigger file ${TB_TRIGGER_FILE} detected for branch ${b?} -> r=${r?}"
+        else
+            r=3
+            [ $V ] && echo "Trigger file ${TB_TRIGGER_FILE} missing for branch ${b?} -> r=${r?}"
+        fi
+    fi
     exit ${r?}
 }
 
@@ -714,12 +724,14 @@ prepare_git_repo_for_tb()
     local refspec=
     local remote_refspec=
 
+    # by default the local branch name is the 'branch' name for the profile
     refspec="${B?}"
     if [ -n "${TB_BRANCH_LOCAL_REFSPEC}" ] ; then
         refspec="${TB_BRANCH_LOCAL_REFSPEC?}"
     fi
 
-    remote_refspec="${B?}"
+    # by default the remote branch name is identical to the local one with origin/ in front
+    remote_refspec="origin/${refspec?}"
     if [ -n "${TB_BRANCH_REMOTE_REFSPEC}" ] ; then
         remote_refspec="${TB_BRANCH_REMOTE_REFSPEC?}"
     fi
@@ -1226,11 +1238,11 @@ run_one_tb()
 
             do_build ${phase_list?}
 
-            if [ "$R" = "0" ] ; then
+            if [ "${R?}" = "0" ] ; then
                 report_to_tinderbox "${tb_LAST_CHECKOUT_DATE}" "success" "yes"
                 phase_list=
                 log_msgs "Successful tb build for sha:$(cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log")"
-            elif [ "$R" = "2" ] ; then
+            elif [ "${R?}" = "2" ] ; then
                 log_msgs "False negative build, skip reporting"
                     # false negative does not need a full clean build, let's just redo make and after
                 retry_count=$((retry_count - 1))
@@ -1263,7 +1275,10 @@ run_one_tb()
         tb_LAST_CHECKOUT_DATE=
         rotate_logs
         popd > /dev/null
-        exit $R
+        if [ "${R?}" = "0" -a "${tb_BUILD_TRIGERRED?}" = "1" ] ; then
+            rm -f "${TB_TRIGGER_FILE?}"
+        fi
+        exit ${R?}
     )
     R="$?"
 
@@ -1386,10 +1401,11 @@ select_next_tb_task()
         else
             ( check_for_commit "$b" )
             r="$?"
-            if [ ${r?} = 0 ] ; then
+            if [ ${r?} = 0 -o ${r?} = 1 ] ; then
                 B="${b?}"
                 tb_TB_BRANCHES=$(rotate_branches ${tb_TB_BRANCHES?})
                 tb_BUILD_TYPE="tb"
+                tb_BUILD_TRIGGERED="${r?}"
                 break
             fi
         fi
