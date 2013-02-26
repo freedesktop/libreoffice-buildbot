@@ -1,0 +1,11 @@
+# Profile Level configuration
+#
+# Gerrit host
+# for gerrit related operation.
+# It is easier to just define an alias
+# in ~/.ssh
+# Here we define d gerrit_tb99 as an alias
+# for tb99@gerrit.libreoffice.org on the right port
+# with the right identity.
+TB_GERRIT_HOST=gerrit_tb99
+

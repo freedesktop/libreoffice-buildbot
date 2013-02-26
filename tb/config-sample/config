@@ -1,0 +1,51 @@
+
+# name of your tinderbox
+# see see http://wiki/documentfoundation.org/Development/Tinderbox
+# for naming convention
+# Note: @99 below is the tinderbox id. in oder to do gerrit
+# build you _must_ obtain a BuilbBot user assocaited with that id
+# see your friendly gerrit admin.
+TB_NAME="Linux_x86_64@99-Template-Description"
+
+# this is the time the tb will go to sleep in case there is nothing to build (in seconds)
+TB_POOL_DELAY=120
+
+# this is the time tb will go to sleep after each build attempt (in seconds)
+TB_POST_BUILD_DELAY=15
+
+# location where tb will put the metadata used to follow the state of a 'branche'
+# this contain work file that folow the last checkout point,
+# the last success point etc...
+# these are small files, with overall low activity, so there is no particular requirement
+# but they need to persist, so do not put them in /tmp or any other
+# place that won't survive a reboot
+TB_METADATA_DIR=~/.tb/meta
+
+# default email mode when doing a tb build
+# while debugggin your set-up you probably want =owner or =none here
+TB_SEND_MAIL=all
+
+# default profile
+# tb always run based on a given 'profile'
+# this is specified onthe command line by -p <profile>
+# this provide a default value in case the information
+# is absenct from the command line
+# on an establish tinderbox, it would be expected than
+# running just 'tb' without argument would run the predefined setup
+# a convinient name for the default profile is tb<id> where id is
+# the id assigned to your box
+TB_DEFAULT_PROFILE=tb99
+
+# if you are doing tb build, we need a SMTP server
+# to send email to the tinderbox server, to post
+# the build result
+# and we need a user/passwd.
+# if your smtp does not need credentials
+# then you can omit both user and passwrd
+TB_SMTP_HOST=smtp.gamil.com
+TB_SMTP_USER=john.doe
+TB_SMTP_PASSWORD=password
+
+# if you are building on a recent Mac (with llvm-based compiler) and you want to
+# use ccache, you need to put the export below, or it won't build.
+# export CCACHE_CPP2=yes
