@@ -1415,11 +1415,12 @@ select_next_tb_task()
         if [ "${tb_ONE_SHOT?}" = "1" ] ; then
             B="${b?}"
             tb_BUILD_TYPE="tb"
+            tb_BUILD_TRIGGERED="0"
             break
         else
             ( check_for_commit "$b" )
             r="$?"
-            if [ ${r?} = 0 -o ${r?} = 1 ] ; then
+            if [ "${r?}" = "0" -o "${r?}" = "1" ] ; then
                 B="${b?}"
                 tb_TB_BRANCHES=$(rotate_branches ${tb_TB_BRANCHES?})
                 tb_BUILD_TYPE="tb"
