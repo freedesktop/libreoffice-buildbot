@@ -337,7 +337,7 @@ check_for_commit()
 
     source_branch_level_config "${b?}" "tb"
 
-    pushd "${TB_GIT_DIR?}" > /dev/null || die "Cannot cd to git repo ${TB_GIT_DIR?} for tb-branche ${b?}"
+    pushd "${TB_GIT_DIR?}" > /dev/null || die "Cannot cd to git repo ${TB_GIT_DIR?} for tb-branch ${b?}"
 
     err_msgs="$( $tb_TIMEOUT git fetch 2>&1)"
     if [ "$?" -ne "0" ] ; then
@@ -374,12 +374,14 @@ check_for_commit()
     fi
     [ $V ] && echo "pulling from the repo ${TB_GIT_REPO?} for branch ${b?} -> r=${r?}"
     if [ "${r?}" = "0" ] ; then
-        if [ -n "${TB_TRIGGER_FILE}" -a -f "${TB_TRIGGER_FILE}" ] ; then
-            r=1
-            [ $V ] && echo "Trigger file ${TB_TRIGGER_FILE} detected for branch ${b?} -> r=${r?}"
-        else
-            r=3
-            [ $V ] && echo "Trigger file ${TB_TRIGGER_FILE} missing for branch ${b?} -> r=${r?}"
+        if [ -n "${TB_TRIGGER_FILE}" ] ; then
+            if [ -f "${TB_TRIGGER_FILE}" ] ; then
+                r=1
+                [ $V ] && echo "Trigger file ${TB_TRIGGER_FILE} detected for branch ${b?} -> r=${r?}"
+            else
+                r=3
+                [ $V ] && echo "Trigger file ${TB_TRIGGER_FILE} missing for branch ${b?} -> r=${r?}"
+            fi
         fi
     fi
     exit ${r?}
@@ -391,7 +393,7 @@ check_for_commit()
 collect_current_head()
 {
     [ $V ] && echo "collect_current_head"
-    echo "core:$(git rev-parse HEAD)" > "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log"
+    echo "$(git rev-parse HEAD)" > "${TB_METADATA_DIR?}/${P}_${B?}_current-git-head.log"
     print_date > "${TB_METADATA_DIR?}/${P}_${B?}_current-git-timestamp.log"
 }
 
@@ -572,11 +574,9 @@ find_dev_install_location()
 
 generate_cgit_link()
 {
-    local line="$1"
-    local repo=$(echo $line | cut -f 1 -d \:)
-    local sha=$(echo $line | cut -f 2 -d \:)
+    local sha="$1"
 
-    echo "<a href='http://cgit.freedesktop.org/libreoffice/${repo}/log/?id=$sha'>$repo</a>"
+    echo "<a href='http://cgit.freedesktop.org/libreoffice/core/log/?id=$sha'>core</a>"
 }
 
 get_commits_since_last_good()
@@ -792,7 +792,7 @@ prepare_upload_manifest()
     echo "tinderbox: tree: ${tb_TINDERBOX_BRANCH?}" >> $manifest_file
     echo "tinderbox: pull time $(cat "${TB_METADATA_DIR?}/${P?}_${B?}_current-git-timestamp.log")" >> $manifest_file
     echo "tinderbox: git sha1s"  >> $manifest_file
-    cat "${TB_METADATA_DIR?}/{P?}_${B?}_current-git-head.log"  >> $manifest_file
+    echo "core:$(cat ${TB_METADATA_DIR?}/{P?}_${B?}_current-git-head.log)"  >> $manifest_file
     echo ""  >> $manifest_file
     echo "tinderbox: autogen log"  >> $manifest_file
     cat tb_${P?}_${B?}_autogen.log  >> $manifest_file
@@ -1060,7 +1060,7 @@ tinderbox: END
         (
             echo "$message_content"
             cat "${TB_METADATA_DIR?}/${P}_${B?}_current-git-timestamp.log"
-            for cm in $(cat ${TB_METADATA_DIR?}/${P?}_${B?}_current-git-head.log) ; do echo "TinderboxPrint: $(generate_cgit_link "core:${cm}")" ; done
+            for cm in $(cat ${TB_METADATA_DIR?}/${P?}_${B?}_current-git-head.log) ; do echo "TinderboxPrint: $(generate_cgit_link "${cm}")" ; done
             cat tb_${B?}_autogen.log tb_${B?}_clean.log tb_${B?}_build.log tb_${B?}_tests.log 2>/dev/null
         ) | gzip -c > "${gzlog}"
         xtinder="X-Tinder: gzookie"
