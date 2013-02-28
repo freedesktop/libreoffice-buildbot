@@ -22,7 +22,7 @@ pre_autogen()
 canonical_do_autogen()
 {
     if [ "${R}" = "0" ] ; then
-        if ! ${TB_NICE} ./autogen.sh > "tb_${B}_autogen.log" 2>&1 ; then
+        if ! ${TB_NICE} ${TB_GIT_DIR?}/autogen.sh > "tb_${B}_autogen.log" 2>&1 ; then
             tb_REPORT_LOG=tb_${B}_autogen.log
             tb_REPORT_MSGS="autogen/configure failed - error is:"
             R=1
