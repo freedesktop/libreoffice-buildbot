@@ -272,6 +272,7 @@ check_branch_profile_tb()
         if [ "$?" != "0" ] ; then
             die "Branch ${b?} does not exist in the bibisect repo, Cannot collect the requested bibisect"
         fi
+        popd > /dev/null
     fi
 
     # if CCACHE_DIR is set it has been set by the branch's profile
@@ -432,6 +433,7 @@ deliver_to_bibisect()
     local oc=""
 
     [ $V ] && echo "deliver_to_bibisect()"
+    pushd "$TB_GIT_DIR" > /dev/null
 
     if [ -n ${tb_OPT_DIR} ] ; then
         # verify that someone did not screw-up bibisect repo
@@ -472,8 +474,8 @@ deliver_to_bibisect()
             fi
         fi
     fi
-    [ $V ] && echo "unlock ${lock_file?}.bibisect"
-    [ $V ] && echo "unlock ${lock_file?}.bibisect"
+    popd > /dev/null
+
 }
 
 
@@ -586,10 +588,11 @@ get_commits_since_last_good()
     local repo=
     local sha=
 
+    pushd "$TB_GIT_DIR" > /dev/null
+
     if [ -f "${TB_METADATA_DIR?}/${P?}_${B?}_last-success-git-head.txt" ] ; then
-        head=$(head -n1 "${TB_METADATA_DIR?}/${P?}_${B?}_last-success-git-head.txt")
-        repo=$(echo ${head?} | cut -d : -f 1)
-        sha=$(echo ${head?} | cut -d : -f 2)
+        sha=$(head -n1 "${TB_METADATA_DIR?}/${P?}_${B?}_last-success-git-head.txt")
+        repo="core"
         if [ "${mode?}" = "people" ] ; then
             git log '--pretty=tformat:%ce' ${sha?}..HEAD
         else
@@ -604,6 +607,7 @@ get_commits_since_last_good()
             echo "no primer available, can't extract the relevant log"
         fi
     fi
+    popd > /dev/null
 }
 
 get_committers()
@@ -1293,7 +1297,7 @@ run_one_tb()
         tb_LAST_CHECKOUT_DATE=
         rotate_logs
         popd > /dev/null
-        if [ "${R?}" = "0" -a "${tb_BUILD_TRIGERRED?}" = "1" ] ; then
+        if [ "${R?}" = "0" -a "${tb_BUILD_TRIGERRED}" = "1" ] ; then
             rm -f "${TB_TRIGGER_FILE?}"
         fi
         exit ${R?}
