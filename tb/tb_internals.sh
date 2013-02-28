@@ -213,7 +213,7 @@ check_branch_profile_gerrit()
         exit -1;
     fi
 
-    check_branch_profile_common
+    check_branch_profile_common "${b?}"
 
     # if CCACHE_DIR is set it has been set by the branch's profile
     # if TB_CCACHE_SIZE is set make sure the cache is as big as specified
@@ -249,7 +249,7 @@ check_branch_profile_tb()
         exit -1;
     fi
 
-    check_branch_profile_common
+    check_branch_profile_common "${b?}"
 
     if [ -z "${TB_TINDERBOX_BRANCH}" ] ; then
         TB_TINDERBOX_BRANCH=$(determine_default_tinderbox_branch "${b?}")
@@ -1550,7 +1550,7 @@ source_branch_level_config()
     local t="$2"
 
     if [ -f "${tb_PROFILE_DIR?}/branches/${b?}/config" ] ; then
-        source "${tb_PROFILE_DIR?}/branches/${B?}/config"
+        source "${tb_PROFILE_DIR?}/branches/${b?}/config"
     fi
     if [ -f "${tb_PROFILE_DIR?}/branches/${b?}/config_${t?}" ] ; then
         source "${tb_PROFILE_DIR?}/branches/${b?}/config_${t?}"
@@ -1560,7 +1560,7 @@ source_branch_level_config()
         TB_TINDERBOX_BRANCH=$(determine_default_tinderbox_branch "${b?}")
     fi
     if [ -f "${tb_PROFILE_DIR?}/branches/${b?}/phase.sh" ] ; then
-        source "${tb_PROFILE_DIR?}/branches/${B?}/phase.sh"
+        source "${tb_PROFILE_DIR?}/branches/${b?}/phase.sh"
     fi
     if [ -f "${tb_PROFILE_DIR?}/branches/${b?}/phase_${t?}.sh" ] ; then
         source "${tb_PROFILE_DIR?}/branches/${b?}/phase_${t?}.sh"
