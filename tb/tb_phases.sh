@@ -22,9 +22,11 @@ pre_autogen()
 canonical_do_autogen()
 {
     if [ "${R}" = "0" ] ; then
-        if ! ${TB_NICE} ${TB_GIT_DIR?}/autogen.sh > "tb_${B}_autogen.log" 2>&1 ; then
-            tb_REPORT_LOG=tb_${B}_autogen.log
+        if ! ${TB_NICE} ${TB_GIT_DIR?}/autogen.sh > "tb_${P?}_autogen.log" 2>&1 ; then
+            tb_REPORT_LOG=tb_${P?}_autogen.log
             tb_REPORT_MSGS="autogen/configure failed - error is:"
+            [ $V ] && echo "autogen failed"
+            [ $V ] && cat tb_${P?}_autogen.log
             R=1
         fi
     fi
@@ -55,8 +57,8 @@ pre_clean()
 canonical_do_clean()
 {
     if [ "${R}" = "0" ] ; then
-        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr clean > "tb_${B?}_clean.log" 2>&1 ; then
-            tb_REPORT_LOG="tb_${B?}_clean.log"
+        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr clean > "tb_${P?}_clean.log" 2>&1 ; then
+            tb_REPORT_LOG="tb_${P?}_clean.log"
             tb_REPORT_MSGS="cleaning up failed - error is:"
             R=1
         fi
@@ -80,21 +82,23 @@ local optdir=""
 local extra_buildid=""
 
     tb_OPT_DIR=""
-    if [ "${tb_BUILD_TYPE?}" = "tb" ] ; then
-        current_timestamp=$(sed -e "s/ /_/" "${TB_METADATA_DIR?}/${P?}_${B}_current-git-timestamp.log")
-        extra_buildid="TinderBox: ${TB_NAME?}, Branch:${B}, Time: $current_timestamp"
+    if [ "${TB_TYPE?}" = "tb" ] ; then
+        current_timestamp=$(sed -e "s/ /_/" "${TB_METADATA_DIR?}/${P?}_current-git-timestamp.log")
+        extra_buildid="TinderBox: ${TB_NAME?}, Branch:${TB_BRANCH?}, Time: $current_timestamp"
     fi
     if [ "${R}" = "0" ] ; then
         export EXTRA_BUILDID="$extra_buildid"
-        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr > "tb_${B?}_build.log" 2>&1 ; then
-            tb_REPORT_LOG="tb_${B?}_build.log"
+        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr > "tb_${P?}_build.log" 2>&1 ; then
+            tb_REPORT_LOG="tb_${P?}_build.log"
             tb_REPORT_MSGS="build failed - error is:"
+            [ $V ] && echo "make failed :"
+            [ $V ] && cat tb_${P?}_build.log
             R=1
         else
             # if we want to populate bibisect we need to 'install'
-            if [ "${tb_BUILD_TYPE?}" = "tb" -a ${TB_BIBISECT} != "0" ] ; then
-                if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr install-tb >>"tb_${B?}_build.log" 2>&1 ; then
-                    tb_REPORT_LOG="tb_${B}_build.log"
+            if [ "${TB_TYPE?}" = "tb" -a ${TB_BIBISECT} != "0" ] ; then
+                if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr install-tb >>"tb_${P?}_build.log" 2>&1 ; then
+                    tb_REPORT_LOG="tb_${P}_build.log"
                     tb_REPORT_MSGS="build failed - error is:"
                     R=1
                 else
@@ -112,16 +116,11 @@ do_make()
 
 canonical_post_make()
 {
-    if [ "${tb_BUILD_TYPE?}" = "tb" ] ; then
+    if [ "${TB_TYPE?}" = "tb" ] ; then
         if [ "${R}" != "0" ] ; then
             if [ -f "${tb_REPORT_LOG?}" ] ; then
-                if [ -f "${tb_PROFILE_DIR?}/branches/${B?}/false_negatives" ] ; then
-                    grep -F "$(cat "${tb_PROFILE_DIR?}/branhces/${B?}/false_negatives")" "${tb_REPORT_LOG?}" && R="2"
-                    if [ "${R?}" == "2" ] ; then
-                        log_msgs "False negative detected"
-                    fi
-                elif [ -f "${tb_PROFILE_DIR?}/false_negatives" ] ; then
-                    grep -F "$(cat "${tb_PROFILE_DIR?}/false_negatives")" "${tb_REPORT_LOG?}" && R="2"
+                if [ -f "${tb_CONFIG_DIR?}/profiles/${P?}false_negatives" ] ; then
+                    grep -F "$(cat "${tb_CONFIG_DIR?}/profiles/${P?}/false_negatives")" "${tb_REPORT_LOG?}" && R="2"
                     if [ "${R?}" == "2" ] ; then
                         log_msgs "False negative detected"
                     fi
@@ -145,8 +144,8 @@ canonical_do_test()
 {
     if [ "${R}" = "0" ] ; then
         if [ "${TB_DO_TESTS}" = "1" ] ; then
-            if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr check > "tb_${B?}_tests.log" 2>&1 ; then
-                tb_REPORT_LOG="tb_${B?}_tests.log"
+            if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr check > "tb_${P?}_tests.log" 2>&1 ; then
+                tb_REPORT_LOG="tb_${P?}_tests.log"
                 tb_REPORT_MSGS="check failed - error is:"
                 R=1
             fi
@@ -177,7 +176,7 @@ canonical_do_push()
         return 0;
     fi
 
-    if [ "${tb_BUILD_TYPE?}" = "tb" ] ; then
+    if [ "${TB_TYPE?}" = "tb" ] ; then
         # Push nightly build if needed
         if [ "$TB_PUSH_NIGHTLIES" = "1" ] ; then
             push_nightly
@@ -219,7 +218,7 @@ do_build()
 {
     local phases="$@"
     local p
-    [ $V ] && echo "do_build (${tb_BUILD_TYPE?}) phase_list=${phases?}"
+    [ $V ] && echo "do_build (${TB_TYPE?}) phase_list=${phases?}"
 
     for p in ${phases?} ; do
         [ $V ] && echo "phase $p"
