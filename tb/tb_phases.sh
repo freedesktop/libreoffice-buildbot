@@ -88,7 +88,9 @@ local extra_buildid=""
     fi
     if [ "${R}" = "0" ] ; then
         export EXTRA_BUILDID="$extra_buildid"
-        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr > "tb_${P?}_build.log" 2>&1 ; then
+        # we for MAKE_RESTARTS=1 because 1/ we know thta Makefile is up to date
+        # and 2/ the 'restart' mechanism in make is messed-up by the fact that we trap SIGINT
+        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} MAKE_RESTARTS=1  -sr > "tb_${P?}_build.log" 2>&1 ; then
             tb_REPORT_LOG="tb_${P?}_build.log"
             tb_REPORT_MSGS="build failed - error is:"
             [ $V ] && echo "make failed :"
@@ -97,7 +99,7 @@ local extra_buildid=""
         else
             # if we want to populate bibisect we need to 'install'
             if [ "${TB_TYPE?}" = "tb" -a ${TB_BIBISECT} != "0" ] ; then
-                if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr install-tb >>"tb_${P?}_build.log" 2>&1 ; then
+                if ! ${TB_NICE} ${TB_WATCHDOG}  ${MAKE?} MAKE_RESTARTS=1 -sr install-tb >>"tb_${P?}_build.log" 2>&1 ; then
                     tb_REPORT_LOG="tb_${P}_build.log"
                     tb_REPORT_MSGS="build failed - error is:"
                     R=1
@@ -144,7 +146,7 @@ canonical_do_test()
 {
     if [ "${R}" = "0" ] ; then
         if [ "${TB_DO_TESTS}" = "1" ] ; then
-            if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr check > "tb_${P?}_tests.log" 2>&1 ; then
+            if ! ${TB_NICE} ${TB_WATCHDOG}  ${MAKE?} MAKE_RESTARTS=1 -sr check > "tb_${P?}_tests.log" 2>&1 ; then
                 tb_REPORT_LOG="tb_${P?}_tests.log"
                 tb_REPORT_MSGS="check failed - error is:"
                 R=1
