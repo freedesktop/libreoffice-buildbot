@@ -1348,7 +1348,7 @@ validate_tb_profile()
         fi
     fi
 
-    if [ -z "${tb_SEND_MAIL}" ] ; then
+    if [ -n "${TB_SEND_MAIL}" ] ; then
         tb_SEND_MAIL="${TB_SEND_MAIL}"
     fi
     # if we want email to be sent, we must make sure that the required parameters are set in the profile (or in the environment)
