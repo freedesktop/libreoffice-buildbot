@@ -871,7 +871,7 @@ run_next_task()
         fi
         P=
     done
-    if [ "${TB_MODE}" = "fair" ] ; then
+    if [ "${TB_SCHEDULING}" = "fair" ] ; then
         if [ -n "$P" -a "${R}" = "0" ] ; then
             rotate_active_profiles "${P?}"
         fi
