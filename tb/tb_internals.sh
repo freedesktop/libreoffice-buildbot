@@ -450,6 +450,23 @@ profile_gerrit_defaults()
     if [ "${TB_GERRIT_TEST}" = "1" -o "${TB_TEST}" = "1" ] ; then
         tb_GERRIT_TEST="-t"
     fi
+    if [ -z "${TB_GERRIT_PLATFORM}" ] ; then
+        os=$(uname)
+        case "$os" in
+            *Linux*)
+                TB_GERRIT_PLATFORM="Linux"
+                ;;
+            Darwin)
+                TB_GERRIT_PLATFORM="MacOSX"
+                ;;
+            CYGWIN*)
+                TB_GERRIT_PLATFORM="Windows"
+                ;;
+        esac
+        if [ -z "${TB_GERRIT_PLATFORM}" ] ; then
+            die "Could not determine gerrit platform for ${os}"
+        fi
+    fi
 
 }
 
