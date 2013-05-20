@@ -467,7 +467,6 @@ profile_gerrit_defaults()
             die "Could not determine gerrit platform for ${os}"
         fi
     fi
-
 }
 
 profile_tb_defaults()
@@ -993,7 +992,7 @@ select_next_gerrit_task()
     GERRIT_TASK_BRANCH=""
     GERRIT_TASK_REF=""
     GERRIT_TASK_FEATURE=""
-    result=$(ssh ${TB_GERRIT_HOST?} buildbot get -p core -a ${TB_GERRIT_PLATFORM?} --format BASH ${TB_GERRIT_BRANCH?} ${tb_GERRIT_TEST})
+    result=$(ssh ${TB_GERRIT_HOST?} buildbot get -p core -a ${TB_GERRIT_PLATFORM?} --format BASH ${TB_BRANCH?} ${tb_GERRIT_TEST})
     [ $V ] && echo "Get task result:${result}"
 
     has_task=$(echo "$result" | grep "^GERRIT_TASK_")
@@ -1280,6 +1279,9 @@ validate_gerrit_profile()
     local p="$1"
     if [ -z "${TB_NAME}" ] ; then
         die "TB_NAME is required to be configured"
+    fi
+    if [ -z "${TB_BRANCH}" ] ; then
+        die "TB_BRANCH is required to be configured"
     fi
     if [ -z "${TB_GIT_DIR}" ] ; then
         die "TB_GIT_DIR is required to be configured"
