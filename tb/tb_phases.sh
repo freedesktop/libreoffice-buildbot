@@ -57,7 +57,7 @@ pre_clean()
 canonical_do_clean()
 {
     if [ "${R}" = "0" ] ; then
-        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} -sr clean > "tb_${P?}_clean.log" 2>&1 ; then
+        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} MAKE_RESTARTS=1 -sr clean > "tb_${P?}_clean.log" 2>&1 ; then
             tb_REPORT_LOG="tb_${P?}_clean.log"
             tb_REPORT_MSGS="cleaning up failed - error is:"
             R=1
