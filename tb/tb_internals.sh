@@ -1112,13 +1112,13 @@ send_mail_msg()
 
     [ $V ] && log_msgs "send mail to ${to?} with subject \"${subject?}\""
     [ $V ] && quiet=""
-#    if [ -n "${log}" ] ; then
-#        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
-#    elif [ -n "${headers?}" ] ; then
-#        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
-#    else
-#        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
-#    fi
+    if [ -n "${log}" ] ; then
+        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
+    elif [ -n "${headers?}" ] ; then
+        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
+    else
+        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
+    fi
 }
 
 #
