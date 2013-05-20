@@ -301,13 +301,13 @@ interupted_build()
     log_msgs "Interrupted by Signal"
     if [ "$TB_MODE" = "gerrit" ] ; then
         if [ -n "${GERRIT_TASK_TICKET}" ] ;then
-            # repport a cancellation if we already acquired the ticket
+            # report a cancellation if we already acquired the ticket
             R=2
             report_gerrit
         fi
     elif [ "$TB_MODE" = "tb" ] ; then
         if [ -n "${tb_LAST_CHECKOUT_DATE?}" ] ; then
-            # repport a cancellation if we already notified a start
+            # report a cancellation if we already notified a start
             report_to_tinderbox "${tb_LAST_CHECKOUT_DATE?}" "fold" "no"
         fi
     fi
@@ -464,7 +464,9 @@ profile_tb_defaults()
     if [ -z "${TB_REMOTE_REFSPEC}" ] ; then
         TB_REMOTE_REFSPEC="origin/${TB_LOCAL_REFSPEC}"
     fi
-
+    if [ -n "${TB_SEND_MAIL}" ] ; then
+        tb_SEND_MAIL="${TB_SEND_MAIL}"
+    fi
 }
 
 push_bibisect()
@@ -860,6 +862,27 @@ run_next_task()
     fi
 }
 
+run_primer()
+{
+    P=
+    R=0
+    for P in ${tb_ACTIVE_PROFILES} ; do
+        (
+        local triggered=0
+        R=0
+        trap 'interupted_build' SIGINT SIGQUIT
+        load_profile "${P?}"
+
+        # we do not want to send any email on 'primer/one-shot' build
+        tb_SEND_MAIL="none"
+        pushd "${TB_GIT_DIR?}" > /dev/null || die "Cannot cd to git repo ${TB_GIT_DIR?} for profile ${P?}"
+        run_tb_task
+        )
+        R=$?
+    done
+
+}
+
 run_tb_task()
 {
     local phase_list
@@ -953,7 +976,7 @@ select_next_gerrit_task()
     GERRIT_TASK_BRANCH=""
     GERRIT_TASK_REF=""
     GERRIT_TASK_FEATURE=""
-    result=$(ssh ${TB_GERRIT_HOST?} buildbot get -p core -a ${tb_GERRIT_PLATFORM?} --format BASH ${TB_GERRIT_BRANCH?} ${tb_GERRIT_TEST})
+    result=$(ssh ${TB_GERRIT_HOST?} buildbot get -p core -a ${TB_GERRIT_PLATFORM?} --format BASH ${TB_GERRIT_BRANCH?} ${tb_GERRIT_TEST})
     [ $V ] && echo "Get task result:${result}"
 
     has_task=$(echo "$result" | grep "^GERRIT_TASK_")
