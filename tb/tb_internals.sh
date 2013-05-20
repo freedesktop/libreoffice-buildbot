@@ -454,13 +454,13 @@ profile_gerrit_defaults()
         os=$(uname)
         case "$os" in
             *Linux*)
-                TB_GERRIT_PLATFORM="Linux"
+                TB_GERRIT_PLATFORM="LINUX"
                 ;;
             Darwin)
-                TB_GERRIT_PLATFORM="MacOSX"
+                TB_GERRIT_PLATFORM="MAC"
                 ;;
             CYGWIN*)
-                TB_GERRIT_PLATFORM="Windows"
+                TB_GERRIT_PLATFORM="WINDOWS"
                 ;;
         esac
         if [ -z "${TB_GERRIT_PLATFORM}" ] ; then
