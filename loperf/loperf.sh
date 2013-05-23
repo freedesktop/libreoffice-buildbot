@@ -32,6 +32,7 @@ source utls.sh
 REQUIRED_VALGRIND_VERSION="valgrind-3.7.0"
 
 hash valgrind > /dev/null 2>&1 || echo "valgrind >= $REQUIRED_VALGRIND_VERSION is required for this test."
+hash gzip > /dev/null 2>&1 && GZIP="TRUE"
 
 if test $(compareversion "$(valgrind --version)" "$REQUIRED_VALGRIND_VERSION") -eq -1; then
     echo "valgrind >= $REQUIRED_VALGRIND_VERSION is required for this test."
@@ -93,6 +94,7 @@ cur_log=$(launch)
 
 offload_str=$(grep '^summary:' "$cur_log" | sed s/"summary: "//)
 offload=($offload_str)
+if test -n "$GZIP"; then gzip "$cur_log" > /dev/null 2>&1; fi
 
 #Collect data to csv file
 CSV_FN="$CSV_LOG_DIR"/"offload.csv"
@@ -136,6 +138,7 @@ find docs -type f |  grep -Ev "\/\." | while read f; do
 
     onload_str=$(grep '^summary:' "$cur_log" | sed s/"summary: "//)
     onload=($onload_str)
+    if test -n "$GZIP"; then gzip "$cur_log" > /dev/null 2>&1; fi
     # Populate onload to PF_LOG
     echo "Load: $f" | tee -a "$PF_LOG"
     echo "$onload_str" | tee -a "$PF_LOG"
