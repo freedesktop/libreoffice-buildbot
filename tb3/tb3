@@ -1,0 +1,137 @@
+#!/usr/bin/python
+#
+# This file is part of the LibreOffice project.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+import argparse
+import datetime
+import json
+import os.path
+import sys
+
+sys.path.append('./dist-packages')
+import tb3.repostate
+import tb3.scheduler
+
+updater = None
+def get_updater(parms):
+    global updater
+    if not updater:
+        updater = tb3.repostate.RepoStateUpdater(parms['platform'], parms['branch'], parms['repo'])
+    return updater
+
+repostate = None
+def get_repostate(parms):
+    global repostate
+    if not repostate:
+        repostate = tb3.repostate.RepoState(parms['platform'], parms['branch'], parms['repo'])
+    return repostate
+
+def sync(parms):
+    get_repostate(parms).sync()
+    
+def set_commit_finished(parms):
+    get_updater(parms).set_finished(parms['set_commit_finished'], parms['builder'], parms['result'].upper(), parms['result_reference'])
+
+def set_commit_running(parms):
+    get_updater(parms).set_scheduled(parms['set_commit_running'], parms['builder'], parms['estimated_duration'])
+
+def show_state(parms):
+    if parms['format'] == 'json':
+        raise NotImplementedError
+    print(get_repostate(parms))
+    
+def show_history(parms):
+    if parms['format'] == 'json':
+        raise NotImplementedError
+    history = tb3.repostate.RepoHistory(parms['platform'], parms['repo'])
+    for (commit, state) in history.get_recent_commit_states(parms['branch'], parms['history_count']):
+        print("%s %s" % (commit, state))
+
+def show_proposals(parms):
+    merge_scheduler = tb3.scheduler.MergeScheduler(parms['platform'], parms['branch'], parms['repo'])
+    merge_scheduler.add_scheduler(tb3.scheduler.HeadScheduler(parms['platform'], parms['branch'], parms['repo']), parms['head_weight'])
+    merge_scheduler.add_scheduler(tb3.scheduler.BisectScheduler(parms['platform'], parms['branch'], parms['repo']), parms['bisect_weight'])
+    proposals = merge_scheduler.get_proposals(datetime.datetime.now())
+    if parms['format'] == 'text':
+        print('')
+        print('Proposals:')
+        for proposal in proposals:
+            print(proposals)
+    else:
+        print(json.dumps([p.__dict__ for p in proposals]))
+
+def execute(parms):
+    if type(parms['estimated_duration']) is float:
+        parms['estimated_duration'] = datetime.timedelta(minutes=parms['estimated_duration'])
+    if parms['sync']:
+        sync(parms)
+    if parms['set_commit_finished']:
+        set_commit_finished(parms)
+    if parms['set_commit_running']:
+        set_commit_running(parms)
+    if parms['show_state']:
+        show_state(parms)
+    if parms['show_history']:
+        show_history(parms)
+    if parms['show_proposals']:
+        show_proposals(parms)
+
+if __name__ == '__main__':
+    commandname = os.path.basename(sys.argv[0])
+    fullcommand = False
+    parser = argparse.ArgumentParser(description='tinderbox coordinator')
+    set_commit_finished_only = ' (only for --set-commit-finished)'
+    set_commit_running_only = ' (only for --set-commit-running)'
+    show_proposals_only = '(only for --show-proposals)'
+    show_history_only = '(only for --show-history)'
+    if commandname == 'tb3-sync':
+        pass
+    elif commandname == 'tb3-set-commit-finished':
+        set_commit_finished_only = ''
+        parser.add_argument('set-commit-finished', nargs=1, help='the commit to set the state for')
+    elif commandname == 'tb3-set-commit-running':
+        set_commit_running_only = ''
+        parser.add_argument('set-commit-running', nargs=1, help='commit to set to state running')
+    elif commandname == 'tb3-show-state':
+        pass
+    elif commandname == 'tb3-show-history':
+        show_history_only = ''
+    elif commandname == 'tb3-show-proposals':
+        show_proposals_only = ''
+    else:
+        fullcommand = True
+    parser.add_argument('--repo', help='location of the LibreOffice core git repository', required=True)
+    parser.add_argument('--platform', help='platform for which coordination is requested', required=True)
+    parser.add_argument('--branch', help='branch for which coordination is requested', required=True)
+    parser.add_argument('--builder', help='name of the build machine interacting with the coordinator', required=True)
+    if fullcommand:
+        parser.add_argument('--sync', help='syncs the repository from its origin', action='store_true')
+        parser.add_argument('--set-commit-finished', help='set the result for this commit')
+        parser.add_argument('--set-commit-running', help='set this commit to state running')
+        parser.add_argument('--show-state', help='shows the current repository state (text only for now)', action='store_true')
+        parser.add_argument('--show-history', help='shows the current build proposals', action='store_true')
+        parser.add_argument('--show-proposals', help='shows the current build proposals', action='store_true')
+    if fullcommand or commandname == 'tb3-set-commit-running':
+        parser.add_argument('--estimated-duration', help='the estimated time to complete in minutes (default: 120)%s' % set_commit_running_only, type=float, default=120.0)
+    if fullcommand or commandname == 'tb3-set-commit-finished':
+        parser.add_argument('--result', help='the result to store%s' % set_commit_finished_only, choices=['good','bad'], default='bad', required=not fullcommand)
+        parser.add_argument('--result-reference', help='the result reference (a string) to store%s' % set_commit_finished_only, default='')
+    if fullcommand or commandname == 'tb3-show-history':
+        parser.add_argument('--history-count', help='number of commits to show (default: 50)%s' % show_history_only, type=int, default=50)
+    if fullcommand or commandname == 'tb3-show-proposals':
+        parser.add_argument('--head-weight', help='set scoring weight for head (default: 1.0)%s' % show_proposals_only, type=float, default=1.0)
+        parser.add_argument('--bisect-weight', help='set scoring weight for bisection (default: 1.0)%s' % show_proposals_only, type=float, default=1.0)
+    if fullcommand or commandname == 'tb3-show-proposals' or commandname == 'tb3-show-history':
+        parser.add_argument('--format', help='set format for proposals and history (default: text)', choices=['text', 'json'], default='text')
+    args = vars(parser.parse_args())
+    if not fullcommand:
+        args['sync'] = commandname == 'tb3-sync'
+        args['show_proposals'] = commandname == 'tb3-show-proposals'
+        args['show_state'] = commandname == 'tb3-show-state'
+    execute(args)
+    
+# vim: set et sw=4 ts=4:
