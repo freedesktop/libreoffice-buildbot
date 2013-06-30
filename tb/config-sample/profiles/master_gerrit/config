@@ -1,0 +1,24 @@
+
+#mandatory param: indicate a gerrit build
+TB_TYPE=gerrit
+
+# name used for repporting
+TB_NAME=Linux-x86_84@99-optional-comment
+
+# branch targeted by this profile
+TB_BRANCH=master
+
+# location of the git repo for this profile
+TB_GIT_DIR=/lo/gerrit_master
+
+# gerrit host alias
+# It is recommended to have an entry gerrit_tb<id> in ~/.ssh/config
+# in the form
+#
+# Host tb_gerrit99
+# User tb99
+# Port 29418
+# Hostname gerrit.libreoffice.org
+# IdentityFile <path to the public key for tb99 as registered in gerrit>
+#
+TB_GERRIT_HOST=gerrit_tb99
