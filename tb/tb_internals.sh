@@ -230,25 +230,6 @@ epoch_from_utc()
     date -u '+%s' -d "$utc UTC"
 }
 
-
-#
-# Fetch a gerrit changeset and check it out
-#
-fetch_gerrit()
-{
-    GERRIT_PREV_B=`git branch | grep '^\*' | sed 's/^..//' | sed 's/\//_/g'`
-    [ $V ] && echo "fetching gerrit path from ssh://${TB_GERRIT_HOST?}/core ${GERRIT_TASK_REF?}"
-    git fetch -q ssh://${TB_GERRIT_HOST?}/core ${GERRIT_TASK_REF?}
-    if [ "$?" != "0" ] ; then
-        retval="3"
-    else
-        git checkout -q FETCH_HEAD || die "fatal error checking out gerrit ref"
-        git submodule -q update
-        [ $V ] && echo "fetched gerrit path from ssh://${TB_GERRIT_HOST?}/core ${GERRIT_TASK_REF?}"
-        retval="0"
-    fi
-}
-
 find_dev_install_location()
 {
     find . -name opt -type d
@@ -362,18 +343,18 @@ prepare_git_repo_for_gerrit()
     [ $V ] && echo "fetching gerrit path from ssh://${TB_GERRIT_HOST?}/core ${GERRIT_TASK_REF?}"
 
     (
-        git clean -fd && git fetch -q ssh://${TB_GERRIT_HOST?}/core ${GERRIT_TASK_REF}
+        git clean -fd && git fetch ssh://${TB_GERRIT_HOST?}/core ${GERRIT_TASK_REF}
         if [ "$?" = "0" ] ; then
-            git checkout -q FETCH_HEAD
-            git submodule -q update
+            git checkout FETCH_HEAD || exit -1
+            git submodule update
         else
             exit -1
         fi
     ) 2>&1 > ${TB_BUILD_DIR}/error_log.log
 
     if [ "$?" != "0" ] ; then
-        report_error owner "$(print_date)" error_log.log
-        die "Cannot reposition repo ${TB_GIT_DIR?} to the proper branch"
+        log_msgs "Error checkout out ${GERRIT_TASK_TICKET?}"
+        R=2;
     fi
 
 }
@@ -801,15 +782,17 @@ run_gerrit_task()
     # branch and checkout the target sha
     prepare_git_repo_for_gerrit
 
-    # gerrit build are not incremental
-    # always use all the phases
-    local phase_list="autogen clean make test push"
+    # if prepare repor failed R is no 0 anymore
+    if [ "${R}" == 0 ] ; then
+        # gerrit build are not incremental
+        # always use all the phases
+        local phase_list="autogen clean make test push"
 
-    pushd ${TB_BUILD_DIR?} > /dev/null || die "Cannot cd to build dir : ${TB_BUILD_DIR?}"
+        pushd ${TB_BUILD_DIR?} > /dev/null || die "Cannot cd to build dir : ${TB_BUILD_DIR?}"
 
-    # run the build
-    do_build ${phase_list?}
-
+        # run the build
+        do_build ${phase_list?}
+    fi
     # tell teh gerrit buildbot of the result of the build
     # R contain the overall result
     report_gerrit
