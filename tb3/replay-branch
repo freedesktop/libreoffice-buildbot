@@ -1,0 +1,61 @@
+#!/usr/bin/python
+#
+# This file is part of the LibreOffice project.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+import argparse
+import sh
+import sys
+import time
+
+class Syncer:
+    def __init__(self, args):
+        (   self.commit_count, self.from_branch,
+            self.to_branch, self.count,
+            self.intervall, self.repo) = \
+        (   args['commit_count'], args['from_branch'],
+            args['to_branch'], args['count'],
+            args['intervall'], args['repo'])
+        self.git = sh.git.bake(_cwd=self.repo)
+        assert(len(self.git('rev-parse', show_cdup=True).strip()) == 0)
+        assert(len(self.git.branch(self.to_branch, no_color=True, list=True)))
+        assert(len(self.git.branch(self.from_branch, no_color=True, list=True)))
+    def sync(self, args):
+        more_commits = True
+        commits = [c for c in self.git("rev-list", "%s..%s" % (self.to_branch, self.from_branch)).split('\n') if len(c)==40]
+        if len(commits) == 0:
+            more_commits = False
+        else:
+            try:
+                commit = commits[-self.commit_count]
+            except IndexError:
+                commit = commits[0]
+                more_commits = False
+            #self.git.checkout(self.to_branch)
+            #self.git.pull(commit)
+        return more_commits
+    def execute(self):
+        if self.count > 0:
+            for step in range(self.count):
+                if not self.sync(args):
+                    break
+                time.sleep(self.intervall)
+        else:
+            while self.sync(args):
+                time.sleep(self.intervall)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='branch replayer')
+    parser.add_argument('--repo', help='the repo to play work on (default: current dir)', default='.')
+    parser.add_argument('--from-branch', help='the branch to replay from', required=True)
+    parser.add_argument('--to-branch', help='the branch to replay to', default='master')
+    parser.add_argument('--commit-count', help='the number of commits to pull in one sync (default: 1)', type=int, default=1)
+    parser.add_argument('--intervall', help='the time to wait between sync in seconds (default: 1)', type=float, default=1)
+    parser.add_argument('--count', help='the number of syncs (0 is unlimited and default)', type=int, default=0)
+    args = vars(parser.parse_args())
+    Syncer(args).execute()
+    
+# vim: set et sw=4 ts=4:
