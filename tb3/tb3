@@ -65,17 +65,17 @@ def show_proposals(parms):
         print(json.dumps([p.__dict__ for p in proposals]))
 
 def execute(parms):
-    if type(parms['estimated_duration']) is float:
+    if parms.has_key('estimated_duration') and type(parms['estimated_duration']) is float:
         parms['estimated_duration'] = datetime.timedelta(minutes=parms['estimated_duration'])
     if parms['sync']:
         sync(parms)
-    if parms['set_commit_finished']:
+    if parms.has_key('set_commit_finished') and parms['set_commit_finished']:
         set_commit_finished(parms)
-    if parms['set_commit_running']:
+    if parms.has_key('set_commit_running') and parms['set_commit_running']:
         set_commit_running(parms)
     if parms['show_state']:
         show_state(parms)
-    if parms['show_history']:
+    if parms.has_key('show_history') and parms['show_history']:
         show_history(parms)
     if parms['show_proposals']:
         show_proposals(parms)
