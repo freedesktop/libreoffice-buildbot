@@ -15,10 +15,10 @@ class Syncer:
     def __init__(self, args):
         (   self.commit_count, self.from_branch,
             self.to_branch, self.count,
-            self.intervall, self.repo) = \
+            self.interval, self.repo) = \
         (   args['commit_count'], args['from_branch'],
             args['to_branch'], args['count'],
-            args['intervall'], args['repo'])
+            args['interval'], args['repo'])
         self.git = sh.git.bake(_cwd=self.repo)
         assert(len(self.git('rev-parse', show_cdup=True).strip()) == 0)
         assert(len(self.git.branch(self.to_branch, no_color=True, list=True)))
@@ -34,18 +34,18 @@ class Syncer:
             except IndexError:
                 commit = commits[0]
                 more_commits = False
-            #self.git.checkout(self.to_branch)
-            #self.git.pull(commit)
+            self.git.checkout(self.to_branch)
+            self.git.pull(commit)
         return more_commits
     def execute(self):
         if self.count > 0:
             for step in range(self.count):
                 if not self.sync(args):
                     break
-                time.sleep(self.intervall)
+                time.sleep(self.interval)
         else:
             while self.sync(args):
-                time.sleep(self.intervall)
+                time.sleep(self.interval)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='branch replayer')
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('--from-branch', help='the branch to replay from', required=True)
     parser.add_argument('--to-branch', help='the branch to replay to', default='master')
     parser.add_argument('--commit-count', help='the number of commits to pull in one sync (default: 1)', type=int, default=1)
-    parser.add_argument('--intervall', help='the time to wait between sync in seconds (default: 1)', type=float, default=1)
+    parser.add_argument('--interval', help='the time to wait between sync in seconds (default: 1)', type=float, default=1)
     parser.add_argument('--count', help='the number of syncs (0 is unlimited and default)', type=int, default=0)
     args = vars(parser.parse_args())
     Syncer(args).execute()
