@@ -52,6 +52,7 @@ class TestTb3LocalClient(unittest.TestCase):
         self.assertEqual(len(logdirs[0][1]), 0)
         logfiles = logdirs[0][2]
         self.assertEqual(len(logfiles), 1) # only one file in dir
+        self.assertEqual(state.artifactreference, logfiles[0])
         logfile = open(os.path.join(self.logdir, logfiles[0]), 'r')
         lines = [line for line in logfile]
         self.assertEqual(len(lines), 1)
