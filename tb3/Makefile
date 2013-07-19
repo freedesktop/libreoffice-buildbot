@@ -1,16 +1,13 @@
 define runtest
-./tests/tb3/$(1).py
+./tests/$(subst SLASH,/,$(1)).py
 endef
 
-test: test-repostate test-scheduler test-cli
+test: test-tb3SLASHrepostate test-tb3SLASHscheduler test-tb3-cli test-tb3-local-client
 	@true
 .PHONY: test
 
 test-%:
 	$(call runtest,$*)
-
-test-cli:
-	./tests/tb3-cli.py
 
 .PHONY: test-%
 

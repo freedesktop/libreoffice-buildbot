@@ -26,7 +26,7 @@ class LocalClient:
             branch=self.args['branch'],
             builder=self.args['builder'],
             format='json')
-        self.logdir = tempfile.mkdtemp()
+        self.logdir = self.args['logdir']
         self.workdir = tempfile.mkdtemp()
     def get_proposal(self):
         data = ''
@@ -41,19 +41,23 @@ class LocalClient:
         self.tb3(set_commit_running=proposal['commit'])
     def run_build(self, proposal):
         buildtime = int(time.time()*100)
+        if self.logdir:
+            outfile=os.path.join(self.logdir,'%s-%d.out' % (proposal['commit'], buildtime))
+        else:
+            outfile = '/dev/null'
         command = sh.Command(self.args['script'])
         rc = command(
             proposal['commit'],
             self.workdir,
             self.args['repo'],
-            _err=os.path.join(self.logdir,'%d.err' % buildtime),
-            _out=os.path.join(self.logdir, '%d.out' % buildtime),
+            _err=outfile,
+            _out=outfile,
             _ok_code=range(256)).exit_code
         if not rc:
-            return 'good'
-        return 'bad'
-    def report_result(self, proposal, res):
-        self.tb3(set_commit_finished=proposal['commit'], result=res)
+            return ('good', os.path.basename(outfile))
+        return ('bad', os.path.basename(outfile))
+    def report_result(self, proposal, result):
+        self.tb3(set_commit_finished=proposal['commit'], result=result[0], result_reference=result[1])
     def __one_run(self):
         time.sleep(self.args['interval'])
         proposal = self.get_proposal()
@@ -77,6 +81,7 @@ if __name__ == '__main__':
     parser.add_argument('--branch', help='branch for which coordination is requested', required=True)
     parser.add_argument('--builder', help='name of the build machine interacting with the coordinator', required=True)
     parser.add_argument('--script', help='path to the build script', required=True)
+    parser.add_argument('--logdir', help='path to the to store the logs', default=None)
     parser.add_argument('--estimated-duration', help='the estimated time to complete in minutes (default: 120)', type=float, default=120.0)
     parser.add_argument('--interval', help='the time to sleep between builds/polls in seconds (default: 1)', type=float, default=1.0)
     parser.add_argument('--count', help='the number of builds to try, 0 for unlimited builds  (default: unlimited)', type=int, default=0)
