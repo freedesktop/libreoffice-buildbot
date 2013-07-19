@@ -1,0 +1,86 @@
+#!/usr/bin/python
+#
+# This file is part of the LibreOffice project.
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+#
+import argparse
+import json
+import os.path
+import sh
+import sys
+import tempfile
+import time
+
+sys.path.append('./dist-packages')
+
+class LocalClient:
+    def __init__(self, args):
+        self.args = args
+        self.tb3 = sh.Command.bake(
+            sh.Command(self.args['tb3_master']),
+            repo=self.args['repo'],
+            platform=self.args['platform'],
+            branch=self.args['branch'],
+            builder=self.args['builder'],
+            format='json')
+        self.logdir = tempfile.mkdtemp()
+        self.workdir = tempfile.mkdtemp()
+    def get_proposal(self):
+        data = ''
+        for line in self.tb3(show_proposals=True):
+            data+=line
+        proposals = json.loads(data)
+        if len(proposals)>0:
+            return proposals[0]
+        else:
+            return None
+    def report_start(self, proposal):
+        self.tb3(set_commit_running=proposal['commit'])
+    def run_build(self, proposal):
+        buildtime = int(time.time()*100)
+        command = sh.Command(self.args['script'])
+        rc = command(
+            proposal['commit'],
+            self.workdir,
+            self.args['repo'],
+            _err=os.path.join(self.logdir,'%d.err' % buildtime),
+            _out=os.path.join(self.logdir, '%d.out' % buildtime),
+            _ok_code=range(256)).exit_code
+        if not rc:
+            return 'good'
+        return 'bad'
+    def report_result(self, proposal, res):
+        self.tb3(set_commit_finished=proposal['commit'], result=res)
+    def __one_run(self):
+        time.sleep(self.args['interval'])
+        proposal = self.get_proposal()
+        if proposal:
+            self.report_start(proposal)
+            result = self.run_build(proposal)
+            self.report_result(proposal, result)
+    def execute(self):
+        if self.args['count']:
+            for x in range(self.args['count']):
+                self.__one_run()
+        else:
+            while True:
+                self.__one_run()
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='local tinderbox runner')
+    parser.add_argument('--tb3-master', help='the path to the tb3 executable', required=True)
+    parser.add_argument('--repo', help='location of the LibreOffice core git repository', required=True)
+    parser.add_argument('--platform', help='platform for which coordination is requested', required=True)
+    parser.add_argument('--branch', help='branch for which coordination is requested', required=True)
+    parser.add_argument('--builder', help='name of the build machine interacting with the coordinator', required=True)
+    parser.add_argument('--script', help='path to the build script', required=True)
+    parser.add_argument('--estimated-duration', help='the estimated time to complete in minutes (default: 120)', type=float, default=120.0)
+    parser.add_argument('--interval', help='the time to sleep between builds/polls in seconds (default: 1)', type=float, default=1.0)
+    parser.add_argument('--count', help='the number of builds to try, 0 for unlimited builds  (default: unlimited)', type=int, default=0)
+    args = vars(parser.parse_args())
+    LocalClient(args).execute()
+    
+# vim: set et sw=4 ts=4:
