@@ -7,9 +7,10 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 
+import os
+import re
 import sh
 import sys
-import os
 import unittest
 import tempfile
 
@@ -56,7 +57,10 @@ class TestTb3LocalClient(unittest.TestCase):
         logfile = open(os.path.join(self.logdir, logfiles[0]), 'r')
         lines = [line for line in logfile]
         self.assertEqual(len(lines), 1)
-        self.assertEqual(lines[0], 'building\n')
+        self.assertNotEqual(re.search('building commit %s' % self.head, lines[0]), None)
+        self.assertNotEqual(re.search('from repo %s' % self.testdir, lines[0]), None)
+        self.assertNotEqual(re.search('on platform %s' % self.platform, lines[0]), None)
+        self.assertNotEqual(re.search('as builder %s' % self.builder, lines[0]), None)
 
 if __name__ == '__main__':
     unittest.main()

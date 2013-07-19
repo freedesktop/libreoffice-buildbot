@@ -50,6 +50,8 @@ class LocalClient:
             proposal['commit'],
             self.workdir,
             self.args['repo'],
+            self.args['platform'],
+            self.args['builder'],
             _err=outfile,
             _out=outfile,
             _ok_code=range(256)).exit_code
