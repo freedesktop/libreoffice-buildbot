@@ -62,7 +62,7 @@ echo "==== Storing bibisect ===="
 echo archiving installation at $DEVINSTALLDIR ...
 git --git-dir=$BUILDER_HOME/artifactdir/.git --work-tree=$DEVINSTALLDIR add -A
 git --git-dir=$BUILDER_HOME/artifactdir/.git --work-tree=$DEVINSTALLDIR commit -F $BUILDER_HOME/commitmsg
-git --git-dir=$BUILDER_HOME/artifactdir/.git tag $BINREPO_TAG
+git --git-dir=$BUILDER_HOME/artifactdir/.git tag $BINREPO_TAG || true
 git --git-dir=$BUILDER_HOME/artifactdir/.git push origin $BINREPO_TAG:$BINREPO_TAG $BINREPO_BRANCH:$BINREPO_BRANCH
 echo done.
 echo
