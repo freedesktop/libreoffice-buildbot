@@ -48,10 +48,10 @@ class LocalClient:
         command = sh.Command(self.args['script'])
         rc = command(
             proposal['commit'],
-            self.workdir,
             self.args['repo'],
             self.args['platform'],
             self.args['builder'],
+            self.workdir,
             _err=outfile,
             _out=outfile,
             _ok_code=range(256)).exit_code

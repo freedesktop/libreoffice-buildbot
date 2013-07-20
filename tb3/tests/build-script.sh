@@ -6,6 +6,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
-echo "building commit $1 from repo $3 in workdir $2 on platform $4 as builder $5."
+echo "building commit $1 from repo $2 on platform $3 as builder $4 in workdir $5."
 true
 # vim: set et sw=4 ts=4:

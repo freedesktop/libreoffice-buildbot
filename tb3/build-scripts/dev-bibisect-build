@@ -12,41 +12,45 @@ CCACHE_SIZE=10G
 
 
 echo "==== Setting up environment ===="
-echo "building commit $1 from repo $3 in workdir $2 on platform $4 as builder $5 with script $0."
 set -e
-export BUILDER_HOME=`readlink -f $2`
+COMMIT=$1
+REPO=$2
+PLATFORM=$3
+BUILDER=$4
+export BUILDER_HOME=`readlink -f $5`
+echo "building commit $COMMIT from repo $REPO in workdir $BUILDER_HOME on platform $PLATFORM as builder $BUILDER with script $0."
 cd $BUILDER_HOME
 rm -rf builddir artifactdir
 mkdir -p builddir tarballs ccache
 export CCACHE_DIR=$BUILDER_HOME/ccache
-export BINREPO_BRANCH=builder-$5
-export BINREPO_TAG=source-hash-$1
+export BINREPO_BRANCH=builder-$BUILDER
+export BINREPO_TAG=source-hash-$COMMIT
 (cd $BINREPO && git branch $BINREPO_BRANCH initial) || true
 git clone $BINREPO $BUILDER_HOME/artifactdir --branch $BINREPO_BRANCH
-git --git-dir=$3 log -1 --pretty=format:"source-hash-%H%n%n" $1 > $BUILDER_HOME/commitmsg
-git --git-dir=$3 log -1 --pretty=fuller $1 >> $BUILDER_HOME/commitmsg
+git --git-dir=$REPO log -1 --pretty=format:"source-hash-%H%n%n" $COMMIT > $BUILDER_HOME/commitmsg
+git --git-dir=$REPO log -1 --pretty=fuller $COMMIT >> $BUILDER_HOME/commitmsg
 ccache -M$CCACHE_SIZE
 echo
 echo
 
 echo "==== Unpacking source ===="
 echo Unpacking source ...
-(cd $3 && git archive --format tar $1)| tar --extract --directory $BUILDER_HOME/builddir
+(cd $REPO && git archive --format tar $COMMIT)| tar --extract --directory $BUILDER_HOME/builddir
 echo done.
 mkdir -p $BUILDER_HOME/builddir/.git
 echo
 echo
 
 echo "==== Configuring build ===="
-echo "configuring commit $1 from repo $3 in workdir $2 on platform $4 as builder $5 with script $0." > $BUILDER_HOME/artifactdir/autogen.log
+echo "configuring commit $COMMIT from repo $REPO in workdir $BUILDER_HOME on platform $PLATFORM as builder $BUILDER with script $0." > $BUILDER_HOME/artifactdir/autogen.log
 (cd $BUILDER_HOME/builddir && ./autogen.sh --with-external-tar=$BUILDER_HOME/tarballs --disable-linkoo --disable-option-checking) 2>&1 | tee --append $BUILDER_HOME/artifactdir/autogen.log
 echo
 echo
 
 echo "==== Building ===="
 ccache -s
-echo "building commit $1 from repo $3 in workdir $2 on platform $4 as builder $5 with script $0." > $BUILDER_HOME/artifactdir/make.log
-echo "dev-installing commit $1 from repo $3 in workdir $2 on platform $4 as builder $5 with script $0." > $BUILDER_HOME/artifactdir/dev-install.log
+echo "building commit $COMMIT from repo $REPO in workdir $BUILDER_HOME on platform $PLATFORM as builder $BUILDER with script $0." > $BUILDER_HOME/artifactdir/make.log
+echo "dev-installing commit $COMMIT from repo $REPO in workdir $BUILDER_HOME on platform $PLATFORM as builder $BUILDER with script $0." > $BUILDER_HOME/artifactdir/dev-install.log
 (cd $BUILDER_HOME/builddir; make || make) 2>&1 | tee --append $BUILDER_HOME/artifactdir/make.log
 (cd $BUILDER_HOME/builddir; make dev-install) 2>&1 | tee --append $BUILDER_HOME/artifactdir/dev-install.log
 ccache -s
