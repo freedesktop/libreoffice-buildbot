@@ -14,10 +14,10 @@ import functools
 import datetime
 
 class Proposal:
-    def __init__(self, score, commit, scheduler):
-        (self.score, self.commit, self.scheduler) = (score, commit, scheduler)
+    def __init__(self, score, commit, scheduler, platform, branch):
+        (self.score, self.commit, self.scheduler, self.platform, self.branch) = (score, commit, scheduler, platform, branch)
     def __repr__(self):
-        return 'Proposal(%f, %s, %s)' % (self.score, self.commit, self.scheduler)
+        return 'Proposal(%f, %s, %s, %s, %s)' % (self.score, self.commit, self.scheduler, self.platform, self.branch)
     def __cmp__(self, other):
         return other.score - self.score
 
@@ -63,10 +63,10 @@ class HeadScheduler(Scheduler):
         if not last_build is None:
             commits = self.get_commits(last_build, head)
             for commit in commits:
-                proposals.append(Proposal(1-1/((len(commits)-float(commit[0]))**2+1), commit[1], self.__class__.__name__))
+                proposals.append(Proposal(1-1/((len(commits)-float(commit[0]))**2+1), commit[1], self.__class__.__name__, self.platform, self.branch))
             self.dampen_running_commits(commits, proposals, time)
         else:
-            proposals.append(Proposal(float(1), head, self.__class__.__name__))
+            proposals.append(Proposal(float(1), head, self.__class__.__name__, self.platform, self.branch))
         self.norm_results(proposals)
         return proposals
 
@@ -81,7 +81,7 @@ class BisectScheduler(Scheduler):
         commits = self.get_commits(last_good, '%s^' % first_bad)
         proposals = []
         for commit in commits:
-            proposals.append(Proposal(1.0, commit[1], self.__class__.__name__))
+            proposals.append(Proposal(1.0, commit[1], self.__class__.__name__, self.platform, self.branch))
         for idx in range(len(proposals)):
             proposals[idx].score *= (1-1/(float(idx)**2+1)) * (1-1/((float(idx-len(proposals)))**2+1))
         self.dampen_running_commits(commits, proposals, time)
