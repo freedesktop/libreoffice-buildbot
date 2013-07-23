@@ -29,6 +29,8 @@ class Scheduler:
         self.repostate = tb3.repostate.RepoState(self.platform, self.branch, self.repo)
         self.repohistory = tb3.repostate.RepoHistory(self.platform, self.repo)
         self.git = sh.git.bake(_cwd=repo)
+    def make_proposal(self, score, commit):
+        return Proposal(score, commit, self.__class__.__name__, self.platform, self.branch)
     def count_commits(self, start, to):
         return int(self.git('rev-list', '%s..%s' % (start, to), count=True))
     def get_commits(self, begin, end):
@@ -63,10 +65,10 @@ class HeadScheduler(Scheduler):
         if not last_build is None:
             commits = self.get_commits(last_build, head)
             for commit in commits:
-                proposals.append(Proposal(1-1/((len(commits)-float(commit[0]))**2+1), commit[1], self.__class__.__name__, self.platform, self.branch))
+                proposals.append(self.make_proposal(1-1/((len(commits)-float(commit[0]))**2+1), commit[1]))
             self.dampen_running_commits(commits, proposals, time)
         else:
-            proposals.append(Proposal(float(1), head, self.__class__.__name__, self.platform, self.branch))
+            proposals.append(self.make_proposal(float(1), head))
         self.norm_results(proposals)
         return proposals
 
@@ -81,7 +83,7 @@ class BisectScheduler(Scheduler):
         commits = self.get_commits(last_good, '%s^' % first_bad)
         proposals = []
         for commit in commits:
-            proposals.append(Proposal(1.0, commit[1], self.__class__.__name__, self.platform, self.branch))
+            proposals.append(self.make_proposal(1.0, commit[1]))
         for idx in range(len(proposals)):
             proposals[idx].score *= (1-1/(float(idx)**2+1)) * (1-1/((float(idx-len(proposals)))**2+1))
         self.dampen_running_commits(commits, proposals, time)
