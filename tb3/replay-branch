@@ -34,8 +34,7 @@ class Syncer:
             except IndexError:
                 commit = commits[0]
                 more_commits = False
-            self.git.checkout(self.to_branch)
-            self.git.pull(commit)
+            self.git.branch('-f', self.to_branch, commit)
         return more_commits
     def execute(self):
         if self.count > 0:
