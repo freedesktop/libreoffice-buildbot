@@ -107,7 +107,7 @@ if __name__ == '__main__':
     parser.add_argument('--repo', help='location of the LibreOffice core git repository', required=True)
     parser.add_argument('--platform', help='platform for which coordination is requested', required=True)
     parser.add_argument('--branch', help='branch for which coordination is requested', required=True)
-    parser.add_argument('--builder', help='name of the build machine interacting with the coordinator', required=True)
+    parser.add_argument('--builder', help='name of the build machine interacting with the coordinator (required for --set-commit-finished and --set-commit-running)')
     if fullcommand:
         parser.add_argument('--sync', help='syncs the repository from its origin', action='store_true')
         parser.add_argument('--set-commit-finished', help='set the result for this commit')
@@ -128,6 +128,9 @@ if __name__ == '__main__':
     if fullcommand or commandname == 'tb3-show-proposals' or commandname == 'tb3-show-history':
         parser.add_argument('--format', help='set format for proposals and history (default: text)', choices=['text', 'json'], default='text')
     args = vars(parser.parse_args())
+    if not args.has_key('builder') and (args.has_key('set_commit_running') or args.has_key('set_commit_finished')):
+        parser.print_help()
+        sys.exit(1)
     if not fullcommand:
         args['sync'] = commandname == 'tb3-sync'
         args['show_proposals'] = commandname == 'tb3-show-proposals'
