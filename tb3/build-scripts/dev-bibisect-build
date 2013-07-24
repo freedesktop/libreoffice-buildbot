@@ -58,7 +58,7 @@ ccache -s
 echo
 echo
 
-echo "==== Storing bibisect ===="
+echo "==== Storing binary ===="
 `grep DEVINSTALLDIR $BUILDER_HOME/builddir/config_host.mk`
 echo archiving installation at $DEVINSTALLDIR ...
 git --git-dir=$BUILDER_HOME/artifactdir/.git --work-tree=$DEVINSTALLDIR add -A
