@@ -61,12 +61,15 @@ class LocalClient:
     def report_result(self, proposal, result):
         self.tb3(set_commit_finished=proposal['commit'], result=result[0], result_reference=result[1])
     def __one_run(self):
-        time.sleep(self.args['interval'])
-        proposal = self.get_proposal()
-        if proposal:
-            self.report_start(proposal)
-            result = self.run_build(proposal)
-            self.report_result(proposal, result)
+        proposal = None
+        while not proposal:
+            proposal = self.get_proposal()
+            print proposal
+            if not proposal or float(proposal['score']) < self.args['min_score']:
+                time.sleep(self.args['poll_idle_time'])
+        self.report_start(proposal)
+        result = self.run_build(proposal)
+        self.report_result(proposal, result)
     def execute(self):
         if self.args['count']:
             for x in range(self.args['count']):
@@ -85,8 +88,9 @@ if __name__ == '__main__':
     parser.add_argument('--script', help='path to the build script', required=True)
     parser.add_argument('--logdir', help='path to the to store the logs', default=None)
     parser.add_argument('--estimated-duration', help='the estimated time to complete in minutes (default: 120)', type=float, default=120.0)
-    parser.add_argument('--interval', help='the time to sleep between builds/polls in seconds (default: 1)', type=float, default=1.0)
     parser.add_argument('--count', help='the number of builds to try, 0 for unlimited builds  (default: unlimited)', type=int, default=0)
+    parser.add_argument('--poll-idle-time', help='the number seconds to wait before a retry when not getting a good proposal (default: 60)', type=float, default=60.0)
+    parser.add_argument('--min-score', help='the minimum score of a proposal to be tried (default: 0)', type=float, default=1.0)
     args = vars(parser.parse_args())
     LocalClient(args).execute()
     
