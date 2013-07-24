@@ -27,7 +27,7 @@ export BINREPO_BRANCH=builder-$BUILDER
 export BINREPO_TAG=source-hash-$COMMIT
 (cd $BINREPO && git branch $BINREPO_BRANCH initial) || true
 git clone $BINREPO $BUILDER_HOME/artifactdir --branch $BINREPO_BRANCH
-(cd $BUILDER_HOME/artifactdir && git rm -r `git ls-tree --name-only HEAD`)
+(cd $BUILDER_HOME/artifactdir && git rm -r * || true)
 git --git-dir=$REPO log -1 --pretty=format:"source-hash-%H%n%n" $COMMIT > $BUILDER_HOME/commitmsg
 git --git-dir=$REPO log -1 --pretty=fuller $COMMIT >> $BUILDER_HOME/commitmsg
 ccache -M$CCACHE_SIZE
