@@ -30,6 +30,7 @@ class LocalClient:
         self.workdir = tempfile.mkdtemp()
     def get_proposal(self):
         data = ''
+        self.tb3(sync=True)
         for line in self.tb3(show_proposals=True):
             data+=line
         proposals = json.loads(data)
