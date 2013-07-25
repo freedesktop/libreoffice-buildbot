@@ -134,6 +134,7 @@ if __name__ == '__main__':
     if not fullcommand:
         args['sync'] = commandname == 'tb3-sync'
         args['show_proposals'] = commandname == 'tb3-show-proposals'
+        args['show_history'] = commandname == 'tb3-show-history'
         args['show_state'] = commandname == 'tb3-show-state'
     execute(args)
     
