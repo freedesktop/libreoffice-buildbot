@@ -40,12 +40,12 @@ def set_commit_running(parms):
     get_updater(parms).set_scheduled(parms['set_commit_running'], parms['builder'], parms['estimated_duration'])
 
 def show_state(parms):
-    if parms['format'] == 'json':
+    if parms.has_key('format') and parms['format'] == 'json':
         raise NotImplementedError
     print(get_repostate(parms))
     
 def show_history(parms):
-    if parms['format'] == 'json':
+    if parms.has_key('format') and parms['format'] == 'json':
         raise NotImplementedError
     history = tb3.repostate.RepoHistory(parms['platform'], parms['repo'])
     for (commit, state) in history.get_recent_commit_states(parms['branch'], parms['history_count']):
