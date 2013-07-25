@@ -60,7 +60,7 @@ def show_proposals(parms):
         print('')
         print('Proposals:')
         for proposal in proposals:
-            print(proposals)
+            print(proposal)
     else:
         print(json.dumps([p.__dict__ for p in proposals]))
 
