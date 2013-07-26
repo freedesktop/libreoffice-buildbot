@@ -65,7 +65,12 @@ class TestRepoHistory(unittest.TestCase):
             self.assertEqual(self.history.get_commit_state(self.head), commitstate)
         with self.assertRaises(AttributeError):
             self.history.set_commit_state(self.head, tb3.repostate.CommitState('foo!'))
- 
+    def test_duration(self):
+        commitstate = tb3.repostate.CommitState(estimated_duration=datetime.timedelta(hours=3, minutes=14))
+        self.history.set_commit_state(self.head, commitstate)
+        commitstate = self.history.get_commit_state(self.head)
+        self.assertEqual(commitstate.estimated_duration, datetime.timedelta(hours=3, minutes=14))
+
 class TestRepoUpdater(unittest.TestCase):
     def __resolve_ref(self, refname):
         return self.git('show-ref', refname).split(' ')[0]
