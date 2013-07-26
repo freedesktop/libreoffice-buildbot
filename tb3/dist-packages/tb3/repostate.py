@@ -27,7 +27,7 @@ class StateDecoder(json.JSONDecoder):
                 if value[0] == '__datetime__':
                     obj[key] = datetime.datetime.utcfromtimestamp(value[1])
                 elif value[0] == '__timedelta__':
-                    obj[key] = datetime.timedelta(float(value[1]))
+                    obj[key] = datetime.timedelta(0, float(value[1]))
         return obj
 
 class RepoState:
