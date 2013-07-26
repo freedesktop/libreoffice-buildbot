@@ -70,6 +70,13 @@ class TestRepoHistory(unittest.TestCase):
         self.history.set_commit_state(self.head, commitstate)
         commitstate = self.history.get_commit_state(self.head)
         self.assertEqual(commitstate.estimated_duration, datetime.timedelta(hours=3, minutes=14))
+    def test_times(self):
+        now = datetime.datetime.now()
+        commitstate = tb3.repostate.CommitState(started=now, finished=now)
+        self.history.set_commit_state(self.head, commitstate)
+        commitstate = self.history.get_commit_state(self.head)
+        self.assertEqual(commitstate.started, now)
+        self.assertEqual(commitstate.finished, now)
 
 class TestRepoUpdater(unittest.TestCase):
     def __resolve_ref(self, refname):
