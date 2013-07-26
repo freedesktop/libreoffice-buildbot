@@ -39,21 +39,25 @@ class Scheduler:
             if len(commit) == 40:
                 commits.append( (len(commits), commit, self.repohistory.get_commit_state(commit)) )
         return commits
-    def norm_results(self, proposals):
+    def norm_results(self, proposals, offset):
         maxscore = 0
         #maxscore = functools.reduce( lambda x,y: max(x.score, y.score), proposals)
         for proposal in proposals:
             maxscore = max(maxscore, proposal.score)
+        multiplier = (len(proposals) + offset) / maxscore
         if maxscore > 0:
             for proposal in proposals:
-                proposal.score = proposal.score / maxscore * len(proposals)
+                proposal.score = proposal.score * multiplier
     def dampen_running_commits(self, commits, proposals, time):
+        reduce_all = 0
         for commit in commits:
             if commit[2].state == 'RUNNING':
                 running_time = max(datetime.timedelta(), time - commit[2].started)
                 timedistance = running_time.total_seconds() / commit[2].estimated_duration.total_seconds()
                 for idx in range(len(proposals)):
-                    proposals[idx].score *= 1-1/((commit[0]-idx+timedistance)**2+1)
+                    proposals[idx].score *= 1-1/((abs(commit[0]-idx)+timedistance)**2+1)
+                reduce_all -= math.exp(-(timedistance**2))
+        return reduce_all
     def get_proposals(self, time):
         return [(0, None, self.__class__.__name__)]
 
@@ -62,14 +66,15 @@ class HeadScheduler(Scheduler):
         head = self.repostate.get_head()
         last_build = self.repostate.get_last_build()
         proposals = []
+        reduce_all = 0
         if not last_build is None:
             commits = self.get_commits(last_build, head)
             for commit in commits:
                 proposals.append(self.make_proposal(1-1/((len(commits)-float(commit[0]))**2+1), commit[1]))
-            self.dampen_running_commits(commits, proposals, time)
+            reduce_all = self.dampen_running_commits(commits, proposals, time)
         else:
             proposals.append(self.make_proposal(float(1), head))
-        self.norm_results(proposals)
+        self.norm_results(proposals, reduce_all)
         return proposals
 
 class BisectScheduler(Scheduler):
@@ -86,8 +91,8 @@ class BisectScheduler(Scheduler):
             proposals.append(self.make_proposal(1.0, commit[1]))
         for idx in range(len(proposals)):
             proposals[idx].score *= (1-1/(float(idx)**2+1)) * (1-1/((float(idx-len(proposals)))**2+1))
-        self.dampen_running_commits(commits, proposals, time)
-        self.norm_results(proposals)
+        reduce_all = self.dampen_running_commits(commits, proposals, time)
+        self.norm_results(proposals, reduce_all)
         return proposals
 
 class MergeScheduler(Scheduler):
