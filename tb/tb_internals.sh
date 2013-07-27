@@ -403,10 +403,10 @@ prepare_upload_manifest()
 
     echo "tinderbox: administrator: ${TB_OWNER?}" >> $manifest_file
     echo "tinderbox: buildname: ${TB_NAME?}" >> $manifest_file
-    echo "tinderbox: tree: ${tb_TINDERBOX_BRANCH?}" >> $manifest_file
+    echo "tinderbox: tree: ${TB_TINDERBOX_BRANCH?}" >> $manifest_file
     echo "tinderbox: pull time $(cat "${TB_METADATA_DIR?}/${P?}_current-git-timestamp.log")" >> $manifest_file
     echo "tinderbox: git sha1s"  >> $manifest_file
-    echo "core:$(cat ${TB_METADATA_DIR?}/{P?}_current-git-head.log)"  >> $manifest_file
+    echo "core:$(cat ${TB_METADATA_DIR?}/${P?}_current-git-head.log)"  >> $manifest_file
     echo ""  >> $manifest_file
     echo "tinderbox: autogen log"  >> $manifest_file
     cat tb_${P?}_autogen.log  >> $manifest_file
@@ -525,7 +525,7 @@ push_nightly()
     [ $V ] && echo "Push Nightly builds"
     prepare_upload_manifest
 
-    upload_time="$(cat "${TB_METADATA_DIR?}/${P?}_current-git-timestamp.log")"
+    upload_time="$(cat "${TB_METADATA_DIR?}/${P?}_current-git-timestamp.log" | sed -e "s/ /_/g" | sed -e "s/:/./g")"
     ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoffice.org/daily/${TB_BRANCH?}/${TB_NAME?}/${upload_time?}\"" || return 1
 
     if [ -f config_host.mk ] ; then
@@ -537,7 +537,8 @@ push_nightly()
         pack_loc="workdir"
     fi
     pushd "${pack_loc?}" > /dev/null
-    mkdir push 2>/dev/null || return 1
+    rm -fr push
+    mkdir push 2>/dev/null
     stage="./push"
     tag="${P?}~${upload_time?}"
 
