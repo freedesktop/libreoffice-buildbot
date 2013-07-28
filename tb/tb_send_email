@@ -1904,8 +1904,8 @@ else {
         printmsg("DEBUG => Starting TLS", 2);
         if (SMTPchat('STARTTLS')) { quit($conf{'error'}, 1); }
         my $ssl_ver = 'SSLv3 TLSv1';
-        chomp(my $system = `uname -o`);
-        if ($system eq 'Cygwin') { $ssl_ver = 'SSLv3'; }
+        chomp(my $system = `uname`);
+        if ($system =~ /CYGWIN/) { $ssl_ver = 'SSLv3'; }
         if (! IO::Socket::SSL->start_SSL($SERVER, SSL_version => $ssl_ver)) {
             quit("ERROR => TLS setup failed: " . IO::Socket::SSL::errstr(), 1);
         }
