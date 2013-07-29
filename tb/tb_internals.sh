@@ -608,7 +608,7 @@ ${tinder1}
  Tinderbox info:
 
  ${tinder2}
- Branch: $TINDER_BRANCH
+ Branch: $TB_BRANCH
  "starttime": $(epoch_from_utc "$rough_time")
  Machine: `uname -a`
  Configured with: `cat autogen.lastrun`
