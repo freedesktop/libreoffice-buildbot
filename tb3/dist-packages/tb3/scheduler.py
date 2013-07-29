@@ -42,10 +42,12 @@ class Scheduler:
     def norm_results(self, proposals, offset):
         maxscore = 0
         #maxscore = functools.reduce( lambda x,y: max(x.score, y.score), proposals)
+        if not len(proposals):
+            return
         for proposal in proposals:
             maxscore = max(maxscore, proposal.score)
-        multiplier = (len(proposals) + offset) / maxscore
         if maxscore > 0:
+            multiplier = (len(proposals) + offset) / maxscore
             for proposal in proposals:
                 proposal.score = proposal.score * multiplier
     def dampen_running_commits(self, commits, proposals, time):
