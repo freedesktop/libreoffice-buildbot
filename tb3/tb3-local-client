@@ -7,6 +7,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 import argparse
+import datetime
 import json
 import os.path
 import sh
@@ -39,6 +40,7 @@ class LocalClient:
             format='json')
         self.logdir = self.args['logdir']
         self.workdir = tempfile.mkdtemp()
+        self.buildtimes = {}
     def get_proposal(self, source):
         data = ''
         for line in self.tb3(repo=source.repo, branch=source.branch, platform=source.platform, show_proposals=True):
@@ -49,7 +51,11 @@ class LocalClient:
         else:
             return None
     def report_start(self, proposal):
-        self.tb3(repo=proposal['repo'], branch=proposal['branch'], platform=proposal['platform'], set_commit_running=proposal['commit'])
+        estimated_buildtime = float(120)
+        if self.buildtimes.has_key( (proposal['repo'], proposal['branch'], proposal['platform']) ):
+            scenario_buildtimes = self.buildtimes[ (proposal['repo'], proposal['branch'], proposal['platform']) ]
+            estimated_buildtime = scenario_buildtimes[len(scenario_buildtimes)/2]
+        self.tb3(repo=proposal['repo'], branch=proposal['branch'], platform=proposal['platform'], set_commit_running=proposal['commit'], estimated_buildtime=estimated_buildtime)
     def run_build(self, proposal):
         buildtime = int(time.time()*100)
         if self.logdir:
@@ -57,6 +63,7 @@ class LocalClient:
         else:
             outfile = '/dev/null'
         command = sh.Command(self.args['script'])
+        starttime = datetime.datetime.now()
         rc = command(
             proposal['commit'],
             proposal['repo'],
@@ -66,6 +73,16 @@ class LocalClient:
             _err=outfile,
             _out=outfile,
             _ok_code=range(256)).exit_code
+        duration_in_minutes = ((datetime.datetime.now() - starttime).total_seconds())/60
+        if self.buildtimes.has_key( (proposal['repo'], proposal['branch'], proposal['platform']) ):
+            scenario_buildtimes = self.buildtimes[ (proposal['repo'], proposal['branch'], proposal['platform']) ]
+            scenario_buildtimes.append(duration_in_minutes)
+            scenario_buildtimes = sorted(scenario_buildtimes)
+            if len(scenario_buildtimes) > 100:
+                scenario_buildtimes = scenario_buildtimes[1:-1]
+            self.buildtimes[ (proposal['repo'], proposal['branch'], proposal['platform']) ] = scenario_buildtimes
+        else:
+            self.buildtimes[ (proposal['repo'], proposal['branch'], proposal['platform']) ] = [duration_in_minutes]
         if not rc:
             return ('good', os.path.basename(outfile))
         return ('bad', os.path.basename(outfile))
@@ -104,7 +121,6 @@ if __name__ == '__main__':
     parser.add_argument('--builder', help='name of the build machine interacting with the coordinator', required=True)
     parser.add_argument('--script', help='path to the build script', required=True)
     parser.add_argument('--logdir', help='path to the to store the logs', default=None)
-    parser.add_argument('--estimated-duration', help='the estimated time to complete in minutes (default: 120)', type=float, default=120.0)
     parser.add_argument('--count', help='the number of builds to try, 0 for unlimited builds  (default: unlimited)', type=int, default=0)
     parser.add_argument('--poll-idle-time', help='the number seconds to wait before a retry when not getting a good proposal (default: 60)', type=float, default=60.0)
     parser.add_argument('--min-score', help='the minimum score of a proposal to be tried (default: 0)', type=float, default=1.0)
