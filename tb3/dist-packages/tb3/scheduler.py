@@ -14,10 +14,10 @@ import functools
 import datetime
 
 class Proposal:
-    def __init__(self, score, commit, scheduler, platform, branch):
-        (self.score, self.commit, self.scheduler, self.platform, self.branch) = (score, commit, scheduler, platform, branch)
+    def __init__(self, score, commit, scheduler, platform, repo, branch):
+        (self.score, self.commit, self.scheduler, self.platform, self.repo, self.branch) = (score, commit, scheduler, platform, repo, branch)
     def __repr__(self):
-        return 'Proposal(%f, %s, %s, %s, %s)' % (self.score, self.commit, self.scheduler, self.platform, self.branch)
+        return 'Proposal(%f, %s, %s, %s, %s, %s)' % (self.score, self.commit, self.scheduler, self.platform, self.repo, self.branch)
     def __cmp__(self, other):
         return other.score - self.score
 
@@ -30,7 +30,7 @@ class Scheduler:
         self.repohistory = tb3.repostate.RepoHistory(self.platform, self.repo)
         self.git = sh.git.bake(_cwd=repo)
     def make_proposal(self, score, commit):
-        return Proposal(score, commit, self.__class__.__name__, self.platform, self.branch)
+        return Proposal(score, commit, self.__class__.__name__, self.platform, self.repo, self.branch)
     def count_commits(self, start, to):
         return int(self.git('rev-list', '%s..%s' % (start, to), count=True))
     def get_commits(self, begin, end):

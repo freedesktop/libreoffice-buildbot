@@ -28,9 +28,7 @@ class TestTb3LocalClient(unittest.TestCase):
         (self.testdir, self.git) = helpers.createTestRepo()
         self.logdir = tempfile.mkdtemp()
         self.tb3localclient = sh.Command.bake(sh.Command("tb3-local-client"),
-            repo=self.testdir,
-            branch=self.branch,
-            platform=self.platform,
+            '--proposal-source', self.testdir, self.branch, self.platform, 1, 1,
             builder=self.builder,
             tb3_master='./tb3',
             script='./tests/build-script.sh',
