@@ -95,7 +95,7 @@ class LocalClient:
                 self.tb3(repo=repo, sync=True)
             proposals = [self.get_proposal(source) for source in self.sources]
             for p in proposals:
-                if p and (not proposal or p.score > proposal.score):
+                if p and (not proposal or p['score'] > proposal['score']):
                     proposal = p
             if not proposal or float(proposal['score']) < self.args['min_score']:
                 time.sleep(self.args['poll_idle_time'])
