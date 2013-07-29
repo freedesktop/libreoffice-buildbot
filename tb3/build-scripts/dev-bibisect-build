@@ -44,7 +44,7 @@ echo
 
 echo "==== Configuring build ===="
 echo "configuring commit $COMMIT from repo $REPO in workdir $BUILDER_HOME on platform $PLATFORM as builder $BUILDER with script $0." > $BUILDER_HOME/artifactdir/autogen.log
-(cd $BUILDER_HOME/builddir && ./autogen.sh --with-external-tar=$BUILDER_HOME/tarballs --disable-linkoo --disable-option-checking --disable-dependency-tracking) 2>&1 | tee --append $BUILDER_HOME/artifactdir/autogen.log
+(cd $BUILDER_HOME/builddir && ./autogen.sh --with-external-tar=$BUILDER_HOME/tarballs --disable-linkoo --disable-option-checking --disable-dependency-tracking --without-doxygen) 2>&1 | tee --append $BUILDER_HOME/artifactdir/autogen.log
 echo
 echo
 
