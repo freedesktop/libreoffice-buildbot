@@ -178,7 +178,7 @@ class RepoStateUpdater:
             self.repostate.clear_last_bad()
     def set_scheduled(self, commit, builder, estimated_duration):
         # FIXME: dont hardcode limit
-        estimated_duration = max(estimated_duration, datetime.timedelta(hours=4))
+        estimated_duration = min(estimated_duration, datetime.timedelta(hours=4))
         commitstate = CommitState('RUNNING', datetime.datetime.now(), builder, estimated_duration)
         self.repohistory.set_commit_state(commit, commitstate)
     def set_finished(self, commit, builder, state, artifactreference):
