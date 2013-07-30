@@ -55,7 +55,7 @@ class LocalClient:
         if self.buildtimes.has_key( (proposal['repo'], proposal['branch'], proposal['platform']) ):
             scenario_buildtimes = self.buildtimes[ (proposal['repo'], proposal['branch'], proposal['platform']) ]
             estimated_buildtime = scenario_buildtimes[len(scenario_buildtimes)/2]
-        self.tb3(repo=proposal['repo'], branch=proposal['branch'], platform=proposal['platform'], set_commit_running=proposal['commit'], estimated_buildtime=estimated_buildtime)
+        self.tb3(repo=proposal['repo'], branch=proposal['branch'], platform=proposal['platform'], set_commit_running=proposal['commit'], estimated_duration=estimated_buildtime)
     def run_build(self, proposal):
         buildtime = int(time.time()*100)
         if self.logdir:
