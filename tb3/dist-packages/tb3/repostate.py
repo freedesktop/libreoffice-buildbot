@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # This file is part of the LibreOffice project.
 #
@@ -22,7 +22,7 @@ class StateEncoder(json.JSONEncoder):
 class StateDecoder(json.JSONDecoder):
     def decode(self, s):
         obj = super(StateDecoder, self).decode(s)
-        for (key, value) in obj.iteritems():
+        for (key, value) in obj.items():
             if isinstance(value, list):
                 if value[0] == '__datetime__':
                     obj[key] = datetime.datetime.utcfromtimestamp(value[1])

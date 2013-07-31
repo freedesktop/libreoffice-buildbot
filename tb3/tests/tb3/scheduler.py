@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # This file is part of the LibreOffice project.
 #
@@ -24,11 +24,11 @@ class TestScheduler(unittest.TestCase):
     def _show_log(self, commit):
         for line in self.git("log", "--pretty=oneline", commit):
             sys.stdout.write(line)
-        print
+        print()
     def _show_proposals(self, proposals):
         for proposal in proposals:
             sys.stdout.write("%f %s" %(proposal.score, self.git("log", "-1", "--pretty=oneline",  proposal.commit)))
-        print
+        print()
     def setUp(self):
         (self.testdir, self.git) = helpers.createTestRepo()
         self.state = tb3.repostate.RepoState('linux', 'master', self.testdir)

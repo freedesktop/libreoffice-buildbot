@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 #
 # This file is part of the LibreOffice project.
 #
@@ -18,8 +18,8 @@ class Proposal:
         (self.score, self.commit, self.scheduler, self.platform, self.repo, self.branch) = (score, commit, scheduler, platform, repo, branch)
     def __repr__(self):
         return 'Proposal(%f, %s, %s, %s, %s, %s)' % (self.score, self.commit, self.scheduler, self.platform, self.repo, self.branch)
-    def __cmp__(self, other):
-        return other.score - self.score
+    def __lt__(self, other):
+        return self.score < other.score
 
 class Scheduler:
     def __init__(self, platform, branch, repo):
@@ -110,5 +110,5 @@ class MergeScheduler(Scheduler):
             for proposal in new_proposals:
                 proposal.score *= scheduler[0]
                 proposals.append(proposal)
-        return sorted(proposals)
+        return sorted(proposals, key=lambda p: -p.score)
 # vim: set et sw=4 ts=4:

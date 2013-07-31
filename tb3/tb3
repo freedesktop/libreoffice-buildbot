@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # This file is part of the LibreOffice project.
 #
@@ -40,12 +40,12 @@ def set_commit_running(parms):
     get_updater(parms).set_scheduled(parms['set_commit_running'], parms['builder'], parms['estimated_duration'])
 
 def show_state(parms):
-    if parms.has_key('format') and parms['format'] == 'json':
+    if 'format' in parms and parms['format'] == 'json':
         raise NotImplementedError
     print(get_repostate(parms))
     
 def show_history(parms):
-    if parms.has_key('format') and parms['format'] == 'json':
+    if 'format' in parms and parms['format'] == 'json':
         raise NotImplementedError
     history = tb3.repostate.RepoHistory(parms['platform'], parms['repo'])
     for (commit, state) in history.get_recent_commit_states(parms['branch'], parms['history_count']):
@@ -65,17 +65,17 @@ def show_proposals(parms):
         print(json.dumps([p.__dict__ for p in proposals]))
 
 def execute(parms):
-    if parms.has_key('estimated_duration') and type(parms['estimated_duration']) is float:
+    if 'estimated_duration' in parms and type(parms['estimated_duration']) is float:
         parms['estimated_duration'] = datetime.timedelta(minutes=parms['estimated_duration'])
     if parms['sync']:
         sync(parms)
-    if parms.has_key('set_commit_finished') and parms['set_commit_finished']:
+    if 'set_commit_finished' in parms and parms['set_commit_finished']:
         set_commit_finished(parms)
-    if parms.has_key('set_commit_running') and parms['set_commit_running']:
+    if 'set_commit_running' in parms and parms['set_commit_running']:
         set_commit_running(parms)
     if parms['show_state']:
         show_state(parms)
-    if parms.has_key('show_history') and parms['show_history']:
+    if 'show_history' in parms and parms['show_history']:
         show_history(parms)
     if parms['show_proposals']:
         show_proposals(parms)
@@ -128,11 +128,11 @@ if __name__ == '__main__':
     if fullcommand or commandname == 'tb3-show-proposals' or commandname == 'tb3-show-history':
         parser.add_argument('--format', help='set format for proposals and history (default: text)', choices=['text', 'json'], default='text')
     args = vars(parser.parse_args())
-    if not args.has_key('builder') and (args.has_key('set_commit_running') or args.has_key('set_commit_finished')):
+    if not 'builder' in args and ('set_commit_running' in args or 'set_commit_finished' in args):
         parser.print_help()
         sys.exit(1)
-    if args.has_key('set_commit_finished') or args.has_key('set_commit_running') or args.has_key('show_state') or args.has_key('show_history') or args.has_key('show_proposals'):
-        if not (args.has_key('branch') and args.has_key('platform')):
+    if 'set_commit_finished' in args or 'set_commit_running' in args or 'show_state' in args or 'show_history' in args or 'show_proposals' in args:
+        if not 'branch' in args and 'platform' in args:
             parser.print_help()
             sys.exit(1)
     if not fullcommand:

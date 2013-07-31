@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 #
 # This file is part of the LibreOffice project.
 #
@@ -75,8 +75,8 @@ class TestRepoHistory(unittest.TestCase):
         commitstate = tb3.repostate.CommitState(started=now, finished=now)
         self.history.set_commit_state(self.head, commitstate)
         commitstate = self.history.get_commit_state(self.head)
-        self.assertEqual(commitstate.started, now)
-        self.assertEqual(commitstate.finished, now)
+        self.assertLess(abs((commitstate.started - now).total_seconds()), 0.01)
+        self.assertLess(abs((commitstate.finished -now).total_seconds()), 0.01)
 
 class TestRepoUpdater(unittest.TestCase):
     def __resolve_ref(self, refname):

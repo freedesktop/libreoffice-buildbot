@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # This file is part of the LibreOffice project.
 #
@@ -52,7 +52,7 @@ class LocalClient:
             return None
     def report_start(self, proposal):
         estimated_buildtime = float(120)
-        if self.buildtimes.has_key( (proposal['repo'], proposal['branch'], proposal['platform']) ):
+        if (proposal['repo'], proposal['branch'], proposal['platform']) in self.buildtimes:
             scenario_buildtimes = self.buildtimes[ (proposal['repo'], proposal['branch'], proposal['platform']) ]
             estimated_buildtime = scenario_buildtimes[len(scenario_buildtimes)/2]
         self.tb3(repo=proposal['repo'], branch=proposal['branch'], platform=proposal['platform'], set_commit_running=proposal['commit'], estimated_duration=estimated_buildtime)
@@ -74,7 +74,7 @@ class LocalClient:
             _out=outfile,
             _ok_code=range(256)).exit_code
         duration_in_minutes = ((datetime.datetime.now() - starttime).total_seconds())/60
-        if self.buildtimes.has_key( (proposal['repo'], proposal['branch'], proposal['platform']) ):
+        if (proposal['repo'], proposal['branch'], proposal['platform']) in self.buildtimes:
             scenario_buildtimes = self.buildtimes[ (proposal['repo'], proposal['branch'], proposal['platform']) ]
             scenario_buildtimes.append(duration_in_minutes)
             scenario_buildtimes = sorted(scenario_buildtimes)
@@ -99,11 +99,11 @@ class LocalClient:
                     proposal = p
             if not proposal or float(proposal['score']) < self.args['min_score']:
                 time.sleep(self.args['poll_idle_time'])
-        print proposal
+        print(proposal)
         try:
             self.report_start(proposal)
         except Exception as e:
-            print "except %s" % e
+            print("except %s" % e)
         result = self.run_build(proposal)
         self.report_result(proposal, result)
     def execute(self):
