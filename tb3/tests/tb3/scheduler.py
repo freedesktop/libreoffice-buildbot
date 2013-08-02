@@ -27,8 +27,19 @@ class TestScheduler(unittest.TestCase):
         print()
     def _show_proposals(self, proposals):
         for proposal in proposals:
-            sys.stdout.write("%f %s" %(proposal.score, self.git("log", "-1", "--pretty=oneline",  proposal.commit)))
+            sys.stdout.write("%f %s %s" %(proposal.score, proposal.scheduler, self.git("log", "-1", "--pretty=oneline",  proposal.commit)))
         print()
+    def _get_best_proposal(self, scheduler, time, expected_message, expected_count, expect_in_order):
+        proposals = scheduler.get_proposals(time)
+        self.assertEqual(len(proposals), expected_count)
+        proposals = sorted(proposals, key = lambda proposal: -proposal.score)
+        self._show_proposals(proposals)
+        if expect_in_order:
+            for idx in range(len(proposals)-1):
+                self.assertEqual(self.git('merge-base', '--is-ancestor', proposals[idx+1].commit, proposals[idx].commit, _ok_code=[0,1]).exit_code, 0)
+        commit_msg = ''.join([line for line in self.git("log", "-1", "--pretty=%s",  proposals[0].commit)]).strip('\n')
+        self.assertEqual(commit_msg, expected_message)
+        return proposals[0]
     def setUp(self):
         (self.testdir, self.git) = helpers.createTestRepo()
         self.state = tb3.repostate.RepoState('linux', 'master', self.testdir)
@@ -48,65 +59,38 @@ class TestHeadScheduler(TestScheduler):
         #self._show_log(self.head)
         self.scheduler = tb3.scheduler.HeadScheduler('linux', 'master', self.testdir)
         self.state.set_last_good(self.preb1)
-        proposals = self.scheduler.get_proposals(datetime.datetime.now())
-        self.assertEqual(len(proposals), 9)
-        proposals = sorted(proposals, key = lambda proposal: -proposal.score)
-        #self._show_proposals(proposals)
-        best_proposal = proposals[0]
+        now = datetime.datetime.now()
+        best_proposal = self._get_best_proposal(self.scheduler, now, 'commit 9', 9, True)
         self.assertEqual(best_proposal.scheduler, 'HeadScheduler')
         self.assertEqual(best_proposal.commit, self.head)
         self.assertEqual(best_proposal.score, 9)
-        for idx in range(len(proposals)-1):
-            self.assertEqual(self.git('merge-base', '--is-ancestor', proposals[idx+1].commit, proposals[idx].commit, _ok_code=[0,1]).exit_code, 0)
-        self.updater.set_scheduled(self.head, 'box', datetime.timedelta(hours=2))
-        proposals = self.scheduler.get_proposals(datetime.datetime.now())
-        self.assertEqual(len(proposals), 9)
-        #self._show_proposals(proposals)
-        proposals = sorted(proposals, key = lambda proposal: -proposal.score)
-        best_proposal = proposals[0]
+        self.updater.set_scheduled(best_proposal.commit, 'box', datetime.timedelta(hours=2))
+        best_proposal = self._get_best_proposal(self.scheduler, now, 'commit 5', 9, False)
         self.assertEqual(best_proposal.scheduler, 'HeadScheduler')
         precommits = self.scheduler.count_commits(self.preb1, best_proposal.commit)
         postcommits = self.scheduler.count_commits(best_proposal.commit, self.head)
         self.assertLessEqual(abs(precommits-postcommits),1)
         self.updater.set_scheduled(best_proposal.commit, 'box', datetime.timedelta(hours=2))
         last_proposal = best_proposal
-        proposals = self.scheduler.get_proposals(datetime.datetime.now())
-        self.assertEqual(len(proposals), 9)
-        #self._show_proposals(proposals)
-        proposals = sorted(proposals, key = lambda proposal: -proposal.score)
-        best_proposal = proposals[0]
-        self.assertEqual(best_proposal.scheduler, 'HeadScheduler')
+        best_proposal = self._get_best_proposal(self.scheduler, now, 'commit 2', 9, False)
     def test_with_should_have_finished(self):
         #self._show_log(self.head)
         self.scheduler = tb3.scheduler.HeadScheduler('linux', 'master', self.testdir)
         self.state.set_last_good(self.preb1)
-        proposals = self.scheduler.get_proposals(datetime.datetime.now())
-        self.assertEqual(len(proposals), 9)
-        proposals = sorted(proposals, key = lambda proposal: -proposal.score)
-        #self._show_proposals(proposals)
-        best_proposal = proposals[0]
+        intwohours = datetime.datetime.now()+datetime.timedelta(hours=2)
+        best_proposal = self._get_best_proposal(self.scheduler, intwohours, 'commit 9', 9, True)
         self.assertEqual(best_proposal.scheduler, 'HeadScheduler')
         self.assertEqual(best_proposal.commit, self.head)
         self.assertEqual(best_proposal.score, 9)
-        for idx in range(len(proposals)-1):
-            self.assertEqual(self.git('merge-base', '--is-ancestor', proposals[idx+1].commit, proposals[idx].commit, _ok_code=[0,1]).exit_code, 0)
-        self.updater.set_scheduled(self.head, 'box', datetime.timedelta(hours=4))
-        proposals = self.scheduler.get_proposals(datetime.datetime.now()+datetime.timedelta(hours=2))
-        self.assertEqual(len(proposals), 9)
-        #self._show_proposals(proposals)
-        proposals = sorted(proposals, key = lambda proposal: -proposal.score)
-        best_proposal = proposals[0]
+        self.updater.set_scheduled(best_proposal.commit, 'box', datetime.timedelta(hours=4))
+        best_proposal = self._get_best_proposal(self.scheduler, intwohours, 'commit 5', 9, False)
         self.assertEqual(best_proposal.scheduler, 'HeadScheduler')
         precommits = self.scheduler.count_commits(self.preb1, best_proposal.commit)
         postcommits = self.scheduler.count_commits(best_proposal.commit, self.head)
         self.assertLessEqual(abs(precommits-postcommits),1)
         self.updater.set_scheduled(best_proposal.commit, 'box', datetime.timedelta(hours=4))
         last_proposal = best_proposal
-        proposals = self.scheduler.get_proposals(datetime.datetime.now()+datetime.timedelta(hours=2))
-        self.assertEqual(len(proposals), 9)
-        #self._show_proposals(proposals)
-        proposals = sorted(proposals, key = lambda proposal: -proposal.score)
-        best_proposal = proposals[0]
+        best_proposal = self._get_best_proposal(self.scheduler, intwohours, 'commit 3', 9, False)
         self.assertEqual(best_proposal.scheduler, 'HeadScheduler')
  
 class TestBisectScheduler(TestScheduler):
@@ -115,18 +99,15 @@ class TestBisectScheduler(TestScheduler):
         self.state.set_first_bad(self.postb2)
         self.state.set_last_bad(self.postb2)
         self.scheduler = tb3.scheduler.BisectScheduler('linux', 'master', self.testdir)
-        proposals = self.scheduler.get_proposals(datetime.datetime.now())
-        self.assertEqual(len(proposals), 8)
-        best_proposal = proposals[0]
-        for proposal in proposals:
-            if proposal.score > best_proposal.score:
-                best_proposal = proposal
+        best_proposal = self._get_best_proposal(self.scheduler, datetime.datetime.now(), 'commit 4', 8, False)
         self.assertEqual(best_proposal.scheduler, 'BisectScheduler')
         self.git('merge-base', '--is-ancestor', self.preb1, best_proposal.commit)
         self.git('merge-base', '--is-ancestor', best_proposal.commit, self.postb2)
         precommits = self.scheduler.count_commits(self.preb1, best_proposal.commit)
         postcommits = self.scheduler.count_commits(best_proposal.commit, self.postb2)
         self.assertLessEqual(abs(precommits-postcommits),1)
+        self.updater.set_scheduled(best_proposal.commit, 'box', datetime.timedelta(hours=4))
+        best_proposal = self._get_best_proposal(self.scheduler, datetime.datetime.now(), 'commit 6', 8, False)
 
 class TestMergeScheduler(TestScheduler):
     def test_get_proposal(self):
