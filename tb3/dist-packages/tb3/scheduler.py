@@ -72,7 +72,7 @@ class HeadScheduler(Scheduler):
         if not last_build is None:
             commits = self.get_commits(last_build, head)
             for commit in commits:
-                proposals.append(self.make_proposal(1-1/((len(commits)-float(commit[0]))**2+1), commit[1]))
+                proposals.append(self.make_proposal(1-1/((len(commits)-0.5-float(commit[0]))**2+1), commit[1]))
             reduce_all = self.dampen_running_commits(commits, proposals, time)
         else:
             proposals.append(self.make_proposal(float(1), head))
@@ -92,7 +92,7 @@ class BisectScheduler(Scheduler):
         for commit in commits:
             proposals.append(self.make_proposal(1.0, commit[1]))
         for idx in range(len(proposals)):
-            proposals[idx].score *= (1-1/(float(idx)**2+1)) * (1-1/((float(idx+1-len(proposals)))**2+1))
+            proposals[idx].score *= (1-1/(float(idx+0.5)**2+1)) * (1-1/((float(idx+0.5-len(proposals)))**2+1))
         reduce_all = self.dampen_running_commits(commits, proposals, time)
         self.norm_results(proposals, reduce_all)
         return proposals
