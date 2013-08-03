@@ -151,7 +151,7 @@ class RepoStateUpdater:
                 rangestate = last_bad_state
                 if last_build == last_good:
                     rangestate = last_good_state
-                self.repohistory.update_inner_range_state(last_build, commit, CommitState(rangestate), ['GOOD', 'BAD'])
+                self.repohistory.update_inner_range_state(last_build, commit, CommitState(rangestate), ['GOOD', 'BAD', 'BREAKING'])
             else:
                 first_bad = self.repostate.get_first_bad()
                 assert(self.git('merge-base', '--is-ancestor', last_good, commit, _ok_code=[0,1]).exit_code == 0)
@@ -159,7 +159,7 @@ class RepoStateUpdater:
                 assume_range = (last_good, commit)
                 if forward:
                     assume_range = (commit, first_bad)
-                self.repohistory.update_inner_range_state(assume_range[0], assume_range[1], CommitState(bisect_state), ['GOOD', 'BAD'])
+                self.repohistory.update_inner_range_state(assume_range[0], assume_range[1], CommitState(bisect_state), ['GOOD', 'BAD', 'BREAKING'])
     def __finalize_bisect(self):
         (first_bad, last_bad) = (self.repostate.get_first_bad(), self.repostate.get_last_bad())
         if not first_bad:
