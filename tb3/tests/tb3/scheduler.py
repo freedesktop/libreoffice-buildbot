@@ -19,6 +19,9 @@ import tb3.scheduler
 import tb3.repostate
 
 class TestScheduler(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestScheduler, self).__init__(*args, **kwargs)
+        self.testrepomultiplier = 1
     def __resolve_ref(self, refname):
         return self.git('show-ref', refname).split(' ')[0]
     def _show_log(self, commit):
@@ -41,7 +44,7 @@ class TestScheduler(unittest.TestCase):
         self.assertRegex(commit_msg, expected_message)
         return proposals[0]
     def setUp(self):
-        (self.testdir, self.git) = helpers.createTestRepo()
+        (self.testdir, self.git) = helpers.createTestRepo(self.testrepomultiplier)
         self.state = tb3.repostate.RepoState('linux', 'master', self.testdir)
         self.repohistory = tb3.repostate.RepoHistory('linux', self.testdir)
         self.updater = tb3.repostate.RepoStateUpdater('linux', 'master', self.testdir)
@@ -108,6 +111,101 @@ class TestBisectScheduler(TestScheduler):
         self.assertLessEqual(abs(precommits-postcommits),1)
         self.updater.set_scheduled(best_proposal.commit, 'box', datetime.timedelta(hours=4))
         best_proposal = self._get_best_proposal(self.scheduler, datetime.datetime.now(), 'commit [36]', 8, False)
+
+class TestBisectRuns(TestScheduler):
+    def __init__(self, *args, **kwargs):
+        super(TestBisectRuns, self).__init__(*args, **kwargs)
+        self.testrepomultiplier = 10
+    def __resolve_ref(self, refname):
+        return self.git('show-ref', refname).split(' ')[0]
+    def __is_pre_postb2(self, commit):
+        if commit == self.postb2:
+            return False
+        return self.git('merge-base', '--is-ancestor', commit, self.postb2, _ok_code=[0,1]).exit_code == 0
+    def __get_fake_buildresult(self, commit):
+        if self.__is_pre_postb2(commit):
+            return 'GOOD'
+        return 'BAD'
+    def __get_all_commits(self):
+        return self.git('rev-list', '%s..%s' % (self.preb1, self.head)).strip('\n').split('\n')
+    def __get_states(self, commit):
+        real_state = self.__get_fake_buildresult(commit)
+        stored_state = self.repohistory.get_commit_state(commit).state
+        return (real_state, stored_state)
+    def __check_consisitency(self):
+        for commit in self.__get_all_commits():
+            real_state = self.__get_fake_buildresult(commit)
+            stored_state = self.repohistory.get_commit_state(commit)
+            if real_state == 'GOOD':
+                if not stored_state.state in ['UNKNOWN', 'GOOD', 'ASSUMED_GOOD', 'POSSIBLY_BREAKING']:
+                    print('%s is really %s, but stored as %s' % (commit, real_state, stored_state.state))
+            else:
+                if not stored_state.state in ['UNKNOWN', 'BAD', 'POSSIBLY_BREAKING', 'BREAKING', 'ASSUMED_BAD']:
+                    print('%s is really %s, but stored as %s' % (commit, real_state, stored_state.state))
+        (real_state, stored_state) = self.__get_states(self.preb1)
+        self.assertIn(real_state, ['GOOD'])
+        self.assertIn(stored_state, ['GOOD'])
+        if self.preb1 != self.state.get_last_good():
+            commits = self.git('rev-list', '%s..%s^' % (self.preb1, self.state.get_last_good())).strip('\n').split('\n')
+            for commit in self.git('rev-list', '%s..%s^' % (self.preb1, self.state.get_last_good())).strip('\n').split('\n'):
+                if len(commit) == 40:
+                    (real_state, stored_state) = self.__get_states(commit)
+                    self.assertIn(real_state, ['GOOD'])
+                    self.assertIn(stored_state, ['ASSUMED_GOOD', 'GOOD'])
+        (real_state, stored_state) = self.__get_states(self.state.get_last_good())
+        self.assertIn(real_state, ['GOOD'])
+        self.assertIn(stored_state, ['GOOD'])
+        for commit in self.git('rev-list', '%s..%s^' % (self.state.get_last_good(), self.postb2)).strip('\n').split('\n'):
+            if len(commit) == 40:
+                (real_state, stored_state) = self.__get_states(commit)
+                self.assertIn(real_state, ['GOOD'])
+                self.assertIn(stored_state, ['POSSIBLY_BREAKING'])
+        (real_state, stored_state) = self.__get_states(self.postb2)
+        self.assertIn(real_state, ['BAD'])
+        self.assertIn(stored_state, ['POSSIBLY_BREAKING', 'BAD', 'BREAKING'])
+        commits = self.git('rev-list', '%s..%s^' % (self.postb2, self.state.get_first_bad())).strip('\n').split('\n')
+        for commit in commits:
+            if len(commit) == 40:
+                (real_state, stored_state) = self.__get_states(commit)
+                self.assertIn(real_state, ['BAD'])
+                self.assertIn(stored_state, ['POSSIBLY_BREAKING'])
+        (real_state, stored_state) = self.__get_states(self.state.get_first_bad())
+        self.assertIn(real_state, ['BAD'])
+        self.assertIn(stored_state, ['BAD', 'BREAKING'])
+        if self.state.get_first_bad() != self.head:
+            for commit in self.git('rev-list', '%s..%s' % (self.state.get_first_bad(), self.head)).strip('\n').split('\n'):
+                (real_state, stored_state) = self.__get_states(commit)
+                self.assertIn(real_state, ['BAD'])
+                self.assertIn(stored_state, ['BAD', 'ASSUMED_BAD'])
+        (real_state, stored_state) = self.__get_states(self.head)
+        self.assertIn(real_state, ['BAD'])
+        self.assertIn(stored_state, ['BAD']) 
+    def test_bisect_regression(self):
+        self.updater.set_finished(self.preb1, 'testbuilder', self.__get_fake_buildresult(self.preb1), 'foo')
+        self.updater.set_finished(self.head, 'testbuilder', self.__get_fake_buildresult(self.head), 'foo')
+        self.state.set_last_good(self.preb1)
+        self.state.set_first_bad(self.head)
+        self.state.set_last_bad(self.head)
+        self.scheduler = tb3.scheduler.BisectScheduler('linux', 'master', self.testdir)
+        now = datetime.datetime.now()
+        duration = datetime.timedelta(hours=1)
+        all_commits = self.scheduler.get_commits(self.preb1, self.head)
+        for step in range(100):
+            try:
+                proposals = self.scheduler.get_proposals(now)
+                first_commit = proposals[0].commit
+                self.updater.set_scheduled(first_commit, 'box', duration)
+                proposals = self.scheduler.get_proposals(now)
+                second_commit = proposals[0].commit
+                self.updater.set_scheduled(second_commit, 'box', duration)
+                self.updater.set_finished(first_commit, 'testbuilder', self.__get_fake_buildresult(first_commit), 'foo')
+                self.updater.set_finished(second_commit, 'testbuilder', self.__get_fake_buildresult(second_commit), 'foo')
+                self.__check_consisitency()
+            except IndexError:
+                pass
+        (real_state, stored_state) = self.__get_states(self.postb2)
+        self.assertIn(real_state, ['BAD'])
+        self.assertIn(stored_state, ['BREAKING'])
 
 class TestMergeScheduler(TestScheduler):
     def test_get_proposal(self):

@@ -154,6 +154,7 @@ class TestRepoUpdater(unittest.TestCase):
         self.updater.set_finished(self.head, 'testbuilder', 'BAD', 'foo')
         self.assertEqual(self.history.get_commit_state('%s^' % self.head).state, 'ASSUMED_BAD')
 
+
 if __name__ == '__main__':
     unittest.main()
 # vim: set et sw=4 ts=4:
