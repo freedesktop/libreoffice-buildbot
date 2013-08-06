@@ -132,51 +132,42 @@ class TestBisectRuns(TestScheduler):
         real_state = self.__get_fake_buildresult(commit)
         stored_state = self.repohistory.get_commit_state(commit).state
         return (real_state, stored_state)
+    def __get_commit_range(self, begin, end):
+        if begin == end:
+            return []
+        commits = self.git('rev-list', '%s..%s' % (begin, end)).strip('\n').split('\n')
+        return [commit for commit in commits if len(commit) == 40]
+
+        
     def __check_consisitency(self):
-        for commit in self.__get_all_commits():
-            real_state = self.__get_fake_buildresult(commit)
-            stored_state = self.repohistory.get_commit_state(commit)
-            if real_state == 'GOOD':
-                if not stored_state.state in ['UNKNOWN', 'GOOD', 'ASSUMED_GOOD', 'POSSIBLY_BREAKING']:
-                    print('%s is really %s, but stored as %s' % (commit, real_state, stored_state.state))
-            else:
-                if not stored_state.state in ['UNKNOWN', 'BAD', 'POSSIBLY_BREAKING', 'BREAKING', 'ASSUMED_BAD']:
-                    print('%s is really %s, but stored as %s' % (commit, real_state, stored_state.state))
         (real_state, stored_state) = self.__get_states(self.preb1)
         self.assertIn(real_state, ['GOOD'])
         self.assertIn(stored_state, ['GOOD'])
-        if self.preb1 != self.state.get_last_good():
-            commits = self.git('rev-list', '%s..%s^' % (self.preb1, self.state.get_last_good())).strip('\n').split('\n')
-            for commit in self.git('rev-list', '%s..%s^' % (self.preb1, self.state.get_last_good())).strip('\n').split('\n'):
-                if len(commit) == 40:
-                    (real_state, stored_state) = self.__get_states(commit)
-                    self.assertIn(real_state, ['GOOD'])
-                    self.assertIn(stored_state, ['ASSUMED_GOOD', 'GOOD'])
+        for commit in self.__get_commit_range(self.preb1, self.state.get_last_good()):
+            (real_state, stored_state) = self.__get_states(commit)
+            self.assertIn(real_state, ['GOOD'])
+            self.assertIn(stored_state, ['ASSUMED_GOOD', 'GOOD'])
         (real_state, stored_state) = self.__get_states(self.state.get_last_good())
         self.assertIn(real_state, ['GOOD'])
         self.assertIn(stored_state, ['GOOD'])
-        for commit in self.git('rev-list', '%s..%s^' % (self.state.get_last_good(), self.postb2)).strip('\n').split('\n'):
-            if len(commit) == 40:
-                (real_state, stored_state) = self.__get_states(commit)
-                self.assertIn(real_state, ['GOOD'])
-                self.assertIn(stored_state, ['POSSIBLY_BREAKING'])
+        for commit in self.__get_commit_range(self.state.get_last_good(), "%s^" % self.postb2):
+            (real_state, stored_state) = self.__get_states(commit)
+            self.assertIn(real_state, ['GOOD'])
+            self.assertIn(stored_state, ['POSSIBLY_BREAKING'])
         (real_state, stored_state) = self.__get_states(self.postb2)
         self.assertIn(real_state, ['BAD'])
         self.assertIn(stored_state, ['POSSIBLY_BREAKING', 'BAD', 'BREAKING'])
-        commits = self.git('rev-list', '%s..%s^' % (self.postb2, self.state.get_first_bad())).strip('\n').split('\n')
-        for commit in commits:
-            if len(commit) == 40:
-                (real_state, stored_state) = self.__get_states(commit)
-                self.assertIn(real_state, ['BAD'])
-                self.assertIn(stored_state, ['POSSIBLY_BREAKING'])
+        for commit in self.__get_commit_range(self.postb2, "%s^" % self.state.get_first_bad()):
+            (real_state, stored_state) = self.__get_states(commit)
+            self.assertIn(real_state, ['BAD'])
+            self.assertIn(stored_state, ['POSSIBLY_BREAKING'])
         (real_state, stored_state) = self.__get_states(self.state.get_first_bad())
         self.assertIn(real_state, ['BAD'])
         self.assertIn(stored_state, ['BAD', 'BREAKING'])
-        if self.state.get_first_bad() != self.head:
-            for commit in self.git('rev-list', '%s..%s' % (self.state.get_first_bad(), self.head)).strip('\n').split('\n'):
-                (real_state, stored_state) = self.__get_states(commit)
-                self.assertIn(real_state, ['BAD'])
-                self.assertIn(stored_state, ['BAD', 'ASSUMED_BAD'])
+        for commit in self.__get_commit_range(self.state.get_first_bad(), self.head):
+            (real_state, stored_state) = self.__get_states(commit)
+            self.assertIn(real_state, ['BAD'])
+            self.assertIn(stored_state, ['BAD', 'ASSUMED_BAD'])
         (real_state, stored_state) = self.__get_states(self.head)
         self.assertIn(real_state, ['BAD'])
         self.assertIn(stored_state, ['BAD']) 
