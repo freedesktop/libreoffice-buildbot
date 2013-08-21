@@ -691,6 +691,10 @@ report_to_tinderbox()
     local gzlog=
     local message_content=
 
+    if [ -z "${TB_TINDERBOX_BRANCH}" ] ; then
+        TB_TINDERBOX_BRANCH=$(determine_default_tinderbox_branch "${TB_BRANCH?}")
+    fi
+
     start_line="tinderbox: starttime: $(epoch_from_utc ${start_date})"
     message_content="
 tinderbox: administrator: ${TB_OWNER?}
