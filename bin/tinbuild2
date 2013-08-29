@@ -12,6 +12,7 @@ BIN_DIR=$(dirname "$0")
 PAUSE_SECONDS=$((15*60))
 PUSH_NIGHTLIES=0
 PUSH_TO_BIBISECT_REPO=0
+SYMBOLS_DIR=
 ARTIFACTDIR=
 SEND_MAIL="all"
 LOCK=1
@@ -118,6 +119,7 @@ Options:
    -n           run with nice, can be combined with -i
    -p <profile> profile to use.
    -r <bandwidth> push the build nightly at a rate limited by <badnwidth> (in kB/s)
+   -pdb <dir>   if -r is used, and update and upload also .pdb symbol store (Windows)
    -t           run the tests after a sucessfull build
    -v           verbose. print more progress messages
    -w           specify minimum wait between build attempt
@@ -371,6 +373,18 @@ while [ "${1}" != "" ]; do
             else
                 PUSH_NIGHTLIES=1
                 BANDWIDTH="${arg}"
+            fi
+            ;;
+        -pdb)  # pdb symbol store
+            if [ -z "${has_arg}" ] ; then
+                shift;
+                arg="$1"
+            fi
+            if [ -z "${arg}" ] ; then
+                echo "Missing argument for option $parm" 1>&2
+                exit -1
+            else
+                SYMBOLS_DIR="${arg}"
             fi
             ;;
         -s)  # where to stage the build in case of -z with upload

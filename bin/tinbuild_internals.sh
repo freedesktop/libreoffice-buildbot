@@ -635,7 +635,11 @@ push_nightly()
         fi
         [ $V ] && echo "Push Nightly builds"
         prepare_upload_manifest
-        ${BIN_DIR?}/push_nightlies.sh $push_opts -t "$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")" -n "$TINDER_NAME" -l "$BANDWIDTH"
+        if [ "$SYMBOLS_DIR" ] ; then
+            ${BIN_DIR?}/push_nightlies.sh $push_opts -t "$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")" -n "$TINDER_NAME" -l "$BANDWIDTH" -p "$SYMBOLS_DIR"/${B}
+        else
+            ${BIN_DIR?}/push_nightlies.sh $push_opts -t "$(cat "${METADATA_DIR?}/tb_${B}_current-git-timestamp.log")" -n "$TINDER_NAME" -l "$BANDWIDTH"
+        fi
         # If we had a failure in pushing the build up, return
         # immediately (making sure we do not mark this build as the
         # last uploaded daily build).
