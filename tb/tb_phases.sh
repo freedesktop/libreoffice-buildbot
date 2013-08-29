@@ -21,7 +21,14 @@ pre_autogen()
 
 canonical_do_autogen()
 {
+local current_timestamp=
+
     if [ "${R}" = "0" ] ; then
+        export EXTRA_BUILDID=
+        if [ "${TB_TYPE?}" = "tb" ] ; then
+            current_timestamp=$(sed -e "s/ /_/" "${TB_METADATA_DIR?}/${P?}_current-git-timestamp.log")
+            export EXTRA_BUILDID="TinderBox: ${TB_NAME?}, Branch:${TB_BRANCH?}, Time: $current_timestamp"
+        fi
         if ! ${TB_NICE} ${TB_GIT_DIR?}/autogen.sh > "tb_${P?}_autogen.log" 2>&1 ; then
             tb_REPORT_LOG=tb_${P?}_autogen.log
             tb_REPORT_MSGS="autogen/configure failed - error is:"
@@ -77,17 +84,10 @@ canonical_post_clean()
 
 canonical_do_make()
 {
-local current_timestamp=
 local optdir=""
-local extra_buildid=""
 
     tb_OPT_DIR=""
-    if [ "${TB_TYPE?}" = "tb" ] ; then
-        current_timestamp=$(sed -e "s/ /_/" "${TB_METADATA_DIR?}/${P?}_current-git-timestamp.log")
-        extra_buildid="TinderBox: ${TB_NAME?}, Branch:${TB_BRANCH?}, Time: $current_timestamp"
-    fi
     if [ "${R}" = "0" ] ; then
-        export EXTRA_BUILDID="$extra_buildid"
         # we for MAKE_RESTARTS=1 because 1/ we know thta Makefile is up to date
         # and 2/ the 'restart' mechanism in make is messed-up by the fact that we trap SIGINT
         if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} MAKE_RESTARTS=1  -sr > "tb_${P?}_build.log" 2>&1 ; then
