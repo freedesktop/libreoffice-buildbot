@@ -542,7 +542,7 @@ push_nightly()
     stage="./push"
     tag="${P?}~${upload_time?}"
 
-    for file in $(find . -name "*.dmg" -o -name '*.apk' -o -name "Lib*.tar.gz" -o -name "Lib*.exe" -o -name "Lib*.zip" -o -path '*/native/install/*.msi' | grep -v "/push/")
+    for file in $(find . -name "*.dmg" -o -name '*.apk' -o -name "Lib*.tar.gz" -o -name "Lib*.exe" -o -name "Lib*.zip" -o -path '*/installation/*/msi/install/*.msi' | grep -v "/push/")
     do
         target=$(basename $file)
         target="${tag}_${target}"
