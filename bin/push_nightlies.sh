@@ -90,7 +90,7 @@ else
 fi
 
 echo "find packages"
-for file in $(find . -name "*.dmg" -o -name '*.apk' -o -name "Lib*O*.tar.gz" -o -name "Lib*O*.exe" -o -name "Lib*O*.zip" -o -path '*/native/install/*.msi' | grep -v "/push/")
+for file in $(find . -name "*.dmg" -o -name '*.apk' -o -name "Lib*O*.tar.gz" -o -name "Lib*O*.exe" -o -name "Lib*O*.zip" -o -path '*/installation/*/msi/install/*.msi' | grep -v "/push/")
 do
 	target=$(basename $file)
 	target="${tag}_${target}"
