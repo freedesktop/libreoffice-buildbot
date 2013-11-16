@@ -530,11 +530,13 @@ push_nightly()
 
     if [ -f config_host.mk ] ; then
         inpath=$(grep INPATH= config_host.mk | sed -e "s/.*=//")
-    fi
-    if [ -z "${inpath?}" -o  -d "instsetoo_native/${inpath?}" ] ; then
-        pack_loc="instsetoo_native/${inpath?}"
+        if [ -n "${inpath?}" -a -d "instsetoo_native/${inpath?}" ] ; then
+            pack_loc="instsetoo_native/${inpath?}"
+        else
+            pack_loc="workdir"
+        fi
     else
-        pack_loc="workdir"
+        pack_loc="instsetoo_native/${inpath?}"
     fi
     pushd "${pack_loc?}" > /dev/null
     rm -fr push
