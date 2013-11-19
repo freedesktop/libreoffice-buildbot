@@ -792,8 +792,8 @@ run_gerrit_task()
     # if prepare repor failed R is no 0 anymore
     if [ "${R}" == 0 ] ; then
         # gerrit build are not incremental
-        # always use all the phases
-        local phase_list="autogen clean make test push"
+        # always use all the phases and cleanup after yourself
+        local phase_list="autogen clean make test push clean"
 
         pushd ${TB_BUILD_DIR?} > /dev/null || die "Cannot cd to build dir : ${TB_BUILD_DIR?}"
 
