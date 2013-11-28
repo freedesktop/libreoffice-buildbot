@@ -47,6 +47,7 @@ VALGRIND_PARAMS="$2"
 
 TESTDATE=$(date --rfc-3339=second)
 
+test ! -f "$OFFICEBIN" && exit 1
 LOVERSION="$(get_lo_version "$OFFICEBIN")"
 DT=$(echo "$TESTDATE" | tr -s '\ \+\-\:' "_")
 
