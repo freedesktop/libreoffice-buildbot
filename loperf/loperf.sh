@@ -55,10 +55,12 @@ CG_LOG="logs/callgrind/cg-lo-$DT-$LOVERSION"
 PF_LOG="logs/loperf/pf-lo-$DT-$LOVERSION.log"
 ERR_LOG="logs/error.log"
 CSV_LOG_DIR="logs/csv/"
+CSV_HISTORY="logs/history.csv"
 
 mkdir -p logs/callgrind > /dev/null 2>&1
 mkdir -p logs/loperf > /dev/null 2>&1
 mkdir -p "$CSV_LOG_DIR" > /dev/null 2>&1
+test -f "$CSV_HISTORY" || echo -e "date\ttime\tgit-commit\toffload$(ls docs/* | sed s%docs/%\\t%g | tr -d '\n')" > "$CSV_HISTORY"
 
 function launch {
 
@@ -106,6 +108,7 @@ done
 # CEst = Ir + 10 Bm + 10 L1m + 20 Ge + 100 L2m + 100 LLm
 CEst=$(expr ${offload[0]} + 10 \* $(expr ${offload[12]} + ${offload[10]}) + 10 \* $(expr ${offload[3]} + ${offload[4]} + ${offload[5]}) + 20 \* ${offload[13]} + 100 \* $(expr ${offload[6]} + ${offload[7]} + ${offload[8]}))
 echo $'\t'$CEst >> "$CSV_FN"
+echo -n "$TESTDATE"$'\t'"$LOVERSION"$'\t'$CEst >> "$CSV_HISTORY"
 
 # Populate offload to PF_LOG
 echo " Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw Bc Bcm Bi Bim Ge" | tee -a "$PF_LOG"
@@ -144,21 +147,26 @@ find docs -type f |  grep -Ev "\/\." | while read f; do
     echo "Load: $f" | tee -a "$PF_LOG"
     echo "$onload_str" | tee -a "$PF_LOG"
 
+    # Populate onload delta to PF_LOG
+    for i in $(seq 0 13); do
+        onload_delta[$i]=$(expr ${onload[$i]} - ${offload[$i]})
+        echo -n ${onload_delta[$i]} " " | tee -a "$PF_LOG"
+    done
+
     #Construct the csv file name
     CSV_FN="$CSV_LOG_DIR"/"onload-${f#docs\/}".csv
 
     echo -n "$TESTDATE"$'\t'"$LOVERSION" >> "$CSV_FN"
 
-    # Populate onload delta to PF_LOG and CSV_FN
+    # Populate onload to CSV_FN
     for i in $(seq 0 13); do
-        onload_delta[$i]=$(expr ${onload[$i]} - ${offload[$i]})
-        echo -n ${onload_delta[$i]} " " | tee -a "$PF_LOG"
-        echo -n $'\t'${onload_delta[$i]} >> "$CSV_FN"
+        echo -n $'\t'${onload[$i]} >> "$CSV_FN"
     done
 
     # CEst = Ir + 10 Bm + 10 L1m + 20 Ge + 100 L2m + 100 LLm
-    CEst=$(expr ${onload_delta[0]} + 10 \* $(expr ${onload_delta[12]} + ${onload_delta[10]}) + 10 \* $(expr ${onload_delta[3]} + ${onload_delta[4]} + ${onload_delta[5]}) + 20 \* ${onload_delta[13]} + 100 \* $(expr ${onload_delta[6]} + ${onload_delta[7]} + ${onload_delta[8]}))
+    CEst=$(expr ${onload[0]} + 10 \* $(expr ${onload[12]} + ${onload[10]}) + 10 \* $(expr ${onload[3]} + ${onload[4]} + ${onload[5]}) + 20 \* ${onload[13]} + 100 \* $(expr ${onload[6]} + ${onload[7]} + ${onload[8]}))
     echo $'\t'$CEst >> "$CSV_FN"
+    echo -n $'\t'$CEst >> "$CSV_HISTORY"
 
     echo | tee -a "$PF_LOG"
     echo | tee -a "$PF_LOG"
