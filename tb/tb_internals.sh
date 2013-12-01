@@ -495,6 +495,54 @@ push_bibisect()
     fi
 }
 
+# Add pdb files for binaries of the given extension (exe,dll)
+# and type (Library/Executable) to the given list.
+add_pdb_files()
+{
+    extension=$1
+    type=$2
+    list=$3
+    find instdir/ -name "*.${extension}" | while read file
+    do
+        filename=`basename $file`
+        pdb="workdir/LinkTarget/${type}/${filename}.pdb"
+        if test -f "$pdb"; then
+            echo `cygpath -w $pdb` >>$list
+        fi
+    done
+
+}
+
+# upload .pdb symbols (for Windows remote debugging server)
+push_symbols()
+{
+    [ -n "$TB_SYMBOLS_DIR" ] || return 1
+
+    local PULL_TIME="$(cat "${TB_METADATA_DIR?}/${P?}_current-git-timestamp.log")"
+
+    pushd "$TB_BUILD_DIR" >/dev/null
+    ssh upload@gimli.documentfoundation.org "mkdir -p \"/srv/www/dev-builds.libreoffice.org/daily/${TB_BRANCH?}/${TB_NAME?}/symbols\"" || return 1
+    echo "update symbols"
+    rm -f symbols-pdb-list.txt
+    mkdir -p "${TB_SYMBOLS_DIR}"
+    add_pdb_files dll Library symbols-pdb-list.txt
+    add_pdb_files exe Executable symbols-pdb-list.txt
+    "${TB_SYMSTORE}" add /f @symbols-pdb-list.txt /s `cygpath -w $TB_SYMBOLS_DIR` /t LibreOffice /v "$PULL_TIME"
+    rm symbols-pdb-list.txt
+
+    # The maximum number of versions of symbols to keep, older revisions will be removed.
+    # Unless the .dll/.exe changes, the .pdb should be shared, so with incremental tinderbox several revisions should
+    # not be that space-demanding.
+    KEEP_MAX_REVISIONS=5
+    to_remove=`ls -1 ${TB_SYMBOLS_DIR}/000Admin | grep -v '\.txt' | grep -v '\.deleted' | sort | head -n -${KEEP_MAX_REVISIONS}`
+    for revision in $to_remove; do
+        "${TB_SYMSTORE}" del /i ${revision} /s `cygpath -w $TB_SYMBOLS_DIR`
+    done
+    popd >/dev/null
+
+    rsync --bwlimit=${TB_BANDWIDTH_LIMIT} --delete -avzP -e ssh "${TB_SYMBOLS_DIR}/" "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${TB_BRANCH?}/${TB_NAME?}/symbols/" || exit 1
+}
+
 push_nightly()
 {
     local curr_day=
@@ -557,6 +605,12 @@ push_nightly()
     fi
     echo "$curr_day" > "${TB_METADATA_DIR?}/${P?}_last-upload-day.txt"
     popd  > /dev/null # pack_loc
+
+    # Push pdb symbols too if needed
+    if [ "$TB_PUSH_SYMBOLS" = "1" ] ; then
+        push_symbols
+    fi
+
     return 0
 }
 
@@ -1126,6 +1180,9 @@ set_factory_default()
     TB_BIBISECT=0
     TB_PUSH_NIGHTLIES=0
     TB_BANDWIDTH_LIMIT=2000
+
+    TB_SYMBOLS_DIR="${HOME}/symbols"
+    TB_SYMSTORE="/cygdrive/c/Program Files/Debugging Tools for Windows (x64)/symstore.exe"
 
     tb_ONE_SHOT=
     tb_SEND_MAIL="none"
