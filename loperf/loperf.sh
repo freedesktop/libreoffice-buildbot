@@ -178,9 +178,9 @@ echo "" >> "$CSV_HISTORY"
 find "logs/callgrind" -type f -mtime +10 -exec rm {} \;
 
 # Regression check
-echo "Regression Status:" | tee -a "$PF_LOG"
-echo "-----------------" | tee -a "$PF_LOG"
-find $(dirname $(readlink -f "$PF_LOG")) -type f | grep -v "$PF_LOG" | grep log$ | while read rf; do
-    check_regression "$PF_LOG" "$rf" | tee -a "$PF_LOG"
-done
-grep '^Regression found!$' "$PF_LOG" > /dev/null || echo "Congratulations, no regression found!" | tee -a "$PF_LOG"
+# echo "Regression Status:" | tee -a "$PF_LOG"
+# echo "-----------------" | tee -a "$PF_LOG"
+# find $(dirname $(readlink -f "$PF_LOG")) -type f | grep -v "$PF_LOG" | grep log$ | while read rf; do
+#     check_regression "$PF_LOG" "$rf" | tee -a "$PF_LOG"
+# done
+# grep '^Regression found!$' "$PF_LOG" > /dev/null || echo "Congratulations, no regression found!" | tee -a "$PF_LOG"
