@@ -172,6 +172,7 @@ find docs -type f |  grep -Ev "\/\." | while read f; do
     echo | tee -a "$PF_LOG"
 
 done
+echo "" >> "$CSV_HISTORY"
 
 # Clean old callgrind files
 find "logs/callgrind" -type f -mtime +10 -exec rm {} \;
