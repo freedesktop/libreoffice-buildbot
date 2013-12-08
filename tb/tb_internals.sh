@@ -504,7 +504,7 @@ add_pdb_files()
     list=$3
     find instdir/ -name "*.${extension}" | while read file
     do
-        filename=`basename $file`
+        filename=`basename $file .${extension}`
         pdb="workdir/LinkTarget/${type}/${filename}.pdb"
         if test -f "$pdb"; then
             echo `cygpath -w $pdb` >>$list
