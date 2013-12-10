@@ -60,7 +60,7 @@ CSV_HISTORY="logs/history.csv"
 mkdir -p logs/callgrind > /dev/null 2>&1
 mkdir -p logs/loperf > /dev/null 2>&1
 mkdir -p "$CSV_LOG_DIR" > /dev/null 2>&1
-test -f "$CSV_HISTORY" || echo -e "date\ttime\tgit-commit\toffload$(ls docs/* | sed s%docs/%\\t%g | tr -d '\n')" > "$CSV_HISTORY"
+test -f "$CSV_HISTORY" || echo -e "time,git-commit,offload$(ls docs/* | sed s%docs/%,%g | tr -d '\n')" > "$CSV_HISTORY"
 
 function launch {
 
@@ -108,7 +108,7 @@ done
 # CEst = Ir + 10 Bm + 10 L1m + 20 Ge + 100 L2m + 100 LLm
 CEst=$(expr ${offload[0]} + 10 \* $(expr ${offload[12]} + ${offload[10]}) + 10 \* $(expr ${offload[3]} + ${offload[4]} + ${offload[5]}) + 20 \* ${offload[13]} + 100 \* $(expr ${offload[6]} + ${offload[7]} + ${offload[8]}))
 echo $'\t'$CEst >> "$CSV_FN"
-echo -n "$TESTDATE"$'\t'"$LOVERSION"$'\t'$CEst >> "$CSV_HISTORY"
+echo -n "$TESTDATE","$LOVERSION",$CEst >> "$CSV_HISTORY"
 
 # Populate offload to PF_LOG
 echo " Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw Bc Bcm Bi Bim Ge" | tee -a "$PF_LOG"
@@ -166,13 +166,14 @@ find docs -type f |  grep -Ev "\/\." | while read f; do
     # CEst = Ir + 10 Bm + 10 L1m + 20 Ge + 100 L2m + 100 LLm
     CEst=$(expr ${onload[0]} + 10 \* $(expr ${onload[12]} + ${onload[10]}) + 10 \* $(expr ${onload[3]} + ${onload[4]} + ${onload[5]}) + 20 \* ${onload[13]} + 100 \* $(expr ${onload[6]} + ${onload[7]} + ${onload[8]}))
     echo $'\t'$CEst >> "$CSV_FN"
-    echo -n $'\t'$CEst >> "$CSV_HISTORY"
+    echo -n ",$CEst" >> "$CSV_HISTORY"
 
     echo | tee -a "$PF_LOG"
     echo | tee -a "$PF_LOG"
 
 done
 echo "" >> "$CSV_HISTORY"
+$OFFICEBIN --headless --convert-to fods --outdir logs "$CSV_HISTORY"
 
 # Clean old callgrind files
 find "logs/callgrind" -type f -mtime +10 -exec rm {} \;
