@@ -75,84 +75,57 @@ function launch {
     fi
 }
 
-# Do a clean launch
-echo "Start offload pvt..."
-cur_log=$(launch)
-
 # Mapping the data to array:
 #
-# offload[0] -> Ir
-# offload[1] -> Dr
-# offload[2] -> Dw
-# offload[3] -> I1mr
-# offload[4] -> D1mr
-# offload[5] -> D1mw
-# offload[6] -> ILmr
-# offload[7] -> DLmr
-# offload[8] -> DLmw
-# offload[9] -> Bc
-# offload[10] -> Bcm
-# offload[11] -> Bi
-# offload[12] -> Bim
-# offload[13] -> Ge
+# data[0] -> Ir
+# data[1] -> Dr
+# data[2] -> Dw
+# data[3] -> I1mr
+# data[4] -> D1mr
+# data[5] -> D1mw
+# data[6] -> ILmr
+# data[7] -> DLmr
+# data[8] -> DLmw
+# data[9] -> Bc
+# data[10] -> Bcm
+# data[11] -> Bi
+# data[12] -> Bim
+# data[13] -> Ge
 
-offload_str=$(grep '^summary:' "$cur_log" | sed s/"summary: "//)
-offload=($offload_str)
-if test -n "$GZIP"; then gzip "$cur_log" > /dev/null 2>&1; fi
+echo -n "$TESTDATE","$LOVERSION" >> "$CSV_HISTORY"
 
-#Collect data to csv file
-CSV_FN="$CSV_LOG_DIR"/"offload.csv"
-echo -n "$TESTDATE"$'\t'"$LOVERSION" >> "$CSV_FN"
-for i in $(seq 0 13); do
-    echo -n $'\t'${offload[$i]} >> "$CSV_FN"
-done
-# CEst = Ir + 10 Bm + 10 L1m + 20 Ge + 100 L2m + 100 LLm
-CEst=$(expr ${offload[0]} + 10 \* $(expr ${offload[12]} + ${offload[10]}) + 10 \* $(expr ${offload[3]} + ${offload[4]} + ${offload[5]}) + 20 \* ${offload[13]} + 100 \* $(expr ${offload[6]} + ${offload[7]} + ${offload[8]}))
-echo $'\t'$CEst >> "$CSV_FN"
-echo -n "$TESTDATE","$LOVERSION",$CEst >> "$CSV_HISTORY"
+function write_data {
+    cur_log=$(launch "$1")
+
+    data=($(grep '^summary:' "$cur_log" | sed s/"summary: "//))
+    
+    test -n "$GZIP" && gzip "$cur_log" > /dev/null 2>&1
+
+    #Collect data to csv file
+    test -z "$1" && CSV_FN="$CSV_LOG_DIR"/"offload.csv"
+    test -n "$1" && CSV_FN="$CSV_LOG_DIR"/"onload-${1#$DOCUMENTSDIR\/}".csv
+
+    echo -n "$TESTDATE"$'\t'"$LOVERSION" >> "$CSV_FN"
+    for i in $(seq 0 13); do
+        echo -n $'\t'${data[$i]} >> "$CSV_FN"
+    done
+
+    # CEst = Ir + 10 Bm + 10 L1m + 20 Ge + 100 L2m + 100 LLm
+    CEst=$(expr ${data[0]} + 10 \* $(expr ${data[12]} + ${data[10]}) + 10 \* $(expr ${data[3]} + ${data[4]} + ${data[5]}) + 20 \* ${data[13]} + 100 \* $(expr ${data[6]} + ${data[7]} + ${data[8]}))
+    echo $'\t'$CEst >> "$CSV_FN"
+    echo -n ",$CEst" >> "$CSV_HISTORY"
+}
+
+# Do a clean launch
+echo "Start offload pvt..."
+$(write_data "")
 
 # Loaded launch one by one
 echo "Start onload pvt..."
 find $DOCUMENTSDIR -type f |  grep -Ev "\/\." | while read f; do
-    cur_log=$(launch "$f")
-
-    # Mapping the data to array:
-    #
-    # onload[0] -> Ir
-    # onload[1] -> Dr
-    # onload[2] -> Dw
-    # onload[3] -> I1mr
-    # onload[4] -> D1mr
-    # onload[5] -> D1mw
-    # onload[6] -> ILmr
-    # onload[7] -> DLmr
-    # onload[8] -> DLmw
-    # onload[9] -> Bc
-    # onload[10] -> Bcm
-    # onload[11] -> Bi
-    # onload[12] -> Bim
-    # onload[13] -> Ge
-
-    onload_str=$(grep '^summary:' "$cur_log" | sed s/"summary: "//)
-    onload=($onload_str)
-    if test -n "$GZIP"; then gzip "$cur_log" > /dev/null 2>&1; fi
-
-    #Construct the csv file name
-    CSV_FN="$CSV_LOG_DIR"/"onload-${f#$DOCUMENTSDIR\/}".csv
-
-    echo -n "$TESTDATE"$'\t'"$LOVERSION" >> "$CSV_FN"
-
-    # Populate onload to CSV_FN
-    for i in $(seq 0 13); do
-        echo -n $'\t'${onload[$i]} >> "$CSV_FN"
-    done
-
-    # CEst = Ir + 10 Bm + 10 L1m + 20 Ge + 100 L2m + 100 LLm
-    CEst=$(expr ${onload[0]} + 10 \* $(expr ${onload[12]} + ${onload[10]}) + 10 \* $(expr ${onload[3]} + ${onload[4]} + ${onload[5]}) + 20 \* ${onload[13]} + 100 \* $(expr ${onload[6]} + ${onload[7]} + ${onload[8]}))
-    echo $'\t'$CEst >> "$CSV_FN"
-    echo -n ",$CEst" >> "$CSV_HISTORY"
-
+    $(write_data "$f")
 done
+
 echo "" >> "$CSV_HISTORY"
 $OFFICEBIN --headless --convert-to fods --outdir logs "$CSV_HISTORY"
 
