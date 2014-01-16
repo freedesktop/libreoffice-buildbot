@@ -42,6 +42,8 @@ fi
 # Post dependency check
 export OOO_DISABLE_RECOVERY=1
 OFFICEBIN="$1"
+DOCUMENTSDIR="$2"
+test -z "$DOCUMENTSDIR" && echo "missing second parameter: directory with documents to test" && exit 1
 
 TESTDATE=$(date --rfc-3339=second)
 
@@ -58,7 +60,7 @@ CSV_HISTORY="logs/history.csv"
 mkdir -p logs/callgrind > /dev/null 2>&1
 mkdir -p logs/loperf > /dev/null 2>&1
 mkdir -p "$CSV_LOG_DIR" > /dev/null 2>&1
-test -f "$CSV_HISTORY" || echo -e "time,git-commit,offload$(ls docs/* | sed s%docs/%,%g | tr -d '\n')" > "$CSV_HISTORY"
+test -f "$CSV_HISTORY" || echo -e "time,git-commit,offload$(ls $DOCUMENTSDIR/* | sed s%$DOCUMENTSDIR/%,%g | tr -d '\n')" > "$CSV_HISTORY"
 
 function launch {
 
@@ -68,7 +70,7 @@ function launch {
         unset OOO_EXIT_POST_STARTUP
         echo -n "$CG_LOG"-offload.log
     else
-        fn=${1#docs\/}
+        fn=${1#$DOCUMENTSDIR\/}
         ext=${fn##*.}
         valgrind --tool=callgrind --callgrind-out-file="$CG_LOG"-onload-"$fn".log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless --convert-to "$ext" --outdir tmp "$1" > /dev/null 2>&1
         echo -n "$CG_LOG"-onload-"$fn".log
@@ -121,7 +123,7 @@ echo | tee -a "$PF_LOG"
 
 # Loaded launch one by one
 echo "Start onload pvt..."
-find docs -type f |  grep -Ev "\/\." | while read f; do
+find $DOCUMENTSDIR -type f |  grep -Ev "\/\." | while read f; do
     cur_log=$(launch "$f")
 
     # Mapping the data to array:
@@ -155,7 +157,7 @@ find docs -type f |  grep -Ev "\/\." | while read f; do
     done
 
     #Construct the csv file name
-    CSV_FN="$CSV_LOG_DIR"/"onload-${f#docs\/}".csv
+    CSV_FN="$CSV_LOG_DIR"/"onload-${f#$DOCUMENTSDIR\/}".csv
 
     echo -n "$TESTDATE"$'\t'"$LOVERSION" >> "$CSV_FN"
 
