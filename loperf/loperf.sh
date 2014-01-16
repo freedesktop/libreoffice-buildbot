@@ -52,13 +52,11 @@ LOVERSION="$(get_lo_version "$OFFICEBIN")"
 DT=$(echo "$TESTDATE" | tr -s '\ \+\-\:' "_")
 
 CG_LOG="logs/callgrind/cg-lo-$DT-$LOVERSION"
-PF_LOG="logs/loperf/pf-lo-$DT-$LOVERSION.log"
 ERR_LOG="logs/error.log"
 CSV_LOG_DIR="logs/csv/"
 CSV_HISTORY="logs/history.csv"
 
 mkdir -p logs/callgrind > /dev/null 2>&1
-mkdir -p logs/loperf > /dev/null 2>&1
 mkdir -p "$CSV_LOG_DIR" > /dev/null 2>&1
 test -f "$CSV_HISTORY" || echo -e "time,git-commit,offload$(ls $DOCUMENTSDIR/* | sed s%$DOCUMENTSDIR/%,%g | tr -d '\n')" > "$CSV_HISTORY"
 
@@ -113,14 +111,6 @@ CEst=$(expr ${offload[0]} + 10 \* $(expr ${offload[12]} + ${offload[10]}) + 10 \
 echo $'\t'$CEst >> "$CSV_FN"
 echo -n "$TESTDATE","$LOVERSION",$CEst >> "$CSV_HISTORY"
 
-# Populate offload to PF_LOG
-echo " Ir Dr Dw I1mr D1mr D1mw ILmr DLmr DLmw Bc Bcm Bi Bim Ge" | tee -a "$PF_LOG"
-echo "########################################################" | tee -a "$PF_LOG"
-echo | tee -a "$PF_LOG"
-echo "Offload:" | tee -a "$PF_LOG"
-echo "$offload_str" | tee -a "$PF_LOG"
-echo | tee -a "$PF_LOG"
-
 # Loaded launch one by one
 echo "Start onload pvt..."
 find $DOCUMENTSDIR -type f |  grep -Ev "\/\." | while read f; do
@@ -146,15 +136,6 @@ find $DOCUMENTSDIR -type f |  grep -Ev "\/\." | while read f; do
     onload_str=$(grep '^summary:' "$cur_log" | sed s/"summary: "//)
     onload=($onload_str)
     if test -n "$GZIP"; then gzip "$cur_log" > /dev/null 2>&1; fi
-    # Populate onload to PF_LOG
-    echo "Load: $f" | tee -a "$PF_LOG"
-    echo "$onload_str" | tee -a "$PF_LOG"
-
-    # Populate onload delta to PF_LOG
-    for i in $(seq 0 13); do
-        onload_delta[$i]=$(expr ${onload[$i]} - ${offload[$i]})
-        echo -n ${onload_delta[$i]} " " | tee -a "$PF_LOG"
-    done
 
     #Construct the csv file name
     CSV_FN="$CSV_LOG_DIR"/"onload-${f#$DOCUMENTSDIR\/}".csv
@@ -171,20 +152,9 @@ find $DOCUMENTSDIR -type f |  grep -Ev "\/\." | while read f; do
     echo $'\t'$CEst >> "$CSV_FN"
     echo -n ",$CEst" >> "$CSV_HISTORY"
 
-    echo | tee -a "$PF_LOG"
-    echo | tee -a "$PF_LOG"
-
 done
 echo "" >> "$CSV_HISTORY"
 $OFFICEBIN --headless --convert-to fods --outdir logs "$CSV_HISTORY"
 
 # Clean old callgrind files
 find "logs/callgrind" -type f -mtime +10 -exec rm {} \;
-
-# Regression check
-# echo "Regression Status:" | tee -a "$PF_LOG"
-# echo "-----------------" | tee -a "$PF_LOG"
-# find $(dirname $(readlink -f "$PF_LOG")) -type f | grep -v "$PF_LOG" | grep log$ | while read rf; do
-#     check_regression "$PF_LOG" "$rf" | tee -a "$PF_LOG"
-# done
-# grep '^Regression found!$' "$PF_LOG" > /dev/null || echo "Congratulations, no regression found!" | tee -a "$PF_LOG"
