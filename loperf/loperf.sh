@@ -42,7 +42,6 @@ fi
 # Post dependency check
 export OOO_DISABLE_RECOVERY=1
 OFFICEBIN="$1"
-VALGRIND_PARAMS="$2"
 
 TESTDATE=$(date --rfc-3339=second)
 
@@ -65,13 +64,13 @@ function launch {
 
     if test "$1" = ""; then
         export OOO_EXIT_POST_STARTUP=1
-        valgrind --tool=callgrind $VALGRIND_PARAMS --callgrind-out-file="$CG_LOG"-offload.log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless > /dev/null 2>&1
+        valgrind --tool=callgrind --callgrind-out-file="$CG_LOG"-offload.log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless > /dev/null 2>&1
         unset OOO_EXIT_POST_STARTUP
         echo -n "$CG_LOG"-offload.log
     else
         fn=${1#docs\/}
         ext=${fn##*.}
-        valgrind --tool=callgrind $VALGRIND_PARAMS --callgrind-out-file="$CG_LOG"-onload-"$fn".log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless --convert-to "$ext" --outdir tmp "$1" > /dev/null 2>&1
+        valgrind --tool=callgrind --callgrind-out-file="$CG_LOG"-onload-"$fn".log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless --convert-to "$ext" --outdir tmp "$1" > /dev/null 2>&1
         echo -n "$CG_LOG"-onload-"$fn".log
     fi
 }
