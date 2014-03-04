@@ -160,7 +160,7 @@ if [ "$ASYNC" = "1" ] ; then
         fi
         rm -fr ${stage}/${tag}_*
         if [ -n "$SYMBOLS_DIR" ] ; then
-            rsync --bwlimit=${BANDWIDTH} --delete -ave ssh ${SYMBOLS_DIR}/ "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BRANCH}/${BUILDER_NAME}/symbols/" || exit 1
+            rsync --bwlimit=${BANDWIDTH} --fuzzy --delete-after -ave ssh ${SYMBOLS_DIR}/ "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BRANCH}/${BUILDER_NAME}/symbols/" || exit 1
         fi
     )# 200>${lock_file?}
 ) &
@@ -170,6 +170,6 @@ else
 	    ssh upload@gimli.documentfoundation.org "cd \"/srv/www/dev-builds.libreoffice.org/daily/${BRANCH}/${BUILDER_NAME}/\" && { rm current; ln -s \"${PULL_TIME}\" current ; }"
     fi
     if [ -n "$SYMBOLS_DIR" ] ; then
-        rsync --bwlimit=${BANDWIDTH} --delete -ave ssh ${SYMBOLS_DIR}/ "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BRANCH}/${BUILDER_NAME}/symbols/" || exit 1
+        rsync --bwlimit=${BANDWIDTH} --fuzzy --delete-after -ave ssh ${SYMBOLS_DIR}/ "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${BRANCH}/${BUILDER_NAME}/symbols/" || exit 1
     fi
 fi
