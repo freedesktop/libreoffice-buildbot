@@ -540,7 +540,7 @@ push_symbols()
     done
     popd >/dev/null
 
-    rsync --bwlimit=${TB_BANDWIDTH_LIMIT} --delete -avzP -e ssh "${TB_SYMBOLS_DIR}/" "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${TB_BRANCH?}/${TB_NAME?}/symbols/" || exit 1
+    rsync --bwlimit=${TB_BANDWIDTH_LIMIT} --fuzzy --delete-after -avzP -e ssh "${TB_SYMBOLS_DIR}/" "upload@gimli.documentfoundation.org:/srv/www/dev-builds.libreoffice.org/daily/${TB_BRANCH?}/${TB_NAME?}/symbols/" || return 1
 }
 
 push_nightly()
