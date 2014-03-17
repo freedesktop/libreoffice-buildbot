@@ -62,7 +62,7 @@ test -f "$CSV_HISTORY" || echo -e "time,git-commit,offload$(ls $DOCUMENTSDIR/* |
 
 function launch {
 
-    if test "$1" = ""; then
+    if test "$1" = "offload"; then
         export OOO_EXIT_POST_STARTUP=1
         valgrind --tool=callgrind --callgrind-out-file="$CG_LOG"-offload.log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless > /dev/null 2>&1
         unset OOO_EXIT_POST_STARTUP
@@ -102,8 +102,11 @@ function write_data {
     test -n "$GZIP" && gzip "$cur_log" > /dev/null 2>&1
 
     #Collect data to csv file
-    test -z "$1" && CSV_FN="$CSV_LOG_DIR"/"offload.csv"
-    test -n "$1" && CSV_FN="$CSV_LOG_DIR"/"onload-${1#$DOCUMENTSDIR\/}".csv
+    if test "$1" = "offload"; then
+        CSV_FN="${CSV_LOG_DIR}/offload-${2}.csv"
+    else
+        CSV_FN="${CSV_LOG_DIR}/onload-${1#$DOCUMENTSDIR\/}.csv"
+    fi
 
     echo -n "$TESTDATE"$'\t'"$LOVERSION" >> "$CSV_FN"
     for i in $(seq 0 13); do
@@ -117,8 +120,11 @@ function write_data {
 }
 
 # Do a clean launch
-echo "Start offload pvt..."
-$(write_data "")
+rm -rf ${1/program\/soffice.bin/user}
+echo "First start offload pvt..."
+$(write_data "offload" "first")
+echo "Second start offload pvt..."
+$(write_data "offload" "second")
 
 # Loaded launch one by one
 echo "Start onload pvt..."
