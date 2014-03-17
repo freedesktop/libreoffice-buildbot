@@ -124,7 +124,7 @@ function write_data {
     # CEst = Ir + 10 Bm + 10 L1m + 20 Ge + 100 L2m + 100 LLm
     CEst=$(expr ${data[0]} + 10 \* $(expr ${data[12]} + ${data[10]}) + 10 \* $(expr ${data[3]} + ${data[4]} + ${data[5]}) + 20 \* ${data[13]} + 100 \* $(expr ${data[6]} + ${data[7]} + ${data[8]}))
     echo $'\t'$CEst >> "$CSV_FN"
-    echo -n ",$CEst" >> "$CSV_HISTORY"
+    echo -n ",$(expr ${CEst} / 1000000)" >> "$CSV_HISTORY"
 }
 
 # Do a clean launch
