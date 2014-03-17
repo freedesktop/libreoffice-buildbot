@@ -58,21 +58,29 @@ CSV_HISTORY="logs/history.csv"
 
 mkdir -p logs/callgrind > /dev/null 2>&1
 mkdir -p "$CSV_LOG_DIR" > /dev/null 2>&1
-test -f "$CSV_HISTORY" || echo -e "time,git-commit,offload$(ls $DOCUMENTSDIR/* | sed s%$DOCUMENTSDIR/%,%g | tr -d '\n')" > "$CSV_HISTORY"
+test -f "$CSV_HISTORY" || echo "time,git-commit,offload-first,offload-second$(ls ${DOCUMENTSDIR}/* | sed "s%${DOCUMENTSDIR}/% %g" | while read f; do echo -n ",$f-load,$f-convert"; done)" > "$CSV_HISTORY"
 
 function launch {
 
     if test "$1" = "offload"; then
         export OOO_EXIT_POST_STARTUP=1
-        valgrind --tool=callgrind --callgrind-out-file="$CG_LOG"-offload.log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless > /dev/null 2>&1
+        CG_OUT_FILE="${CG_LOG}-offload-${2}.log"
+        valgrind --tool=callgrind --callgrind-out-file="${CG_OUT_FILE}" --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless > /dev/null 2>&1
         unset OOO_EXIT_POST_STARTUP
-        echo -n "$CG_LOG"-offload.log
     else
-        fn=${1#$DOCUMENTSDIR\/}
-        ext=${fn##*.}
-        valgrind --tool=callgrind --callgrind-out-file="$CG_LOG"-onload-"$fn".log --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless --convert-to "$ext" --outdir tmp "$1" > /dev/null 2>&1
-        echo -n "$CG_LOG"-onload-"$fn".log
+        if test "$2" = "load"; then
+            export OOO_EXIT_POST_STARTUP=1
+            CG_OUT_FILE="${CG_LOG}-onload-${fn}-${2}.log"
+            valgrind --tool=callgrind --callgrind-out-file="${CG_OUT_FILE}" --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless "$1" > /dev/null 2>&1
+            unset OOO_EXIT_POST_STARTUP
+        else
+            fn=${1#$DOCUMENTSDIR\/}
+            ext=${fn##*.}
+            CG_OUT_FILE="${CG_LOG}-onload-${fn}-${2}.log"
+            valgrind --tool=callgrind --callgrind-out-file="${CG_OUT_FILE}" --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless --convert-to "$ext" --outdir tmp "$1" > /dev/null 2>&1
+        fi
     fi
+    echo -n "${CG_OUT_FILE}"
 }
 
 # Mapping the data to array:
@@ -95,7 +103,7 @@ function launch {
 echo -n "$TESTDATE","$LOVERSION" >> "$CSV_HISTORY"
 
 function write_data {
-    cur_log=$(launch "$1")
+    cur_log=$(launch "${1}" "${2}")
 
     data=($(grep '^summary:' "$cur_log" | sed s/"summary: "//))
     
@@ -105,7 +113,7 @@ function write_data {
     if test "$1" = "offload"; then
         CSV_FN="${CSV_LOG_DIR}/offload-${2}.csv"
     else
-        CSV_FN="${CSV_LOG_DIR}/onload-${1#$DOCUMENTSDIR\/}.csv"
+        CSV_FN="${CSV_LOG_DIR}/onload-${1#$DOCUMENTSDIR\/}-${2}.csv"
     fi
 
     echo -n "$TESTDATE"$'\t'"$LOVERSION" >> "$CSV_FN"
@@ -129,7 +137,10 @@ $(write_data "offload" "second")
 # Loaded launch one by one
 echo "Start onload pvt..."
 find $DOCUMENTSDIR -type f |  grep -Ev "\/\." | while read f; do
-    $(write_data "$f")
+    echo "loading ${f}.."
+    $(write_data "$f" "load")
+    echo "converting ${f}.."
+    $(write_data "$f" "convert")
 done
 
 echo "" >> "$CSV_HISTORY"
