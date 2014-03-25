@@ -136,7 +136,7 @@ $(write_data "offload" "second")
 
 # Loaded launch one by one
 echo "Start onload pvt..."
-find $DOCUMENTSDIR -type f |  grep -Ev "\/\." | while read f; do
+ls ${DOCUMENTSDIR}/* | while read f; do
     echo "loading ${f}.."
     $(write_data "$f" "load")
     echo "converting ${f}.."
