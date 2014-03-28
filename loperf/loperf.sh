@@ -68,15 +68,14 @@ function launch {
         valgrind --tool=callgrind --callgrind-out-file="${CG_OUT_FILE}" --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless > /dev/null 2>&1
         unset OOO_EXIT_POST_STARTUP
     else
+        fn=${1#$DOCUMENTSDIR\/}
+        CG_OUT_FILE="${CG_LOG}-onload-${fn}-${2}.log"
         if test "$2" = "load"; then
             export OOO_EXIT_POST_STARTUP=1
-            CG_OUT_FILE="${CG_LOG}-onload-${fn}-${2}.log"
             valgrind --tool=callgrind --callgrind-out-file="${CG_OUT_FILE}" --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless "$1" > /dev/null 2>&1
             unset OOO_EXIT_POST_STARTUP
         else
-            fn=${1#$DOCUMENTSDIR\/}
             ext=${fn##*.}
-            CG_OUT_FILE="${CG_LOG}-onload-${fn}-${2}.log"
             valgrind --tool=callgrind --callgrind-out-file="${CG_OUT_FILE}" --simulate-cache=yes --dump-instr=yes --collect-bus=yes --branch-sim=yes "$OFFICEBIN" --splash-pipe=0 --headless --convert-to "$ext" --outdir tmp "$1" > /dev/null 2>&1
         fi
     fi
