@@ -536,6 +536,7 @@ else
     libreoffice-3-6) TINDER_BRANCH=$B ;;
     libreoffice-4-0) TINDER_BRANCH=$B ;;
     libreoffice-4-1) TINDER_BRANCH=$B ;;
+    libreoffice-4-2) TINDER_BRANCH=$B ;;
     *)
         if [ "${MODE}" = "prime" -o "${MODE}" = "gerrit-patch" -o "${MODE?}" = "gerrit" ] ; then
             TINDER_BRANCH=$B
