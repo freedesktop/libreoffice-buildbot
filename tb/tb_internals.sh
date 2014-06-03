@@ -182,6 +182,9 @@ determine_default_tinderbox_branch()
         libreoffice-4-2)
             echo "${b?}"
             ;;
+        libreoffice-4-3)
+            echo "${b?}"
+            ;;
     esac
 }
 
