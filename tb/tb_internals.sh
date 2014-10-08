@@ -95,7 +95,11 @@ collect_current_head()
 #
 copy_autogen_config()
 {
-    cp "${tb_CONFIG_DIR?}/profiles/${P?}/autogen.lastrun" autogen.lastrun
+    if [ -f "${tb_CONFIG_DIR?}/profiles/${P?}/autogen.lastrun" ] ; then
+        cp "${tb_CONFIG_DIR?}/profiles/${P?}/autogen.lastrun" autogen.input
+    else
+        cp "${tb_CONFIG_DIR?}/profiles/${P?}/autogen.input" autogen.input
+    fi
 }
 
 deliver_lo_to_bibisect()
