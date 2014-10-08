@@ -857,7 +857,7 @@ run_gerrit_task()
         # run the build
         do_build ${phase_list?}
     fi
-    # tell teh gerrit buildbot of the result of the build
+    # tell the gerrit buildbot of the result of the build
     # R contain the overall result
     report_gerrit
 
@@ -940,8 +940,9 @@ run_primer()
         tb_SEND_MAIL="none"
         pushd "${TB_GIT_DIR?}" > /dev/null || die "Cannot cd to git repo ${TB_GIT_DIR?} for profile ${P?}"
         run_tb_task
+        exit "$R"
         )
-        R=$?
+        R="$?"
     done
 
 }
@@ -1276,7 +1277,7 @@ try_run_task()
                 rm -f "${TB_TRIGGER_FILE?}"
             fi
         fi
-        return $R
+        exit "$R"
     )
     R="$?"
     # check we we intercepted a signal, if so bail
