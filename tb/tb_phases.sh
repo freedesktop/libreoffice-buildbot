@@ -15,6 +15,8 @@ canonical_pre_autogen()
             rm -fr tempdir
             mkdir tempdir
             export TMPDIR="$(pwd)/tempdir"
+            export TMP="$(pwd)/tempdir"
+            export TEMP="$(pwd)/tempdir"
         fi
     fi
 }
