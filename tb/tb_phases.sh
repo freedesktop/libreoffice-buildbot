@@ -11,6 +11,11 @@ canonical_pre_autogen()
         if [ ! -f autogen.lastrun -o "${tb_KEEP_AUTOGEN}" != "YES" ] ; then
             copy_autogen_config
         fi
+        if [ "${TB_LOCALTEMPDIR}" = "1" ] ; then
+            rm -fr tempdir
+            mkdir tempdir
+            export TMPDIR="$(pwd)/tempdir"
+        fi
     fi
 }
 
