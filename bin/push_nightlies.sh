@@ -76,7 +76,11 @@ fi
 
 topdir="$PWD"
 
-cd instsetoo_native/${INPATH}
+if [ -z "$INPATH" ] ; then
+    false
+else
+    cd instsetoo_native/${INPATH}
+fi
 
 if [ $? != 0 ]; then
     cd workdir
