@@ -7,9 +7,37 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 #
 
-SRC_DIR=/home/buildslave/source/libo-core
-TRACEFILE_DIR=/home/buildslave/lcov
-HTML_DIR=/home/buildslave/lcov/html
+usage()
+{
+	echo "Usage: lcov-report.sh -s [DIRECTORY] -t [DIRECTORY] -w [DIRECTORY]
+	-s	source code directory
+	-t 	tracefile directory
+	-w 	html (www) directory"
+	exit 1
+}
+
+if [ "$#" != "6" ]
+then
+	usage
+fi
+
+while getopts ":s:t:w:" opt
+do
+	case $opt in
+		s)
+			SRC_DIR="$OPTARG"
+			;;
+		t)
+			TRACEFILE_DIR="$OPTARG"
+			;;
+		w)
+			HTML_DIR="$OPTARG"
+			;;
+		*)
+			usage
+			;;
+	esac
+done
 
 if [ ! -d "$SRC_DIR" ]
 then
@@ -23,12 +51,14 @@ mkdir "$TRACEFILE_DIR"
 if [ "$?" != "0" ]
 then
 	echo "ERROR: Failed to create directory $TRACEFILE_DIR" >&2
+	exit 1
 fi
 
 mkdir "$HTML_DIR"
 if [ "$?" != "0" ]
 then
 	echo "ERROR: Failed to create directory $HTML_DIR" >&2
+	exit 1
 fi
 
 lcov --zerocounters --directory "$SRC_DIR"
