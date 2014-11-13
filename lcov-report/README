@@ -1,0 +1,33 @@
+
+A small script to create gcov/lcov code coverage reports of tests run
+on the libreoffice source code.
+
+
+Usage: lcov-report.sh [-b] -c [FILE] -s [DIRECTORY] -t [DIRECTORY] -w [DIRECTORY]
+
+
+-s
+        Specify the location where the libreoffice source code is
+        located. This flag is mandatory.
+
+-c
+        Specify the file containing the libreoffice test commands to run.
+        In it's simplest form, this file could contain a single line
+        reading something like 'cd $SRCDIR && make check'. This flag
+        is mandatory.
+
+-b
+        Specifies to build the libreoffice sources in the location
+        specified by the '-s' flag. This flag is optional. If you
+        choose to omit it, you must make sure the libreoffice source
+        code is built using the appropriate FLAGS ('-fprofile-arcs
+        -ftest-coverage').
+
+-t
+        Specifies the directory in which to contain the lcov
+        tracefile's. This flag is mandatory.
+
+-w
+        Specifies the directory in which to contain the generated HTML
+        report files. This flag is mandatory.
+

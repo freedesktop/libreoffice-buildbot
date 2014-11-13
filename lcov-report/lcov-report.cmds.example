@@ -1,0 +1,8 @@
+cd "$SRC_DIR"
+make check
+MY_EXITCODE=$?
+if [ "$MY_EXITCODE" != "0" ]
+then
+	echo "ERROR: make check failed with exitcode $MY_EXITCODE" >&2
+	exit "$MY_EXITCODE"
+fi
