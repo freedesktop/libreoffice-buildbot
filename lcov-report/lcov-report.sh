@@ -15,6 +15,39 @@
 
 init()
 { 
+if [ -n "$SOURCE_COMPILE" -a -n "$BEFORE" -o -n "$SOURCE_COMPILE" -a -n "$AFTER" -o -n "$BEFORE" -a -n "$AFTER" ]
+then
+	echo "ERROR: You can only supply one of '-a', '-b' or '-c' simultaneously." >&2
+	exit 1
+fi
+
+if [ -n "$AFTER" -a -z "$HTML_DIR" ]
+then
+	echo "ERROR: When specifying '-a', you also need to specify '-w'." >&2
+	exit 1
+fi
+
+if [ -n "$AFTER" -a -z "$SRC_DIR" ]
+then
+	echo "ERROR: When specifying '-a', you also need to specify '-s'." >&2
+	exit 1
+fi
+
+if [ -n "$BEFORE" -a -z "$SRC_DIR" ]
+then
+	echo "ERROR: When specifying '-b', you also need to specify '-s'." >&2
+	exit 1
+fi
+
+if [ -n "$BEFORE" -o -n "$AFTER" ]
+then
+	if [ -z "$TRACEFILE_DIR" ]
+	then
+		echo "ERROR: When specifying '-a' or '-b', you also need to specify '-t'." >&2
+		exit 1
+	fi
+fi
+
 if [ "$SRC_DIR" = "/" -o "$TRACEFILE_DIR" = "/" -o "$HTML_DIR" = "/" ]
 then
 	echo "ERROR: Dont use the root '/' directory for storage." >&2
@@ -23,30 +56,57 @@ fi
 
 if [ ! -d "$SRC_DIR" ]
 then
-	echo "ERROR: Failed to locate directory $SRC_DIR." >&2
+	echo "ERROR: Failed to locate source code directory $SRC_DIR." >&2
 	exit 1
 fi
 
-rm -rf "$TRACEFILE_DIR" "$HTML_DIR"
-
-mkdir "$TRACEFILE_DIR"
-if [ "$?" != "0" ]
+if [ ! -d "$SRC_DIR"/.git ]
 then
-	echo "ERROR: Failed to create directory $TRACEFILE_DIR." >&2
+	echo "ERROR: $SRC_DIR is not a git repository." >&2
 	exit 1
 fi
 
-mkdir "$HTML_DIR"
-if [ "$?" != "0" ]
+if [ -n "$BEFORE" -a ! -d "$TRACEFILE_DIR" ]
 then
-	echo "ERROR: Failed to create directory $HTML_DIR." >&2
-	exit 1
+	mkdir "$TRACEFILE_DIR"
+	if [ "$?" != "0" ]
+	then
+		echo "ERROR: Failed to create tracefile directory $TRACEFILE_DIR." >&2
+		exit 1
+	fi
 fi
 
-if [ ! -f "$TEST_CMDS_FILE" ]
+if [ -n "$BEFORE" -a -d "$TRACEFILE_DIR" ]
 then
-	echo "ERROR: Failed to find test command file $TEST_CMDS_FILE." >&2
-	exit 1
+	rm -rf "$TRACEFILE_DIR"
+	mkdir "$TRACEFILE_DIR"
+	if [ "$?" != "0" ]
+	then
+		echo "ERROR: Failed to create tracefile directory $TRACEFILE_DIR." >&2
+		exit 1
+	fi
+	
+fi
+
+if [ -n "$AFTER" -a ! -d "$HTML_DIR" ]
+then
+	mkdir "$HTML_DIR"
+	if [ "$?" != "0" ]
+	then
+		echo "ERROR: Failed to create html directory $HTML_DIR." >&2
+		exit 1
+	fi
+fi
+
+if [ -n "$AFTER" -a -d "$HTML_DIR" ]
+then
+	rm -rf "$HTML_DIR"
+	mkdir "$HTML_DIR"
+	if [ "$?" != "0" ]
+	then
+		echo "ERROR: Failed to create html directory $HTML_DIR." >&2
+		exit 1
+	fi
 fi
 }
 
@@ -96,18 +156,6 @@ then
 fi
 }
 
-run_tests()
-{
-/bin/sh "$TEST_CMDS_FILE"
-MY_EXITCODE=$?
-if [ "$MY_EXITCODE" != "0" ]
-then
-	echo "ERROR: failed to run tests from testfile $TEST_CMDS_FILE with exitcode $MY_EXITCODE." >&2
-	exit "$MY_EXITCODE"
-fi
-}
-
-
 lcov_tracefile_tests()
 {
 lcov --rc geninfo_auto_base=1 --no-external --capture --directory "$SRC_DIR" --output-file "$TRACEFILE_DIR"/lcov_test.info
@@ -144,11 +192,6 @@ fi
 lcov_mkhtml()
 {
 cd "$SRC_DIR"
-if [ ! -d "$SRC_DIR"/.git ]
-then
-	echo "ERROR: $SRC_DIR is not a git repository." >&2
-	exit 1
-fi
 
 COMMIT_SHA1=$(git log --date=iso | head -3 | awk '/^commit/ {print $2}')
 COMMIT_DATE=$(git log --date=iso | head -3 | awk '/^Date/ {print $2}')
@@ -173,9 +216,10 @@ fi
 
 usage()
 {
-	echo >&2 "Usage: lcov-report.sh [-b] -c [FILE] -s [DIRECTORY] -t [DIRECTORY] -w [DIRECTORY]
-	-b	build libreoffice sources
-	-c	file containing test commands to run
+	echo >&2 "Usage: lcov-report.sh [-a|-b|-c] -s [DIRECTORY] -t [DIRECTORY] -w [DIRECTORY]
+	-b	run lcov commands before your tests
+	-a	run lcov commands after your tests
+	-c	compile libreoffice sources
 	-s	source code directory
 	-t 	tracefile directory
 	-w 	html (www) directory"
@@ -191,7 +235,7 @@ then
 	usage
 fi
 
-while getopts ":s:t:w:c:b" opt
+while getopts ":s:t:w:abc" opt
 do
 	case $opt in
 		s)
@@ -203,11 +247,14 @@ do
 		w)
 			export HTML_DIR="$OPTARG"
 			;;
-		b)
-			export SOURCE_BUILD=TRUE
-			;;
 		c)
-			export TEST_CMDS_FILE="$OPTARG"
+			export SOURCE_COMPILE=TRUE
+			;;
+		b)
+			export BEFORE=TRUE
+			;;
+		a)
+			export AFTER=TRUE
 			;;
 		*)
 			usage
@@ -215,23 +262,24 @@ do
 	esac
 done
 
-
 init
 
-lcov_cleanup
+if [ "$BEFORE" = "TRUE" ]
+then
+	lcov_cleanup
+	lcov_tracefile_baseline
+fi
 
-if [ "$SOURCE_BUILD" = "TRUE" ]
+if [ "$SOURCE_COMPILE" = "TRUE" ]
 then
 	source_build
 fi
 
-lcov_tracefile_baseline
+if [ "$AFTER" = "TRUE" ]
+then
+	lcov_tracefile_tests
+	lcov_tracefile_join
+	lcov_tracefile_cleanup
 
-run_tests
-
-lcov_tracefile_tests
-lcov_tracefile_join
-lcov_tracefile_cleanup
-
-lcov_mkhtml
-
+	lcov_mkhtml
+fi
