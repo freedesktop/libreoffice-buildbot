@@ -1,12 +1,16 @@
-
-lcov-report.sh
-
-	A small script to create gcov/lcov code coverage reports of tests run
-	on the libreoffice source code.
+NAME
+        lcov-report.sh
 
 
-Usage: lcov-report.sh [-a|-b|-c] -s [DIRECTORY] -t [DIRECTORY] -w [DIRECTORY]
+DESCRIPTION
 
+        A small script to create gcov/lcov code coverage reports of tests run
+        on the libreoffice source code.
+
+
+SYNOPSIS
+
+        lcov-report.sh [-a|-b|-c] -s [DIRECTORY] -t [DIRECTORY] -w [DIRECTORY]
 
 -b
         Run lcov commands before you run your tests. This creates a
@@ -15,27 +19,98 @@ Usage: lcov-report.sh [-a|-b|-c] -s [DIRECTORY] -t [DIRECTORY] -w [DIRECTORY]
 
 -a
         Run lcov commands after you run your tests. This creates a
-        tracefile that contains the resukts of your tests, and combines
+        tracefile that contains the results of your tests, and combines
         it with the baseline. You can only supply one of '-a', '-b' or
         '-c' simultaneously.
 
 -c
-        Specifies to build the libreoffice sources in the location
+        Specifies to compile the libreoffice sources in the location
         specified by the '-s' flag. This flag is optional. If you
         choose to omit it, you must make sure the libreoffice source
         code is built using the appropriate FLAGS ('-fprofile-arcs
         -ftest-coverage'). You can only supply one of '-a', '-b' or
         '-c' simultaneously.
 
+-C
+        Specifies the location the sourcecode gets compiled in.
+
 -s
         Specify the location where the libreoffice source code is
-        located. This flag is mandatory.
+        located. This flag is mandatory when you run '-c' or '-a'.
 
 -t
         Specifies the directory in which to contain the lcov
-        tracefile's. This flag is mandatory.
+        tracefile's. This flag is mandatory when you run '-a' or '-b'.
 
 -w
         Specifies the directory in which to contain the generated HTML
-        report files. This flag is mandatory.
+        report files. This flag is mandatory when you run '-b'.
+
+
+EXAMPLE
+
+        Summary.
+
+                In essence, you run the following commands:
+
+                1.) Compile LibreOffice.
+                2.) Run 'lcov-report.sh' before you run your tests.
+                3.) Run your tests.
+                4.) Run 'lcov-report.sh' after your tests.
+
+                That's it.
+
+
+        1.) Compile LibreOffice.
+
+                The first step is to compile the libreoffice code using
+                the appropriate FLAGS and options to autogen.sh and/or
+                ./configure.  You can do this with lcov-report.sh in
+                the following way:
+
+                lcov-report.sh -c -C /home/user/build -s \
+                /home/user/src/libreoffice
+
+                '-c' specifies that you want to compile the code.
+
+                If you choose to build libreoffice yourself instead, make
+                sure to set these FLAGS: LDFLAGS+='-fprofile-arcs'
+                CFLAGS+='-fprofile-arcs -ftest-coverage'
+                CXXFLAGS+='-fprofile-arcs -ftest-coverage'
+                CPPFLAGS+='-fprofile-arcs -ftest-coverage'. Also, you
+                need to supply --disable-online-update to autogen.sh
+                and/or configure.
+
+
+        2.) Run 'lcov-report.sh -b'.
+
+                The next step is to create a gcov/lcov baseline. You
+                run this command ('-b') before you run your tests.
+
+                lcov-report.sh -b -C /home/user/build -t \
+                /home/user/traces
+
+
+        3.) Run tests.
+
+                Now you can run the tests for which you want to report
+                code coverage. This could be as simple as 'make check'
+                in the build directory.
+
+
+        4.) Run 'lcov-report.sh -a'.
+
+                The last step is to create a lcov/gcov tracefile that
+                contains the data about the tests that were run, and
+                to create the html report. You run this command ('-a')
+                after you have completed running your tests.
+
+                lcov-report.sh -a -C /home/user/build \
+                -s /home/user/src/libreoffice -t \
+                /home/user/traces -w /home/user/html
+
+                Make sure that you specify the same directory for the
+                tracefiles ('-t') as you did when running the command
+                '-b' befpre your tests, as lcov needs access to the
+                baseline file that was created in that step.
 
