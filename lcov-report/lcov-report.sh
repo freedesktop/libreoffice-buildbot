@@ -53,7 +53,7 @@ init()
         if [ -z "${SRC_DIR?}" ] ; then
             die "When specifying '-a', you also need to specify '-s'."
         fi
-        if [ -d "${HTML_DIR?}" ] ; then
+        if [ ! -d "${HTML_DIR?}" ] ; then
             mkdir "${HTML_DIR?}" || die "Failed to create html directory ${HTML_DIR?}."
         else
             rm -rf "${HTML_DIR?}"
@@ -65,11 +65,20 @@ init()
         if [ -z "${TRACEFILE_DIR?}" ] ; then
             die "When specifying '-a' or '-b', you also need to specify '-t'."
         fi
+    fi
+
+    if [ "${BEFORE?}" = "TRUE" ] ; then
         if [ ! -d "${TRACEFILE_DIR?}" ] ; then
             mkdir "${TRACEFILE_DIR?}" || die "Failed to create tracefile directory ${TRACEFILE_DIR?}."
         else
             rm -rf "${TRACEFILE_DIR?}"
             mkdir "${TRACEFILE_DIR?}" || die "Failed to create tracefile directory ${TRACEFILE_DIR?}."
+        fi
+    fi
+
+    if [ "${AFTER?}" = "TRUE" ] ; then
+        if [ ! -d "${TRACEFILE_DIR?}" ] ; then
+            die "Failed to locate tracefile directory ${TRACEFILE_DIR?}."
         fi
     fi
 
@@ -136,7 +145,7 @@ lcov_tracefile_cleanup()
 
 lcov_mkhtml()
 {
-    cd "$SRC_DIR"
+    cd "${SRC_DIR?}"
 
     COMMIT_SHA1=$(git log --date=iso | head -3 | awk '/^commit/ {print $2}')
     COMMIT_DATE=$(git log --date=iso | head -3 | awk '/^Date/ {print $2}')
@@ -173,7 +182,7 @@ AFTER=
 SRC_DIR=
 TRACEFILE_DIR=
 HTML_DIR=
-BUIILD_DIR=
+BUILD_DIR=
 
 if [ "$#" = "0" ] ; then
     usage
@@ -207,8 +216,6 @@ while getopts ":s:t:w:C:abc" opt ; do
         ;;
     esac
 done
-
-echo "foo"
 
 init
 
