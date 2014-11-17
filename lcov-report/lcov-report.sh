@@ -139,7 +139,7 @@ lcov_tracefile_cleanup()
     lcov --rc geninfo_auto_base=1 --remove "${TRACEFILE_DIR?}/lcov_total.info" \
     "/usr/include/*" "/usr/lib/*" "${SRC_DIR?}/*/UnpackedTarball/*" "${SRC_DIR?}/workdir/*" \
     "${BUILD_DIR?}/workdir/*" "${SRC_DIR?}/instdir/*" "${SRC_DIR?}/external/*" \
-    -o "${TRACEFILE_DIR?}lcov_filtered.info" \
+    -o "${TRACEFILE_DIR?}/lcov_filtered.info" \
     || die "tracefile generation ${TRACEFILE_DIR?}/lcov_filtered.info failed."
 }
 
