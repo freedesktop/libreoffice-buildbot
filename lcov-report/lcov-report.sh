@@ -109,7 +109,7 @@ source_build()
     cd "${BUILD_DIR?}"
 
     LDFLAGS+='-fprofile-arcs' CFLAGS+='-fprofile-arcs -ftest-coverage' CXXFLAGS+='-fprofile-arcs -ftest-coverage' CPPFLAGS+='-fprofile-arcs -ftest-coverage' \
-    "${SRC_DIR?}/autogen.sh" --disable-online-update --without-system-libs --without-system-headers \
+    "${SRC_DIR?}/autogen.sh" --enable-python=internal --disable-online-update --without-system-libs --without-system-headers \
     || die "autogen.sh failed."
 
     make build-nocheck || die "make build-nocheck failed."
