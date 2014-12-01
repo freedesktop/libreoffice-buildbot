@@ -46,6 +46,12 @@ SYNOPSIS
         Specifies the directory in which to contain the generated HTML
         report files. This flag is mandatory when you run '-b'.
 
+-d
+        Specify a descriptive name for the test(s) you wish to create
+        a report for. For example, if your test consists of the make
+        target 'make check', you could specify '-d "make check"'.
+
+
 
 EXAMPLE
 
@@ -88,7 +94,8 @@ EXAMPLE
                 run this command ('-b') before you run your tests.
 
                 lcov-report.sh -b -C /home/user/build -t \
-                /home/user/traces
+                /home/user/traces -s /home/user/src/libreoffice \
+		-d "make check"
 
 
         3.) Run tests.
@@ -107,10 +114,10 @@ EXAMPLE
 
                 lcov-report.sh -a -C /home/user/build \
                 -s /home/user/src/libreoffice -t \
-                /home/user/traces -w /home/user/html
+                /home/user/traces -w /home/user/html -d "make check"
 
                 Make sure that you specify the same directory for the
                 tracefiles ('-t') as you did when running the command
-                '-b' befpre your tests, as lcov needs access to the
+                '-b' before your tests, as lcov needs access to the
                 baseline file that was created in that step.
 
