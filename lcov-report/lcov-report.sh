@@ -219,19 +219,19 @@ fi
 while getopts ":s:t:w:C:d:abc" opt ; do
     case "$opt" in
     s)
-        SRC_DIR="$OPTARG"
+        SRC_DIR=$(readlink -f "${OPTARG?}")
         ;;
     t)
-        TRACEFILE_DIR="$OPTARG"
+        TRACEFILE_DIR=$(readlink -f "${OPTARG?}")
         ;;
     w)
-        HTML_DIR="$OPTARG"
+        HTML_DIR=$(readlink -f "${OPTARG?}")
         ;;
     c)
         SOURCE_COMPILE=TRUE
         ;;
     C)
-        BUILD_DIR="$OPTARG"
+        BUILD_DIR=$(readlink -f "${OPTARG?}")
         ;;
     b)
         BEFORE=TRUE
