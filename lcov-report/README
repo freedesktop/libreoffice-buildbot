@@ -10,7 +10,8 @@ DESCRIPTION
 
 SYNOPSIS
 
-        lcov-report.sh [-a|-b|-c] -s [DIRECTORY] -t [DIRECTORY] -w [DIRECTORY]
+        lcov-report.sh [-a|-b|-c] -s [DIRECTORY] -t [DIRECTORY] \
+	-w [DIRECTORY] -d "test description"
 
 -b
         Run lcov commands before you run your tests. This creates a
@@ -36,7 +37,7 @@ SYNOPSIS
 
 -s
         Specify the location where the libreoffice source code is
-        located. This flag is mandatory when you run '-c' or '-a'.
+        located. This flag is mandatory.
 
 -t
         Specifies the directory in which to contain the lcov
@@ -44,7 +45,7 @@ SYNOPSIS
 
 -w
         Specifies the directory in which to contain the generated HTML
-        report files. This flag is mandatory when you run '-b'.
+        report files. This flag is mandatory when you run '-a'.
 
 -d
         Specify a descriptive name for the test(s) you wish to create
