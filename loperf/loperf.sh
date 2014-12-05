@@ -44,6 +44,7 @@ export OOO_DISABLE_RECOVERY=1
 OFFICEBIN="$1"
 DOCUMENTSDIR="$2"
 test -z "$DOCUMENTSDIR" && echo "missing second parameter: directory with documents to test" && exit 1
+rm -f $DOCUMENTSDIR/.~lock*
 
 TESTDATE=$(date --rfc-3339=second)
 
