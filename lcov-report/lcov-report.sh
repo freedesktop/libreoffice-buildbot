@@ -28,17 +28,20 @@ init()
     fi
 
     if [ -n "${SRC_DIR?}" ] ; then
+        if [ "${SRC_DIR?}" = "${BUILD_DIR?}" ] ; then
+            die "Cannot set the source directory to the same value as the build directory."
+        fi
+
         if [ ! -d "${SRC_DIR?}" ] ; then
             die "Failed to locate source code directory $SRC_DIR."
+        else
+            SRC_DIR=$(readlink -f "${SRC_DIR?}")
         fi
 
         if [ ! -d "${SRC_DIR?}/.git" ] ; then
             die "${SRC_DIR?} is not a git repository."
         fi
 
-        if [ "${SRC_DIR?}" = "${BUILD_DIR?}" ] ; then
-            die "Cannot set the source directory to the same value as the build directory."
-        fi
     fi
 
     if [ "${AFTER?}" = "TRUE" ] ; then
@@ -60,9 +63,11 @@ init()
 
         if [ ! -d "${HTML_DIR?}" ] ; then
             mkdir "${HTML_DIR?}" || die "Failed to create html directory ${HTML_DIR?}."
+            HTML_DIR=$(readlink -f "${HTML_DIR?}")
         else
             rm -rf "${HTML_DIR?}"
             mkdir "${HTML_DIR?}" || die "Failed to create html directory ${HTML_DIR?}."
+            HTML_DIR=$(readlink -f "${HTML_DIR?}")
         fi
     fi
 
@@ -83,9 +88,11 @@ init()
     if [ "${BEFORE?}" = "TRUE" ] ; then
         if [ ! -d "${TRACEFILE_DIR?}" ] ; then
             mkdir "${TRACEFILE_DIR?}" || die "Failed to create tracefile directory ${TRACEFILE_DIR?}."
+            TRACEFILE_DIR=$(readlink -f "${TRACEFILE_DIR?}")
         else
             rm -rf "${TRACEFILE_DIR?}"
             mkdir "${TRACEFILE_DIR?}" || die "Failed to create tracefile directory ${TRACEFILE_DIR?}."
+            TRACEFILE_DIR=$(readlink -f "${TRACEFILE_DIR?}")
         fi
     fi
 
@@ -99,9 +106,11 @@ init()
         fi
         if [ ! -d "$BUILD_DIR" ] ; then
             mkdir "$BUILD_DIR" || die "Failed to create source compile directory $BUILD_DIR."
+            BUILD_DIR=$(readlink -f "${BUILD_DIR?}")
         else
             rm -rf "$BUILD_DIR"
             mkdir "$BUILD_DIR" || die "Failed to create source compile directory $BUILD_DIR."
+            BUILD_DIR=$(readlink -f "${BUILD_DIR?}")
         fi
     fi
 }
@@ -219,19 +228,19 @@ fi
 while getopts ":s:t:w:C:d:abc" opt ; do
     case "$opt" in
     s)
-        SRC_DIR=$(readlink -f "${OPTARG?}")
+        SRC_DIR="${OPTARG?}"
         ;;
     t)
-        TRACEFILE_DIR=$(readlink -f "${OPTARG?}")
+        TRACEFILE_DIR="${OPTARG?}"
         ;;
     w)
-        HTML_DIR=$(readlink -f "${OPTARG?}")
+        HTML_DIR="${OPTARG?}"
         ;;
     c)
         SOURCE_COMPILE=TRUE
         ;;
     C)
-        BUILD_DIR=$(readlink -f "${OPTARG?}")
+        BUILD_DIR="${OPTARG?}"
         ;;
     b)
         BEFORE=TRUE
