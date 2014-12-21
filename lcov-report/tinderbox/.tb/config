@@ -1,0 +1,13 @@
+TB_ACTIVE_PROFILES=lcov-make-check
+TB_BRANCH=master
+TB_BUILD_DIR=~/build
+TB_GIT_DIR=~/source/libo-core
+TB_NAME=Linux-lcovreports-x86@140
+TB_OWNER=someone@somewhere.net
+TB_TRIGGER_FILE=~/tmp/TINDERBOX_START_LCOV
+TB_LOGFILE=~/tmp/tinderbox.logfile.txt
+
+TB_SMTP_HOST=foo@bar.com
+TB_SMTP_PASSWORD=no.just.no
+TB_SMTP_USER=none
+TB_SEND_MAIL=none

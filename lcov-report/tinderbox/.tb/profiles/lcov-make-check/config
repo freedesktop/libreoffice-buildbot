@@ -1,0 +1,15 @@
+TB_TYPE=tb
+
+# These are for use in the lcov script
+TB_LCOV_TRACEFILE_DIR=~/tmp/traces
+TB_LCOV_HTML_DIR=~/tmp/html
+TB_LCOV_TEST_NAME="make check"
+TB_LCOV_REPORT=~/source/buildbot/lcov-report/lcov-report.sh
+
+# These are set for gcov/lcov code coverage
+LDFLAGS='-fprofile-arcs'
+CFLAGS='-fprofile-arcs -ftest-coverage'
+CXXFLAGS='-fprofile-arcs -ftest-coverage'
+CPPFLAGS='-fprofile-arcs -ftest-coverage'
+export LDFLAGS CFLAGS CXXFLAGS CPPFLAGS
+

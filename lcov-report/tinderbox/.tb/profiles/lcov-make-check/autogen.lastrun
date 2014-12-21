@@ -1,0 +1,4 @@
+--enable-python=internal
+--disable-online-update
+--without-system-libs
+--without-system-headers

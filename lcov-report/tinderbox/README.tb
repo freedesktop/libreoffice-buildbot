@@ -1,0 +1,22 @@
+
+This directory contains an example configuration for the integration of
+the lcov-report.sh shell script with tinderbox/buildbot.
+
+
+The directory tree contains the following items:
+
+- An example profile called 'lcov-make-check', in the directory 
+    '.tb/profiles/lcov-make-check'
+- An example configuration file in '.tb/profiles/lcov-make-check/config'
+- Custom tinderbox 'phases' or functions in
+    '.tb/profiles/lcov-make-check/phases.sh'
+- Custom autogen.sh / configure.sh flags in
+    '.tb/profiles/lcov-make-check/autogen.lastrun'
+
+
+If you would like to use these examples, you can copy the '.tb'
+directory tree to your existing ~/.tb tree, and add the profile
+'lcov-make-check' to 'TB_ACTIVE_PROFILES' in your '~/.tb/config'. You
+also need to set 'TB_BRANCH', 'TB_BUILD_DIR', and 'TB_GIT_DIR'
+there. Additionally, you need to modify the 'TB_LCOV_*' variables in
+'./.tb/profiles/lcov-make-check/config' to reflect your situation.
