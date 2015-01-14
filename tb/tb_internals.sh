@@ -201,6 +201,10 @@ determine_make()
     if [ -n "$MAKE" ] ; then
         $MAKE --version 2> /dev/null | grep -q GNU
         if test $? -eq 0;  then
+            $MAKE --version 2> /dev/null | grep -q GNU | grep -q '4\.'
+            if test $? -eq 0; then
+                tb_MAKE_EXTRA_OPT="-O"
+            fi
             return
         else
             MAKE=
@@ -216,6 +220,11 @@ determine_make()
     done
     if [ -z "$MAKE" ] ; then
         die "Could not find a Gnu Make"
+    else
+        $MAKE --version 2> /dev/null | grep -q GNU | grep -q '4\.'
+        if test $? -eq 0; then
+            tb_MAKE_EXTRA_OPT="-O"
+        fi
     fi
 }
 
