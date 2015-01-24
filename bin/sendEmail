@@ -1903,7 +1903,7 @@ else {
     if ($conf{'tls_server'} == 1 and $conf{'tls_client'} == 1 and $opt{'tls'} =~ /^(yes|auto)$/) {
         printmsg("DEBUG => Starting TLS", 2);
         if (SMTPchat('STARTTLS')) { quit($conf{'error'}, 1); }
-        my $ssl_ver = 'SSLv3 TLSv1';
+        my $ssl_ver = 'SSLv3';
         chomp(my $system = `uname -o`);
         if ($system eq 'Cygwin') { $ssl_ver = 'SSLv3'; }
         if (! IO::Socket::SSL->start_SSL($SERVER, SSL_version => $ssl_ver)) {
