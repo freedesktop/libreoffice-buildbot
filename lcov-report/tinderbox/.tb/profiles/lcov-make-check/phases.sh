@@ -6,7 +6,7 @@ lcov-make-check_do_make()
     if [ "${R}" = "0" ] ; then
         # we for MAKE_RESTARTS=1 because 1/ we know that Makefile is up to date
         # and 2/ the 'restart' mechanism in make is messed-up by the fact that we trap SIGINT
-        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} MAKE_RESTARTS=1 build-nocheck > "tb_${P?}_build-nocheck.log" 2>&1 ; then
+        if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} MAKE_RESTARTS=1 gb_GCOV=YES build-nocheck > "tb_${P?}_build-nocheck.log" 2>&1 ; then
             tb_REPORT_LOG="tb_${P?}_build-nocheck.log"
             tb_REPORT_MSGS="build failed - error is:"
             [ $V ] && echo "make failed :"
@@ -20,7 +20,7 @@ lcov-make-check_do_make()
                 [ $V ] && cat tb_${P?}_build-nocheck.log
                 R=1
             else
-                if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} MAKE_RESTARTS=1 check >> "tb_${P?}_build-nocheck.log" 2>&1 ; then
+                if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} MAKE_RESTARTS=1 gb_GCOV=YES check >> "tb_${P?}_build-nocheck.log" 2>&1 ; then
                     tb_REPORT_LOG="tb_${P?}_build-nocheck.log"
                     tb_REPORT_MSGS="make check failed - error is:"
                     [ $V ] && echo "make failed :"

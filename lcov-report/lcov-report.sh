@@ -128,7 +128,7 @@ source_build()
     "${SRC_DIR?}/autogen.sh" --enable-python=internal --disable-online-update --without-system-libs --without-system-headers \
     || die "autogen.sh failed."
 
-    make build-nocheck || die "make build-nocheck failed."
+    gb_GCOV=YES make build-nocheck || die "make build-nocheck failed."
 
     cd -
 }

@@ -20,3 +20,5 @@ directory tree to your existing ~/.tb tree, and add the profile
 also need to set 'TB_BRANCH', 'TB_BUILD_DIR', and 'TB_GIT_DIR'
 there. Additionally, you need to modify the 'TB_LCOV_*' variables in
 './.tb/profiles/lcov-make-check/config' to reflect your situation.
+
+You can then start tinderbox like so: debug=1 ./tb -p lcov-make-check -v

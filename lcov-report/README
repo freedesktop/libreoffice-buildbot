@@ -96,14 +96,14 @@ EXAMPLE
 
                 lcov-report.sh -b -C /home/user/build -t \
                 /home/user/traces -s /home/user/src/libreoffice \
-		-d "make check"
+                -d "make check"
 
 
         3.) Run tests.
 
                 Now you can run the tests for which you want to report
-                code coverage. This could be as simple as 'make check'
-                in the build directory.
+                code coverage. This could be as simple as 
+                'gb_GCOV=YES make check' in the build directory.
 
 
         4.) Run 'lcov-report.sh -a'.
