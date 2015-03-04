@@ -85,6 +85,8 @@ init()
         if [ -z "${SRC_DIR?}" ] ; then
             die "When specifying '-a', you also need to specify '-s'."
         fi
+
+        BUILD_DIR=$(readlink -f "${BUILD_DIR?}")
     fi
 
     if [ "${BEFORE?}" = "TRUE" ] ; then
