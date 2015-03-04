@@ -163,12 +163,12 @@ lcov_tracefile_cleanup()
 
 lcov_mkhtml()
 {
-    mkdir "${HTML_DIR?}/master~${COMMIT_DATE?}_${COMMIT_TIME?}" || die "Failed to create subdirectory in ${HTML_DIR?}/master~${COMMIT_DATE?}_${COMMIT_TIME?}"
+    mkdir "${HTML_DIR?}/report" || die "Failed to create subdirectory in ${HTML_DIR?}/report"
 
     genhtml --rc geninfo_auto_base=1 --prefix "${SRC_DIR?}" --ignore-errors source "${TRACEFILE_DIR?}/lcov_filtered.info" \
     --legend --title "${TEST_NAME?}" --rc genhtml_desc_html=1 \
-    --output-directory="${HTML_DIR?}/master~${COMMIT_DATE?}_${COMMIT_TIME?}" --description-file "${TRACEFILE_DIR?}/${DESC_FILE?}" \
-    || die "ERROR: Generation of html files in ${HTML_DIR?}/master~${COMMIT_DATE?}_${COMMIT_TIME?} failed."
+    --output-directory="${HTML_DIR?}/report" --description-file "${TRACEFILE_DIR?}/${DESC_FILE?}" \
+    || die "ERROR: Generation of html files in ${HTML_DIR?}/report failed."
 }
 
 lcov_get_commit()
