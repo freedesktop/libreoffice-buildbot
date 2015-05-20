@@ -165,7 +165,7 @@ TB_POST_BUILD_DELAY=<num_of_seconds> Pause in second after a build.
                                      G Level parameter
 TB_SMTP_HOST=<smtp_hostname> Hostname of the smtp server to use to send email.
                              This paramter is mandatory in tb mode
-
+TB_SMTP_TLS=<auto|yes|no> Email TLS mode - auto-detect, enforce, or switch-off.
 TB_SMTP_PASSWORD=<password> Password associated with TB_SMTP_USER.
                             This paramter is mandatory if TB_SMTP_USER is specified
 TB_SMTP_USER=<username> Username to login to the smtp server.

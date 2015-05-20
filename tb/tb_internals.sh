@@ -1170,15 +1170,18 @@ send_mail_msg()
     if [ -n "${TB_SMTP_USER}" ] ; then
         smtp_auth="-xu ${TB_SMTP_USER?} -xp ${TB_SMTP_PASSWORD?}"
     fi
+    if [ -n "${TB_SMTP_TLS}" ] ; then
+        smtp_tls="-o tls=${TB_SMTP_TLS?}"
+    fi
 
     [ $V ] && log_msgs "send mail to ${to?} with subject \"${subject?}\""
     [ $V ] && quiet=""
     if [ -n "${log}" ] ; then
-        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
+        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth $smtp_tls -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}" -a "${log?}"
     elif [ -n "${headers?}" ] ; then
-        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
+        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth $smtp_tls -t "${to?}" -bcc "${bcc?}" -u "${subject?}" -o "message-header=${headers?}"
     else
-        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
+        ${tb_BIN_DIR?}/tb_send_email $quiet -f "${TB_OWNER?}" -s "${TB_SMTP_HOST?}" $smtp_auth $smtp_tls -t "${to?}" -bcc "${bcc?}" -u "${subject?}"
     fi
 }
 
