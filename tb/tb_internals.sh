@@ -791,9 +791,9 @@ tinderbox: END
         subject="tinderbox gzipped logfile"
     fi
 
-    if [ "$SEND_MAIL" = "debug" ] ; then
+    if [ "$tb_SEND_MAIL" = "debug" ] ; then
         echo "$message_content" | send_mail_msg "${TB_OWNER?}" "${subject?}" "${xtinder?}" '' "${gzlog}"
-    elif [ "$SEND_MAIL" = "author" ] ; then
+    elif [ "$tb_SEND_MAIL" = "author" ] ; then
         echo "$message_content" | send_mail_msg "${TB_OWNER?}" "${subject?}" "${xtinder?}" '' "${gzlog}"
         if [ -n "${tb_BRANCH_AUTHOR}" ] ; then
             echo "$message_content" | send_mail_msg "${tb_BRANCH_AUTHOR}" "${subject?}" "${xtinder?}" '' "${gzlog}"
