@@ -410,7 +410,12 @@ collect_current_heads()
 get_committers()
 {
     echo "get_committers: $(get_commits_since_last_good people)" 1>&2
-    get_commits_since_last_good people | sort | uniq | tr '\n' ','
+    get_commits_since_last_good people | sort | uniq | grep -v '^gerrit@gerrit\.libreoffice\.org$' | tr '\n' ','
+        # shm_get says: "when a commit to a submodule is pushed via gerrit,
+        # gerrit automatically generate the necessary commit on core.git to
+        # reflect the submodule change.. that commit is done with gerrit's
+        # credential.. gerrit@gerrit.libreoffice.org and there is no mailbox
+        # behind it"
 }
 
 rotate_logs()
