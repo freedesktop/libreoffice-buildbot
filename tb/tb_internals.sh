@@ -278,8 +278,12 @@ find_dev_install_location()
 generate_cgit_link()
 {
     local sha="$1"
-
-    echo "<a href='http://cgit.freedesktop.org/libreoffice/core/log/?id=$sha'>core</a>"
+    local branch="$2"
+    if [[ $branch == *"online"* ]]; then
+        echo "<a href='http://cgit.freedesktop.org/libreoffice/online/log/?id=$sha'>online</a>"
+    else
+        echo "<a href='http://cgit.freedesktop.org/libreoffice/core/log/?id=$sha'>core</a>"
+    fi
 }
 
 get_commits_since_last_good()
@@ -808,7 +812,7 @@ tinderbox: END
         (
             echo "$message_content"
             cat "${TB_METADATA_DIR?}/${P?}_current-git-timestamp.log"
-            for cm in $(cat "${TB_METADATA_DIR?}/${P?}_current-git-head.log") ; do echo "TinderboxPrint: $(generate_cgit_link "${cm}")" ; done
+            for cm in $(cat "${TB_METADATA_DIR?}/${P?}_current-git-head.log") ; do echo "TinderboxPrint: $(generate_cgit_link "${cm}" "$TB_TINDERBOX_BRANCH?}")" ; done
             cat tb_${P?}_autogen.log tb_${P?}_clean.log tb_${P?}_build.log tb_${P?}_tests.log 2>/dev/null
         ) | gzip -c > "${gzlog}"
         xtinder="X-Tinder: gzookie"
