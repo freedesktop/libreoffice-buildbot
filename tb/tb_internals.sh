@@ -195,6 +195,21 @@ determine_default_tinderbox_branch()
         libreoffice-5-0)
             echo "${b?}"
             ;;
+        libreoffice-5-1)
+            echo "${b?}"
+            ;;
+        libreoffice-5-2)
+            echo "${b?}"
+            ;;
+        libreoffice-5-3)
+            echo "${b?}"
+            ;;
+        libreoffice-5-4)
+            echo "${b?}"
+            ;;
+        libreoffice-6-0)
+            echo "${b?}"
+            ;;
     esac
 }
 
