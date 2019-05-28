@@ -15,7 +15,7 @@ if [ -n "$debug" ] ; then
     set -x
 fi
 
-# get the abolute path to the directory containing the main script
+# get the absolute path to the directory containing the main script
 tb_BIN_DIR=$(dirname "$0")
 pushd ${tb_BIN_DIR} > /dev/null
 tb_BIN_DIR=$(pwd)
@@ -47,13 +47,12 @@ when such a task is found, tb checkout the patch concerned, test build it and
 report the result to gerrit.
 
 In 'dual' mode, tb alternate between the tb and gerrit mode. In dual mode
-there is 3 diffrent scheduling mode:
-The 'fair' mode, which try  tb and gerrit
-build alternatively.
+there are 3 different scheduling modes:
+The 'fair' mode, which tries tb and gerrit build alternatively.
 The tb-gerrit mode, in which tb does primarily tb build unless there is no such
 build to do, in which case it does gerrit build until a new tb build is needed
 The gerrit-tb mode, in which tb does primarily gerrit build unless there is no
-ssuch build to do, in which case it does tb build until a new gerrit build is
+such build to do, in which case it does tb build until a new gerrit build is
 needed.
 
 tb can only run any number of profile at the time.
@@ -70,10 +69,10 @@ The configuration is organized as:
 
 The configuration is obtained for a given profile by sourcing, in this order,
 
-~/tb/config
+~/.tb/config
     /profiles/<profile_name>/config
 
-Each build need a autogen configuration for the building of libreoffice.
+Each build needs an autogen configuration for the building of libreoffice.
 
     /profiles/<profile_name>/autogen.lastrun
 
@@ -87,30 +86,29 @@ The following variables can be specified in tb's configuration files.
 TB_ACTIVE_PROFILES=<profile_name> [<profile_name> ...]
                                   List of active profile.
                                   This is a G level only parameter
-                                  This provide a default value in case -p <profle> is not
+                                  This provide a default value in case -p <profile> is not
                                   present on the command line, but is required.
 TB_BIBISECT_DIR=<path> Location of a git bibisect repository
-                       This is a tb-mode only paramter. This is ingored in gerrit mode
-                       This is a tb-mode only paramter. This is ingored in gerrit mode
+                       This is a tb-mode only parameter. This is ignored in gerrit mode
 TB_BIBISECT_GC=[0|1] Indicate if a git gc should be run after each bibisect version
                      is stored
                      Default is 0.
-                     This is a tb-mode only paramter. This is ingored in gerrit mode
+                     This is a tb-mode only parameter. This is ignored in gerrit mode
 TB_BIBISECT_PUSH=[0|1] Indicate if a git push should be issued after each bibisect
                        version is stored.
                        Default is 0.
-                       This is a tb-mode only paramter. This is ingored in gerrit mode
+                       This is a tb-mode only parameter. This is ignored in gerrit mode
 TB_BIBISECT=[0|1] Indicate if a bibisect version should be saved.
                   Default is 0.
-                  This is a tb-mode only paramter. This is ingored in gerrit mode
-TB_BRANCH=<nane>  name of the branch that profile monitor, used to query gerrit or to repport to tindbuild
+                  This is a tb-mode only parameter. This is ignored in gerrit mode
+TB_BRANCH=<name>  name of the branch that profile monitor, used to query gerrit or to report to tinbuild
                   Default:"master"
-TB_BUILD_DIR=<path> Directory to use a a build directory. If specified, it must exist.
+TB_BUILD_DIR=<path> Directory to use as a build directory. If specified, it must exist.
                     Default to TB_GIT_DIR.
-TB_LOCAL_REFSPEC=<ref> Name of the branche in the local repo
+TB_LOCAL_REFSPEC=<ref> Name of the branch in the local repo
                        Default to the name of the branch in the configuration
-                       This is a P-level only paramter
-                       This is a tb-mode only paramter. This is ingored in gerrit mode
+                       This is a P-level only parameter
+                       This is a tb-mode only parameter. This is ignored in gerrit mode
 TB_MODE=(fair|fix)  Indicate the scheduling fairness to use
                     This is a G only parameter
                     in 'fair' mode active profiles are rotated such that
@@ -119,8 +117,8 @@ TB_MODE=(fair|fix)  Indicate the scheduling fairness to use
                     in the order they are specified, always.
 TB_REMOTE_REFSPEC=<ref> Name of the branch on the remote repo.
                         Default to the name of the branch in the configuration
-                        This is a P-level only paramter
-                        This is a tb-mode only paramter. This is ingored in gerrit mode
+                        This is a P-level only parameter
+                        This is a tb-mode only parameter. This is ignored in gerrit mode
 TB_TYPE=(gerrit|tb) Indicate if the profile describe a gerrit or tb build
                     This is a mandatory P-level only parameter
 TB_GERRIT_HOST=<host> Gerrit host to contact in gerrit mode.
@@ -130,63 +128,63 @@ TB_GERRIT_TEST=(1|0) Indicate that this gerrit profile is for test only.
                      as 'test'. and therefore will not be consumed as real request.
 TB_GIT_DIR=<path> Location of the libreoffice core git repo to use for a build.
                   This parameter is mandatory.
-TB_INCREMENTAL=[0|1] Indicate that one want to do incremental build, iow skip the clean phase
-                     This apply only to tb build, as tb build are normally progressive
-                     in time, whereas gerrit build can be all over the place...
-                     This only make sens if each branch that is meant to be built incrementally
-                     has it's own build directory (which for now also mean its own git repo
-                     at least until gbuildification is complete and the source tree is finaly
+TB_INCREMENTAL=[0|1] Indicate that one wants to do incremental build, iow skip the clean phase
+                     This apply only to tb build, as tb builds are normally progressive
+                     in time, whereas gerrit builds can be all over the place...
+                     This only make sense if each branch that is meant to be built incrementally
+                     has its own build directory (which for now also mean its own git repo
+                     at least until gbuildification is complete and the source tree is finally
                      treated as a read-only zone.
-TB_LOGFILE=<path> File where tb will log message about it's operation.
+TB_LOGFILE=<path> File where tb will log message about its operation.
                   The file does not have to exist, but the path containing the file must.
                   This is only for message issued by tb itself.. this does no relate to build
                   logs.
-TB_MATADATA_DIR<path> directory where tb will store state information regarding the defferent
-                      branches it monitor. In tb mode, tb is keeping track of the last
-                      sucessfull build point, in order to be able to notify the committers
+TB_METADATA_DIR=<path> Directory where tb will store state information regarding the different
+                      branches it monitors. In tb mode, tb is keeping track of the last
+                      successful build point, in order to be able to notify the committers
                       involved in patches since that point in case of build failure.
-                      tb also keep track of the last time it uploaded a version
+                      tb also keeps track of the last time it uploaded a version
                       when such upload options is specified.
                       All the files used to keep track of theses are store in this directory,
                       tb will attempt to create the directory if it does not exist
-                      This is G or P-level parameter only
-                      This paramter is mandatory.
+                      This is G or P-level parameter only.
+                      This parameter is mandatory.
 TB_NAME=<name> Name of the tinderbox. see http://wiki/documentfoundation.org/Development/Tinderbox
                for naming conventions.
                This is G or P-level parameter only
-               This paramter is mandatory.
+               This parameter is mandatory.
 TB_NICE=<prefix> Value to prepend to expensive command like MAKE to nice it
-                 for eacmpel TB_NICE="nice ionice -c3"
+                 for example TB_NICE="nice ionice -c3"
 TB_OWNER=<email> Email of the owner/operator of the tinderbox
-                 This is G or P-level parameter only
-                 This paramter is mandatory.
-TB_POLL_DELAY=<num_of_seconds> Delay in second between two attempt to pool the states of branches.
+                 This is G or P-level parameter only.
+                 This parameter is mandatory.
+TB_POLL_DELAY=<num_of_seconds> Delay in second between two attempts to pool the states of branches.
 TB_POST_BUILD_DELAY=<num_of_seconds> Pause in second after a build.
                                      G Level parameter
 TB_SMTP_HOST=<smtp_hostname> Hostname of the smtp server to use to send email.
-                             This paramter is mandatory in tb mode
+                             This parameter is mandatory in tb mode
 TB_SMTP_TLS=<auto|yes|no> Email TLS mode - auto-detect, enforce, or switch-off.
 TB_SMTP_PASSWORD=<password> Password associated with TB_SMTP_USER.
-                            This paramter is mandatory if TB_SMTP_USER is specified
+                            This parameter is mandatory if TB_SMTP_USER is specified
 TB_SMTP_USER=<username> Username to login to the smtp server.
-                        If your smtp server does not require authotification, you can omit this.
-TB_TINDERBOX_BRANCH=<name> Name associated with a  branch on the tinderbox server.
-                           The tinderbox server need to have a branch name assocaited with any
-                           build repport. the server only recognize a preset list of such name
-                           and they do not necessarely match you local branch name.
-                           This is a tb-mode only paramter. This is ignored in gerrit mode
+                        If your smtp server does not require authentication, you can omit this.
+TB_TINDERBOX_BRANCH=<name> Name associated with a branch on the tinderbox server.
+                           The tinderbox server need to have a branch name associated with any
+                           build report. The server only recognize a preset list of such names
+                           and they do not necessarily match your local branch names.
+                           This is a tb-mode only parameter. This is ignored in gerrit mode.
 TB_TRIGGER_FILE=<absolute_filename> This is the location of a 'trigger' file.
-                                    If specified the existance of that file will be
-                                    tested, and a build for the assocaited branch
-                                    will not be run unless the file exist
-                                    at the end of a successfull build, the trigger
+                                    If specified the existence of that file will be
+                                    tested, and a build for the associated branch
+                                    will not be run unless the file exists.
+                                    At the end of a successful build, the trigger
                                     file is removed by tb.
-                                    This allow to trigger some build at periodic time with a cron
+                                    This allows to trigger some build at periodic time with a cron
                                     For instance you could have a cron that touch a trigger file
                                     weekly to trigger a full localized build.
                                     This is a tb-mode only parameter. This is ignored in gerrit mode
 
-In general, when a command line argument influence on of the paramter listed
+In general, when a command line argument influence on of the parameter listed
 above, it can only override a G-level specification. P-level take, for the most
 part precedence of the command-line.
 
@@ -195,7 +193,7 @@ taking no argument what-so-ever.
 
 
 Note for tinbuild2 user: tb does _not_ require a primer build. but it will not
-send email to committers in case a failure until it has had a prior sucessful
+send email to committers in case a failure until it has had a prior successful
 build for a given branch.
 
 EOF
@@ -242,7 +240,7 @@ while [ "${1}" != "" ]; do
         -k)  # do not override the local autogen.lastrun if present
             tb_KEEP_AUTOGEN="1"
             ;;
-        -p)  # profile to use to deterine extra parameter (email mostly) and autogen arguments
+        -p)  # profile to use to determine extra parameters (email mostly) and autogen arguments
             if [ -z "${has_arg}" ] ; then
                 shift;
                 arg="$1"

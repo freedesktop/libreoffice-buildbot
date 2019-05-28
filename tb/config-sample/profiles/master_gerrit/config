@@ -1,8 +1,8 @@
 
-#mandatory param: indicate a gerrit build
+# mandatory param: indicate a gerrit build
 TB_TYPE=gerrit
 
-# name used for repporting
+# name used for reporting
 TB_NAME=Linux-x86_84@99-optional-comment
 
 # branch targeted by this profile

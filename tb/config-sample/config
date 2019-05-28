@@ -2,9 +2,9 @@
 # name of your tinderbox
 # see see http://wiki/documentfoundation.org/Development/Tinderbox
 # for naming convention
-# Note: @99 below is the tinderbox id. in oder to do gerrit
-# build you _must_ obtain a BuilbBot user associated with that id
-# see your friendly gerrit admin.
+# Note: @99 below is the tinderbox id. In order to do gerrit
+# build you _must_ obtain a BuildBot user associated with that id.
+# See your friendly gerrit admin.
 TB_NAME="Linux_x86_64@99-Template-Description"
 
 # this is the time the tb will go to sleep in case there is nothing to build (in seconds)
@@ -18,22 +18,22 @@ TB_POST_BUILD_DELAY=15
 TB_LOGIFLE=/lo/tb99.log
 
 # default email mode when doing a tb build
-# while debugggin your set-up you probably want =owner or =none here
+# while debugging your set-up you probably want =owner or =none here
 TB_SEND_MAIL=all
 
-# TB_ACTIVE_PROFILES list the default lsit of profile to use for tb
-# in the absence of -p <profile> on the commadn line these profiles
-# will be implicitely selected
-TB_ACTIVE_PROFILES="master_gerrit lo-4-1_gerrit lo-4-1_tb daily_bibisec_upload_master_tb"
+# TB_ACTIVE_PROFILES list the default profiles to use for tb
+# in the absence of -p <profile> on the command line. These profiles
+# will be implicitly selected.
+TB_ACTIVE_PROFILES="master_gerrit lo-4-1_gerrit lo-4-1_tb daily_bibisect_upload_master_tb"
 
 # if you are doing tb build, we need a SMTP server
 # to send email to the tinderbox server, to post
 # the build result
 # and we need a user/passwd.
 # if your smtp does not need credentials
-# then you can omit both user and passwrd
-# note email are also used to notify committer of build failure
-TB_SMTP_HOST=smtp.gamil.com
+# then you can omit both user and password
+# note email is also used to notify committer of build failure
+TB_SMTP_HOST=smtp.gmail.com
 TB_SMTP_USER=john.doe
 TB_SMTP_PASSWORD=password
 

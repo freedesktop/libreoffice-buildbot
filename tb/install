@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# get the abolute path to the directory containing the main script
+# get the absolute path to the directory containing the main script
 BIN_DIR=$(dirname "$0")
 pushd ${BIN_DIR?} > /dev/null
 BIN_DIR=$(pwd)
@@ -13,8 +13,8 @@ usage()
     cat <<EOF
 Usage: $0 [ --prefix=<path> ]
 
---prefix is used here in the sens of autoconf.
-By default the prefix is /opt/lo, which means that tb and necesasry
+--prefix is used here in the sense of autoconf.
+By default the prefix is /opt/lo, which means that tb and necessary
 shell files are installed in /opt/lo/bin
 
 EOF

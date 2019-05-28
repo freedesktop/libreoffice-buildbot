@@ -51,7 +51,7 @@ do_autogen()
     canonical_do_autogen
 }
 
-canoncial_post_autogen()
+canonical_post_autogen()
 {
     return
 }
@@ -95,7 +95,7 @@ local optdir=""
 
     tb_OPT_DIR=""
     if [ "${R}" = "0" ] ; then
-        # we for MAKE_RESTARTS=1 because 1/ we know thta Makefile is up to date
+        # we force MAKE_RESTARTS=1 because 1/ we know that Makefile is up to date
         # and 2/ the 'restart' mechanism in make is messed-up by the fact that we trap SIGINT
         if ! ${TB_NICE} ${TB_WATCHDOG} ${MAKE?} MAKE_RESTARTS=1  -sr $tb_MAKE_EXTRA_OPT > "tb_${P?}_build.log" 2>&1 ; then
             tb_REPORT_LOG="tb_${P?}_build.log"

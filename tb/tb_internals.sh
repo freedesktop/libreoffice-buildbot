@@ -18,25 +18,25 @@
 # Exception: P : current project name
 #            R : build result indicator ( 0=OK 1=KO 2=False positive )
 #            V : verbose messages (V=1 => verbose message V= => no verbose message, iow: [ $V ] && log_msgs ....
-#         MAKE : environement variable is use if set to point to a gnu-make
-#                otherwise overriden to a gne-make found in the PATH
+#         MAKE : environment variable is use if set to point to a gnu-make
+#                otherwise overridden to a gnu-make found in the PATH
 #
-# canonical_* reserverved for phase implementation in tb_phases.sh
-# canonical_[pre|do|post]_<phase> is garanteed to exist, even if it is a no-op function.
+# canonical_* reserved for phase implementation in tb_phases.sh
+# canonical_[pre|do|post]_<phase> is guaranteed to exist, even if it is a no-op function.
 #
 # The rational for these namespace is to allow lower-level overload to still call
 # the implementation at higher level.
 #
-# for instance if a profile phase.sh want derefine the TMPDIR and clean it up
-# in the pre-clean phase, but still want to do what-ever the tb_phase.sh normally do
+# for instance if a profile phase.sh wants to redefine the TMPDIR and clean it up
+# in the pre-clean phase, but still wants to do whatever the tb_phase.sh normally do
 # it can implement
 # pre_clean()
 # {
 #    do what I need to do
-#    canonical_pre_clean() to invoke the defautl impelmentation
+#    canonical_pre_clean() to invoke the default implementation
 # }
 #
-# ATTENTION: do not abuse this scheme by having defferent level invoking different phase
+# ATTENTION: do not abuse this scheme by having different level invoking different phase
 # at higher level... so a profile's pre_clean() for instance shall not invoke canonical_do_clean()
 # or any other phase than *_pre_clean()
 #
@@ -61,7 +61,7 @@ V=
 tb_LOGFILE="/dev/null"
 
 
-# please keep the function declaration in alphabetical order
+# please keep the function declarations in alphabetical order
 
 
 bibisect_post()
@@ -90,7 +90,7 @@ collect_current_head()
 # Copy the autogen.lastrun in the builddir
 # this assume that the cwd is the builddir
 # and that B and tb_BUILD_TYPE are set
-# This is notmally called fromthe do_autogen()
+# This is normally called from the do_autogen()
 # phase.
 #
 copy_autogen_config()
@@ -105,7 +105,7 @@ copy_autogen_config()
 deliver_lo_to_bibisect()
 {
     # copy the content of lo proper to bibisect
-    # this is  separate function so it can easily be overriden
+    # this is  separate function so it can easily be overridden
     cp -fR ${tb_OPT_DIR?} ${TB_BIBISECT_DIR?}/
 
 }
@@ -317,7 +317,7 @@ get_committers()
     get_commits_since_last_good people | sort | uniq | tr '\n' ','
 }
 
-interupted_build()
+interrupted_build()
 {
     log_msgs "Interrupted by Signal"
     if [ "$TB_MODE" = "gerrit" ] ; then
@@ -513,7 +513,7 @@ push_bibisect()
 
     if [ ${TB_BIBISECT} = "1" -a -n "${tb_OPT_DIR}" ] ; then
 
-        [ $V ] && echo "Push: bibisec builds enabled"
+        [ $V ] && echo "Push: bibisect builds enabled"
         curr_day=$(date -u '+%Y%j')
         last_day_upload="$(cat "${TB_METADATA_DIR?}/${P?}_last-bibisect-day.txt" 2>/dev/null)"
         if [ -z "$last_day_upload" ] ; then
@@ -535,7 +535,7 @@ push_bibisect()
     fi
 }
 
-# Add pdb files for binaries of the given extension (exe,dll)
+# Add pdb files for binaries of the given extension (exe, dll)
 # and type (Library/Executable) to the given list.
 add_pdb_files()
 {
@@ -855,7 +855,7 @@ rotate_logs()
     if [ "${R?}" = "0" ] ; then
         cp -f "${TB_METADATA_DIR?}/${P?}_current-git-head.log" "${TB_METADATA_DIR?}/${P?}_last-success-git-head.txt" 2>/dev/null
         cp -f "${TB_METADATA_DIR?}/${P?}_current-git-timestamp.log" "${TB_METADATA_DIR?}/${P?}_last-success-git-timestamp.txt" 2>/dev/null
-    elif [ "${R}" != "2" ]; then # do not count abandonned false_negative loop as failure
+    elif [ "${R}" != "2" ]; then # do not count abandoned false_negative loop as failure
         cp -f "${TB_METADATA_DIR?}/${P?}_current-git-head.log" "${TB_METADATA_DIR?}/${P?}_last-failure-git-head.txt" 2>/dev/null
         cp -f "${TB_METADATA_DIR?}/${P?}_current-git-timestamp.log" "${TB_METADATA_DIR?}/${P?}_last-failure-git-timestamp.txt" 2>/dev/null
     fi
@@ -873,7 +873,7 @@ rotate_logs()
 #
 # Run a gerrit build
 #
-# Run a a subshell to isolate Branch-level config
+# Run a subshell to isolate Branch-level config
 #
 run_gerrit_task()
 {
@@ -883,9 +883,9 @@ run_gerrit_task()
     # branch and checkout the target sha
     prepare_git_repo_for_gerrit
 
-    # if prepare repor failed R is no 0 anymore
+    # if prepare report failed R is no 0 anymore
     if [ "${R}" == 0 ] ; then
-        # gerrit build are not incremental
+        # gerrit builds are not incremental
         # always use all the phases and cleanup after yourself
         local phase_list="autogen clean make test push clean"
 
@@ -924,7 +924,7 @@ local s=0
         # based on the build type run the appropriate build
         if [ -z "${P?}" ] ; then
             if [ "${s?}" != "${TB_POLL_DELAY?}" ] ; then
-                log_msgs "Nothing to do. waiting ${TB_POLL_DELAY?} seconds."
+                log_msgs "Nothing to do. Waiting ${TB_POLL_DELAY?} seconds."
             fi
             s=${TB_POLL_DELAY?}
         else
@@ -935,7 +935,7 @@ local s=0
     # if we were stopped by request, let's log that
     # clean the semaphore file
     if [ -f ${tb_CONFIG_DIR?}/stop ] ; then
-        log_msgs "Stoped by request"
+        log_msgs "Stopped by request"
         rm ${tb_CONFIG_DIR?}/stop
     fi
 
@@ -970,7 +970,7 @@ run_primer()
         (
         local triggered=0
         R=0
-        trap 'interupted_build' SIGINT SIGQUIT
+        trap 'interrupted_build' SIGINT SIGQUIT
         load_profile "${P?}"
 
         # we do not want to send any email on 'primer/one-shot' build
@@ -1062,7 +1062,7 @@ select_next_gerrit_task()
     local has_task
     local r=0
 
-    # short-cut triiger based build
+    # short-cut trigger based build
     if [ -n "${TB_TRIGGER_FILE}" ] ; then
         if [ ! -f "${TB_TRIGGER_FILE}" ] ; then
             R=3
@@ -1120,12 +1120,12 @@ select_next_task()
 
 #
 # Select a Tinderbox task
-# by seraching for new commits
-# on on of the branches under consideration
+# by searching for new commits
+# on one of the branches under consideration
 #
 select_next_tb_task()
 {
-    # short-cut triiger based build
+    # short-cut trigger based build
     if [ -n "${TB_TRIGGER_FILE}" ] ; then
         if [ ! -f "${TB_TRIGGER_FILE}" ] ; then
             R=3
@@ -1213,7 +1213,7 @@ send_mail_msg()
 # Setup factory default for variables
 #
 # this is invoked before the profile is known
-# so it cannot be overriden in the profile's phases.sh
+# so it cannot be overridden in the profile's phases.sh
 #
 set_factory_default()
 {
@@ -1238,8 +1238,8 @@ set_factory_default()
 # Setup default at the global level
 #
 # Based on the content of the profile
-# setup some interna variable
-# assign some default and
+# setup some internal variables
+# assign some defaults and
 # do some other housekeeping
 #
 # Verify that mandatory profile
@@ -1284,7 +1284,7 @@ try_run_task()
     (
         local triggered=0
         R=0
-        trap 'interupted_build' SIGINT SIGQUIT
+        trap 'interrupted_build' SIGINT SIGQUIT
         load_profile "${P?}"
 
         pushd "${TB_GIT_DIR?}" > /dev/null || die "Cannot cd to git repo ${TB_GIT_DIR?} for profile ${P?}"
@@ -1320,7 +1320,7 @@ try_run_task()
         exit "$R"
     )
     R="$?"
-    # check we we intercepted a signal, if so bail
+    # check if we intercepted a signal, if so bail
     if [ "${R?}" = "4" ] ; then
         exit -1
     fi
@@ -1435,7 +1435,7 @@ validate_tb_profile()
     fi
     if [ -n "$TB_BUILD_DIR" ] ; then
         if [ ! -d "${TB_BUILD_DIR}" ] ; then
-            die "TB_BULD_DIR:${TB_BUILD_DIR?} is not a directory"
+            die "TB_BUILD_DIR:${TB_BUILD_DIR?} is not a directory"
         fi
     fi
 
@@ -1474,7 +1474,7 @@ fi
 
 ################
 # ATTENTION:
-# Nothing below this point can be overriden at the platform-level
+# Nothing below this point can be overridden at the platform-level
 # so you should probably add code above this point
 # unless you have a darn good reason not to
 
