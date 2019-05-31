@@ -173,6 +173,9 @@ TB_TINDERBOX_BRANCH=<name> Name associated with a branch on the tinderbox server
                            build report. The server only recognize a preset list of such names
                            and they do not necessarily match your local branch names.
                            This is a tb-mode only parameter. This is ignored in gerrit mode.
+TB_TINDERBOX_EMAIL=<email> Email address of the tinderbox server. By default it is
+                           "tinderbox@gimli.documentfoundation.org".
+                           This is a tb-mode only parameter. This is ignored in gerrit mode.
 TB_TRIGGER_FILE=<absolute_filename> This is the location of a 'trigger' file.
                                     If specified the existence of that file will be
                                     tested, and a build for the associated branch

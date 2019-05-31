@@ -827,7 +827,7 @@ tinderbox: END
             echo "$message_content" | send_mail_msg "${tb_BRANCH_AUTHOR}" "${subject?}" "${xtinder?}" '' "${gzlog}"
         fi
     else
-        echo "$message_content" | send_mail_msg "tinderbox@gimli.documentfoundation.org" "${subject?}" "${xtinder?}" '' "${gzlog}"
+        echo "$message_content" | send_mail_msg "${TB_TINDERBOX_EMAIL?}" "${subject?}" "${xtinder?}" '' "${gzlog}"
     fi
 }
 
@@ -1223,6 +1223,7 @@ set_factory_default()
 {
     TB_INCREMENTAL=
     TB_GERRIT_HOST="logerrit"
+    TB_TINDERBOX_EMAIL="tinderbox@gimli.documentfoundation.org"
     TB_POLL_DELAY=120
     TB_POST_BUILD_DELAY=15
     TB_BIBISECT=0
